@@ -1,0 +1,12 @@
+name: bmqm
+channels:
+  - conda-forge
+  - defaults
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - python=3.11
+  - matplotlib
+  - numpy
+  - scipy
+prefix: /nas/longleaf/home/emainas/.conda/envs/bmqm
