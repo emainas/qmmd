@@ -1,0 +1,77 @@
+
+# ---------- PRL-inspired minimalist paper style ----------
+# Typography
+font.family: serif
+font.size: 9.5
+axes.labelsize: 9.5
+axes.titlesize: 10
+mathtext.fontset: cm
+# If you have Computer Modern installed locally, you can uncomment the next line:
+# font.serif: CMU Serif, Computer Modern Roman, Times New Roman, DejaVu Serif, Liberation Serif, serif
+
+# Figure / Save
+figure.figsize: 3.4, 3.4   # ~ single-column width
+figure.dpi: 300
+savefig.dpi: 600
+savefig.bbox: tight
+savefig.pad_inches: 0.02
+pdf.fonttype: 42            # embed fonts nicely
+ps.fonttype: 42
+
+# Axes & Spines
+axes.linewidth: 0.9
+axes.grid: False
+axes.axisbelow: True
+axes.titlepad: 4.0
+
+# Color & Lines (mostly monochrome with subtle grays)
+# Primary line width
+lines.linewidth: 1.0
+# Use a restrained grayscale cycle; add accent colors manually in code when needed
+axes.prop_cycle: cycler('color', ['0.0', '0.25', '0.5', '0.7'])
+
+# Markers
+lines.markersize: 4.5
+lines.markeredgewidth: 0.8
+# Scatter defaults (matplotlib uses PathCollection; these influence general look)
+patch.edgecolor: black
+patch.linewidth: 0.8
+
+# Ticks (thin, inward, with minors visible)
+xtick.direction: in
+ytick.direction: in
+xtick.major.size: 4
+ytick.major.size: 4
+xtick.minor.size: 2
+ytick.minor.size: 2
+xtick.major.width: 0.8
+ytick.major.width: 0.8
+xtick.minor.width: 0.6
+ytick.minor.width: 0.6
+xtick.minor.visible: True
+ytick.minor.visible: True
+
+# Legend (no box)
+legend.frameon: False
+legend.fontsize: 9
+
+# Grids (off by default; if turned on, keep light)
+grid.color: 0.85
+grid.linewidth: 0.6
+grid.alpha: 0.6
+
+# Errorbar caps subtle
+errorbar.capsize: 2.0
+
+# Boxplot / histogram edges subtle
+boxplot.boxprops.linewidth: 0.9
+boxplot.whiskerprops.linewidth: 0.9
+boxplot.capprops.linewidth: 0.9
+boxplot.medianprops.linewidth: 0.9
+
+# Images
+image.cmap: gray
+image.interpolation: none
+
+# Layout
+figure.constrained_layout.use: True
