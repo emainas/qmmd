@@ -1,4 +1,4 @@
-name: bmqm
+name: qmmd
 channels:
   - conda-forge
   - defaults
@@ -9,4 +9,4 @@ dependencies:
   - matplotlib
   - numpy
   - scipy
-prefix: /nas/longleaf/home/emainas/.conda/envs/bmqm
+prefix: /nas/longleaf/home/emainas/.conda/envs/qmmd
