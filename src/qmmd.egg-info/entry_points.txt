@@ -1,0 +1,2 @@
+[console_scripts]
+qmmd = qmmd.cli:main

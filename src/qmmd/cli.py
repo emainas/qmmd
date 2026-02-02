@@ -1,9 +1,9 @@
 import argparse
 from pathlib import Path
-from bmqm.prep import run_prep
+from qmmd.prep import run_prep
 
 def main():
-    p = argparse.ArgumentParser(prog="bmqm")
+    p = argparse.ArgumentParser(prog="qmmd")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     prep = sub.add_parser("prep", help="Prepare solvated system with tleap")
