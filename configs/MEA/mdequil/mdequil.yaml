@@ -1,0 +1,105 @@
+# qmmd configuration (example)
+# - MD input blocks (Amber &cntrl / &wt)
+# - Slurm job settings
+# - Runtime settings (module + executable)
+
+md:
+  minimize:
+    description: Minimize
+    cntrl:
+      imin: 1
+      maxcyc: 500
+      ncyc: 200
+      ntb: 1
+      cut: 7.0
+      ntr: 0
+      ntpr: 100
+
+  heat:
+    description: Heat from 0 to 300 K
+    cntrl:
+      imin: 0
+      irest: 0
+      ntx: 1
+      nstlim: 50000
+      dt: 0.001        # 50 ps
+      tempi: 0.0
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 7.0
+      ntpr: 500
+      ntwx: 1000
+      ntwe: 0
+      nmropt: 1
+    wt:
+      - type: TEMP0
+        istep1: 0
+        istep2: 50000
+        value1: 0.0
+        value2: 300.0
+      - type: END
+
+  equilibrate_nvt:
+    description: Equilibrate at 300 K
+    cntrl:
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 100000
+      dt: 0.001        # 200 ps
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 7.0
+      ntpr: 500
+      ntwx: 1000
+      ntwe: 0
+
+  equilibrate_npt:
+    description: Equilibrate at 300 K and 1.0 bar
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 100000
+      dt: 0.001        # 200 ps
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ntb: 2
+      ntp: 1
+      taup: 2.0
+      pres0: 1.0
+      ntc: 2
+      ntf: 2
+      cut: 7.0
+      ntpr: 500
+      ntwx: 1000
+      ntwe: 0
+
+slurm:
+  job:
+    name: mdequil
+    partition: small
+    nodes: 2
+    time: "10:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"
+
+runtime:
+  module: "amber/24"
+  executable: "sander"
+  env:
+    TEMP: 300
+    PRESS: 1.0
+  strict_mode: true   # corresponds to: set -euo pipefail
