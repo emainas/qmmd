@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bmqm"
+version = "0.1.0"
+description = "Benchmark quantum mechanics workflows (Amber prep, DFTB runs, Slurm submission)"
+requires-python = ">=3.11"
+dependencies = ["pyyaml"]
+
+[project.scripts]
+bmqm = "bmqm.cli:main"

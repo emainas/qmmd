@@ -125,6 +125,10 @@ def run_tleap(cfg: PrepConfig, tleap_in: Path) -> None:
             check=True,
         )
 
+def run_prep(yaml_path):
+    cfg = load_config(yaml_path)
+    tleap_in = write_tleap_in(cfg)
+    run_tleap(cfg, tleap_in)
 
 def main() -> None:
     if len(sys.argv) != 2:
