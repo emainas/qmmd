@@ -1,0 +1,30 @@
+# =========================
+# MD / Amber outputs
+# =========================
+
+# Amber output files
+*.out
+*.info
+*.log
+
+# Trajectories
+*.nc
+*.mdcrd
+*.dcd
+
+# Restart / coordinate files
+*.rst
+*.rst7
+*.ncrst
+
+# Topology (usually generated)
+*.parm7
+*.prmtop
+
+# Velocities / energies
+*.vel
+*.ene
+
+# Checkpoints / backups
+*.bak
+*.old
