@@ -8,7 +8,7 @@ Uses AmberTools / Amber and DCDFTBMD.
 ## Installation
 
 ```bash
-git clone <REPO_URL>
+git clone https://github.com/emainas/qmmd.git
 cd qmmd
 conda env create -f environment.yml
 conda activate qmmd
