@@ -19,7 +19,7 @@ class PrepConfig:
     mol2: Path
     water_model: str
     buffer: float
-    run_dir: Path
+    input_dir: Path
     counterion_num: int = 0
     frcmod_ion: Optional[str] = None
     counterion: Optional[str] = None
@@ -40,24 +40,35 @@ def load_config(yaml_path: Path) -> PrepConfig:
         buffer=float(data.get("buffer")),
         counterion=data.get("counterion"),
         counterion_num=int(data.get("counterion_num")),
-        run_dir=Path(data["run_dir"]),
+        input_dir=Path(data["input_dir"]),
         prefix=data.get("prefix", "solv"),
     )
 
     return cfg
 
-def write_tleap_in(cfg: PrepConfig) -> Path: 
-    cfg.run_dir.mkdir(parents=True, exist_ok=True)
+def write_tleap_in(cfg: PrepConfig) -> Path:
 
-    frcmod_name = Path(cfg.frcmod).name
-    mol2_name = Path(cfg.mol2).name
+    base_dir = cfg.input_dir.parent
+    prep_dir = base_dir / f"{cfg.prefix}_{cfg.buffer:.1f}" / "prep"
+    prep_dir.mkdir(parents=True, exist_ok=True)
 
-    if not (cfg.run_dir / frcmod_name).exists():
-        raise FileNotFoundError(f"Missing in run_dir: {cfg.run_dir / frcmod_name}")
-    if not (cfg.run_dir / mol2_name).exists():
-        raise FileNotFoundError(f"Missing in run_dir: {cfg.run_dir / mol2_name}")
+    frcmod_name = cfg.frcmod.name
+    mol2_name = cfg.mol2.name
 
-    tleap_in = cfg.run_dir / "tleap.in"
+    frcmod_src = cfg.input_dir / frcmod_name
+    mol2_src = cfg.input_dir / mol2_name
+    
+    # Existence of input checks
+    if not frcmod_src.exists():
+        raise FileNotFoundError(f"Missing in input_dir: {frcmod_src}")
+    if not mol2_src.exists():
+        raise FileNotFoundError(f"Missing in input_dir: {mol2_src}")
+    
+    # Copy inputs to prep dir to run tleap in
+    shutil.copy2(frcmod_src, prep_dir / frcmod_name)
+    shutil.copy2(mol2_src, prep_dir / mol2_name)
+
+    tleap_in = prep_dir / "tleap.in"
 
     addions_block = ""
     if cfg.counterion_num > 0:
@@ -114,12 +125,15 @@ def require_amber() -> Path:
     return tleap_path
 
 def run_tleap(cfg: PrepConfig, tleap_in: Path) -> None: 
-    out_path = cfg.run_dir / "tleap.out"
+    
+    prep_dir = tleap_in.parent
+    out_path = prep_dir / "tleap.out"
+
     with out_path.open("w") as f:
         tleap = require_amber()
         subprocess.run(
             [str(tleap), "-f", tleap_in.name],
-            cwd=cfg.run_dir,
+            cwd=prep_dir,
             stdout=f,
             stderr=subprocess.STDOUT,
             check=True,
@@ -130,6 +144,20 @@ def run_prep(yaml_path):
     tleap_in = write_tleap_in(cfg)
     run_tleap(cfg, tleap_in)
 
+    prep_dir = tleap_in.parent
+
+    # Freeze config for reproducibility (in the prep dir)
+    (prep_dir / "spec.yaml").write_text(yaml_path.read_text())
+
+    parm7 = prep_dir / f"{cfg.prefix}.parm7"
+    rst7 = prep_dir / f"{cfg.prefix}.rst7"
+    if not parm7.exists() or parm7.stat().st_size == 0:
+        raise RuntimeError(f"Missing/empty output: {parm7}")
+    if not rst7.exists() or rst7.stat().st_size == 0:
+        raise RuntimeError(f"Missing/empty output: {rst7}")
+
+    print(f"OK: wrote {parm7.name} and {rst7.name} in {prep_dir}")
+
 def main() -> None:
     if len(sys.argv) != 2:
         print("Usage: python3 prep.py prep.yaml", file=sys.stderr)
@@ -138,21 +166,22 @@ def main() -> None:
     yaml_path = Path(sys.argv[1]).resolve()
     cfg = load_config(yaml_path)
 
-    # Freeze config for reproducibility
-    cfg.run_dir.mkdir(parents=True, exist_ok=True)
-    (cfg.run_dir / "spec.yaml").write_text(yaml_path.read_text())
-
     tleap_in = write_tleap_in(cfg)
     run_tleap(cfg, tleap_in)
 
-    parm7 = cfg.run_dir / f"{cfg.prefix}.parm7"
-    rst7 = cfg.run_dir / f"{cfg.prefix}.rst7"
+    prep_dir = tleap_in.parent
+
+    # Freeze config for reproducibility (in the prep dir)
+    (prep_dir / "spec.yaml").write_text(yaml_path.read_text())
+
+    parm7 = prep_dir / f"{cfg.prefix}.parm7"
+    rst7 = prep_dir / f"{cfg.prefix}.rst7"
     if not parm7.exists() or parm7.stat().st_size == 0:
         raise RuntimeError(f"Missing/empty output: {parm7}")
     if not rst7.exists() or rst7.stat().st_size == 0:
         raise RuntimeError(f"Missing/empty output: {rst7}")
 
-    print(f"OK: wrote {parm7.name} and {rst7.name} in {cfg.run_dir}")
+    print(f"OK: wrote {parm7.name} and {rst7.name} in {prep_dir}")
 
 
 if __name__ == "__main__":

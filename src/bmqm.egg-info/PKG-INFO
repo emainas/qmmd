@@ -1,6 +1,0 @@
-Metadata-Version: 2.4
-Name: bmqm
-Version: 0.1.0
-Summary: Benchmark quantum mechanics workflows (Amber prep, DFTB runs, Slurm submission)
-Requires-Python: >=3.11
-Requires-Dist: pyyaml
