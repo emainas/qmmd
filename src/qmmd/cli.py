@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 from qmmd.prep import run_prep
 from qmmd.mdequil import run_mdequil
+from qmmd.salt import run_salt
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -13,9 +14,14 @@ def main():
     mdequil = sub.add_parser("mdequil", help="Write MD equil inputs and run (slurm if provided, else local)")
     mdequil.add_argument("yaml", type=Path)
 
+    salt = sub.add_parser("salt", help="Delete the counterion (sodium or chlorind) and turn the furthest water into a hydroxide")
+    salt.add_argument("yaml", type=Path)
+
     args = p.parse_args()
 
     if args.cmd == "prep":
         run_prep(args.yaml)
     elif args.cmd == "mdequil":
         run_mdequil(args.yaml)
+    elif args.cmd == "salt":
+        run_salt(args.yaml)
