@@ -3,6 +3,7 @@ from pathlib import Path
 from qmmd.prep import run_prep
 from qmmd.mdequil import run_mdequil
 from qmmd.salt import run_salt
+from qmmd.dftb import run_dftb
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -17,6 +18,9 @@ def main():
     salt = sub.add_parser("salt", help="Delete the counterion (sodium or chlorind) and turn the furthest water into a hydroxide")
     salt.add_argument("yaml", type=Path)
 
+    dftb = sub.add_parser("dftb", help="Write DCDFTBMD input file from previous step and run it with slurm (optional)")
+    dftb.add_argument("yaml", type=Path)
+
     args = p.parse_args()
 
     if args.cmd == "prep":
@@ -25,3 +29,5 @@ def main():
         run_mdequil(args.yaml)
     elif args.cmd == "salt":
         run_salt(args.yaml)
+    elif args.cmd == "dftb":
+        run_dftb(args.yaml)

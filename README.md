@@ -36,7 +36,7 @@ Generates a solvated system using `tleap`.
 **Run**
 
 ```bash
-qmmd prep configs/<molecule>/prep.yaml
+qmmd prep configs/<molecule>/prep/prep.yaml
 ```
 
 ---
@@ -48,7 +48,7 @@ NVT and NPT equilibration with classical force field using Amber's sander module
 **Run**
 
 ```bash
-qmmd prep configs/<molecule>/mdequil.yaml
+qmmd mdequil configs/<molecule>/mdequil/mdequil.yaml
 ```
 
 ---
@@ -60,5 +60,16 @@ Deletes tleap's counterion which is given as input and mutates the furthest wate
 **Run**
 
 ```bash
-qmmd salt configs/<molecule>/salt.yaml
+qmmd salt configs/<molecule>/salt/salt.yaml
 ```
+
+---
+
+## dftb - Run DCDFTBMD
+
+Reads the xyz file from previous step and runs a divide and conquer dftb molecular dynamics run
+
+**Run**
+
+```bash
+qmmd dftb condigs/<molecule>/dftb/dftb.yaml
