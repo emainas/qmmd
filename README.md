@@ -41,9 +41,9 @@ qmmd prep configs/<molecule>/prep.yaml
 
 ---
 
-## mdequil - NVT and NPT equilibration with classical force field using Amber's sander module
+## mdequil - MD Equilibration
 
-Generates Amber input files and slurm input file to run on HPC cluster. 
+NVT and NPT equilibration with classical force field using Amber's sander module
 
 **Run**
 
@@ -53,7 +53,7 @@ qmmd prep configs/<molecule>/mdequil.yaml
 
 ---
 
-## salt - Post-equilibration system adjustment
+## salt - Post-equilibration System Adjustment
 
 Deletes tleap's counterion which is given as input and mutates the furthest water molecule into hydroxide anion
 
