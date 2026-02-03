@@ -14,6 +14,7 @@ conda env create -f environment.yml
 conda activate qmmd
 pip install -e .
 qmmd --help
+```
 
 ---
 
@@ -36,6 +37,7 @@ Generates a solvated system using `tleap`.
 
 ```bash
 qmmd prep configs/<molecule>/prep.yaml
+```
 
 ---
 
@@ -47,6 +49,7 @@ Generates Amber input files and slurm input file to run on HPC cluster.
 
 ```bash
 qmmd prep configs/<molecule>/mdequil.yaml
+```
 
 ---
 
@@ -58,3 +61,4 @@ Deletes tleap's counterion which is given as input and mutates the furthest wate
 
 ```bash
 qmmd salt configs/<molecule>/salt.yaml
+```
