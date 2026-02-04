@@ -9,4 +9,6 @@ dependencies:
   - matplotlib
   - numpy
   - scipy
+  - pandas
+  - openpyxl
 prefix: /nas/longleaf/home/emainas/.conda/envs/qmmd
