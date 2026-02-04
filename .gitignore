@@ -28,3 +28,6 @@
 # Checkpoints / backups
 *.bak
 *.old
+
+# Slurm error file
+*.err

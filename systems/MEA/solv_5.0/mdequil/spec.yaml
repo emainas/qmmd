@@ -11,7 +11,7 @@ md:
       maxcyc: 500
       ncyc: 200
       ntb: 1
-      cut: 4.0
+      cut: 5.0
       ntr: 0
       ntpr: 100
 
@@ -31,7 +31,7 @@ md:
       ntp: 0
       ntc: 2
       ntf: 2
-      cut: 4.0
+      cut: 5.0
       ntpr: 500
       ntwx: 1000
       ntwe: 0
@@ -59,7 +59,7 @@ md:
       ntp: 0
       ntc: 2
       ntf: 2
-      cut: 4.0
+      cut: 5.0
       ntpr: 500
       ntwx: 1000
       ntwe: 0
@@ -82,7 +82,7 @@ md:
       pres0: 1.0
       ntc: 2
       ntf: 2
-      cut: 4.0
+      cut: 5.0
       ntpr: 500
       ntwx: 1000
       ntwe: 0

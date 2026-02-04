@@ -1,6 +1,0 @@
-parm no_ion.parm7
-trajin last_no_ion.rst7
-strip :7@H1
-trajout ready.xyz xyz 
-run
-quit
