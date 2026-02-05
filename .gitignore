@@ -31,3 +31,6 @@
 
 # Slurm error file
 *.err
+
+# dftb outputs
+systems/
