@@ -78,9 +78,8 @@ def bar_plot(df: pd.DataFrame, reports_dir: Path):
 
         all_waters.extend(ys)
 
-    # 🔥 show ALL values as ticks
-    ticks = sorted(set(all_waters))
-    ax.set_yticks(ticks)
+    #ticks = sorted(set(all_waters))
+    #ax.set_yticks(ticks)
 
     ax.set_xlabel("Solvation buffer (Å)")
     ax.set_ylabel("Number of added water residues")
@@ -118,7 +117,6 @@ def scatter_plot(df: pd.DataFrame, reports_dir: Path):
             label=sys,
         )
 
-        # optional connecting line → VERY scientist-looking
         ax.plot(
             sub["buffer_A"],
             sub["water_residues"],
