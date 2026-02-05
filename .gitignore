@@ -33,4 +33,4 @@
 *.err
 
 # dftb outputs
-systems/
+systems/**/dftb/
