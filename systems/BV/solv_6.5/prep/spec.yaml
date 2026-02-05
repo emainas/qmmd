@@ -1,0 +1,15 @@
+name: BV
+leaprc_mol: leaprc.gaff2
+leaprc_sol: leaprc.water.tip3p
+frcmod_ion: frcmod.ionsjc_tip3p
+frcmod: systems/BV/bv.frcmod
+
+mol2: systems/BV/bv.mol2
+
+water_model: TIP3PBOX
+buffer: 6.5
+counterion: Cl-
+counterion_num: 1
+
+input_dir: systems/BV/init/
+prefix: solv

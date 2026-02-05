@@ -1,0 +1,9 @@
+system: BV
+buffer: 5.5
+prefix: solv
+job_name: mdequil
+
+counterion: Cl-
+solute_mask: ":1"
+nclosest: 999999
+delete_h: "H1"   # or H2

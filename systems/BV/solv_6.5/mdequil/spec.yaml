@@ -1,0 +1,107 @@
+system: BV
+buffer: 6.5
+prefix: solv          # matches prep output solv.parm7 / solv.rst7
+job_name: mdequil     # output folder name next to prep
+
+md:
+  minimize:
+    description: Minimize
+    cntrl:
+      imin: 1
+      maxcyc: 500
+      ncyc: 200
+      ntb: 1
+      cut: 5.5
+      ntr: 0
+      ntpr: 100
+
+  heat:
+    description: Heat from 0 to 300 K
+    cntrl:
+      imin: 0
+      irest: 0
+      ntx: 1
+      nstlim: 50000
+      dt: 0.001
+      tempi: 0.0
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 5.5
+      ntpr: 500
+      ntwx: 1000
+      ntwe: 0
+      nmropt: 1
+    wt:
+      - type: TEMP0
+        istep1: 0
+        istep2: 50000
+        value1: 0.0
+        value2: 300.0
+      - type: END
+
+  equilibrate_nvt:
+    description: Equilibrate at 300 K
+    cntrl:
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 100000
+      dt: 0.001
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 5.5
+      ntpr: 500
+      ntwx: 1000
+      ntwe: 0
+
+  equilibrate_npt:
+    description: Equilibrate at 300 K and 1.0 bar
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 100000
+      dt: 0.001
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ntb: 2
+      ntp: 1
+      taup: 2.0
+      pres0: 1.0
+      ntc: 2
+      ntf: 2
+      cut: 5.5
+      ntpr: 500
+      ntwx: 1000
+      ntwe: 0
+
+runtime:
+  module: "amber/24"
+  executable: "sander"
+  env:
+    TEMP: 300
+    PRESS: 1.0
+  strict_mode: true
+
+# optional: remove this whole block or set slurm: null for local-only
+slurm:
+  job:
+    name: mdequil
+    partition: small
+    nodes: 2
+    time: "10:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"
+
