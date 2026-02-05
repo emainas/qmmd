@@ -65,7 +65,7 @@ def parse_buffer_from_file(path: Path) -> float | None:
         return None
 
 
-def plot_system_timeseries(ax, system: str, files: list[Path], ylabel: str, legend_loc="upper right"):
+def plot_system_timeseries(ax, system: str, files: list[Path], ylabel: str, legend_loc="upper right", legend_ncol=2):
     """
     Draw all buffers for one system on a provided Axes.
     """
@@ -106,7 +106,7 @@ def plot_system_timeseries(ax, system: str, files: list[Path], ylabel: str, lege
     fontsize=7,
     title="buffer",
     title_fontsize=7,
-    ncol=2,
+    ncol=legend_ncol,
     loc=legend_loc,
     columnspacing=0.8,
     handlelength=2.5,
@@ -114,7 +114,7 @@ def plot_system_timeseries(ax, system: str, files: list[Path], ylabel: str, lege
     )
 
 
-def make_grid_figure(systems: list[str], data_dir: Path, pattern: str, ylabel: str, out_png: Path, force_yticks=None, legend_loc: str = "upper right"):
+def make_grid_figure(systems: list[str], data_dir: Path, pattern: str, ylabel: str, out_png: Path, force_yticks=None, legend_loc: str = "upper right", legend_ncol=2):
     """
     pattern examples:
       "solv_*_temp.dat"
@@ -137,7 +137,7 @@ def make_grid_figure(systems: list[str], data_dir: Path, pattern: str, ylabel: s
 
         sys_dir = data_dir / system
         files = sorted(sys_dir.glob(pattern)) if sys_dir.exists() else []
-        plot_system_timeseries(ax, system, files, ylabel, legend_loc)
+        plot_system_timeseries(ax, system, files, ylabel, legend_loc, legend_ncol)
 
     # turn off unused axes
     for idx in range(n, nrows * ncols):
@@ -179,6 +179,7 @@ def main():
         out_png=reports_dir / "temp_timeseries_grid.png",
         force_yticks=[0, 100, 200, 300, 400],
         legend_loc="lower right",
+        legend_ncol=2,
     )
 
     make_grid_figure(
@@ -188,6 +189,7 @@ def main():
         ylabel=r"Density (g/cm$^3$)",
         out_png=reports_dir / "density_timeseries_grid.png",
         legend_loc="center right",
+        legend_ncol=1,
     )
 
     print(f"Wrote:\n  {reports_dir/'temp_timeseries_grid.png'}\n  {reports_dir/'density_timeseries_grid.png'}")
