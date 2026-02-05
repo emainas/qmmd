@@ -48,7 +48,7 @@ slurm:
     ntasks: 64
     mem: "50G"
     cpus_per_task: 1
-    time: "5-00:00:00"
+    time: "10:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
 

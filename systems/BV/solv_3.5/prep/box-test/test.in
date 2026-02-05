@@ -1,0 +1,8 @@
+parm ../solv.parm7
+trajin ../solv.rst7
+box getbox ucell name boxlen
+dataset math boxlen boxlen-1.0
+box set boxlen
+trajout smaller.rst7 restart
+run
+quit

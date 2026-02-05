@@ -56,7 +56,7 @@ fi
 # Equilibration NPT (start from NVT)
 if [[ ! -f equil-npt.out ]]; then
     echo "  Equilibration (NPT)..."
-    sander -O \
+    pmemd -O \
       -i equil-npt.in \
       -p "/nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/BV/solv_3.5/prep/solv.parm7" \
       -c equil-nvt.rst7 \
