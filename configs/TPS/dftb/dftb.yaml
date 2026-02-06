@@ -1,5 +1,5 @@
-system: MEA
-buffer: 5.5
+system: TPS
+buffer: 5.0
 prefix: solv
 job_name: dftb
 salt_dirname: salt
@@ -42,13 +42,13 @@ runtime:
 
 slurm:
   job:
-    name: MEA
-    partition: batch
+    name: TPS
+    partition: small
     nodes: 1
     ntasks: 64
     mem: "50G"
     cpus_per_task: 1
-    time: "10:00:00"
+    time: "5-00:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
 

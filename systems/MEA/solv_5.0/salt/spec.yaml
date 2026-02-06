@@ -1,5 +1,5 @@
 system: MEA
-buffer: 5.5
+buffer: 5.0
 prefix: solv
 job_name: mdequil
 
