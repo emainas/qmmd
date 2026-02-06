@@ -14,6 +14,7 @@ from pathlib import Path
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 
 
 def parse_float(s: str):
@@ -315,6 +316,92 @@ def plot_predictions_grid(data_dir: Path, out_png: Path):
     fig.savefig(out_png, dpi=300)
     plt.close(fig)
 
+def write_csv_report(data_dir: Path, reports_dir: Path):
+    out_csv = reports_dir / "dftb_perf_summary.csv"
+    rows = []
+
+    systems = list_systems(data_dir)
+    for system in systems:
+        sys_dir = data_dir / system
+        for solv_dir in list_solv_dirs(sys_dir):
+            solv_tag = solv_dir.name
+            step_files = list_step_perf_files(solv_dir)
+            for step_perf in step_files:
+                run_tag = run_tag_from_file(step_perf)
+                arr = load_step_perf(step_perf)
+                if arr is None:
+                    continue
+
+                subsys_avg = int(round(float(np.mean(arr[:, 1]))))
+                iters_avg = int(round(float(np.mean(arr[:, 2]))))
+                sec_per_step_avg = round(float(np.mean(arr[:, 3])), 2)
+
+                summary = solv_dir / f"{run_tag}_summary.dat"
+                steps_total, seconds_total = load_summary(summary) if summary.exists() else (None, None)
+                steps_total_int = int(round(steps_total)) if steps_total is not None else None
+                summary_hours = (seconds_total / 3600.0) if seconds_total is not None else None
+                summary_hours = round(summary_hours, 1) if summary_hours is not None else None
+
+                steps = arr[:, 0]
+                secs = arr[:, 3]
+                cum = np.cumsum(secs)
+                slope = linear_slope_second_half(steps, cum)
+
+                pred_steps_10x = steps_total_int * 10 if steps_total_int is not None else None
+                pred_steps_100x = steps_total_int * 100 if steps_total_int is not None else None
+
+                pred_seconds_10x = slope * pred_steps_10x if slope is not None and pred_steps_10x is not None else None
+                pred_seconds_100x = slope * pred_steps_100x if slope is not None and pred_steps_100x is not None else None
+                pred_hours_10x = (pred_seconds_10x / 3600.0) if pred_seconds_10x is not None else None
+                pred_hours_100x = (pred_seconds_100x / 3600.0) if pred_seconds_100x is not None else None
+                pred_hours_10x = round(pred_hours_10x, 1) if pred_hours_10x is not None else None
+                pred_hours_100x = round(pred_hours_100x, 1) if pred_hours_100x is not None else None
+
+                pred_sim_ps_10x = pred_steps_10x / 2000.0 if pred_steps_10x is not None else None
+                pred_sim_ps_100x = pred_steps_100x / 2000.0 if pred_steps_100x is not None else None
+
+                rows.append({
+                    "system": system,
+                    "solvation": solv_tag,
+                    "run_tag": run_tag,
+                    "avg_subsystems": subsys_avg,
+                    "avg_iterations": iters_avg,
+                    "avg_sec_per_step": sec_per_step_avg,
+                    "summary_total_steps": steps_total_int,
+                    "summary_total_hours": summary_hours,
+                    "pred_steps_10x": pred_steps_10x,
+                    "pred_hours_10x": pred_hours_10x,
+                    "pred_sim_time_ps_10x": pred_sim_ps_10x,
+                    "pred_steps_100x": pred_steps_100x,
+                    "pred_hours_100x": pred_hours_100x,
+                    "pred_sim_time_ps_100x": pred_sim_ps_100x,
+                })
+
+    fieldnames = [
+        "system",
+        "solvation",
+        "run_tag",
+        "avg_subsystems",
+        "avg_iterations",
+        "avg_sec_per_step",
+        "summary_total_steps",
+        "summary_total_hours",
+        "pred_steps_10x",
+        "pred_hours_10x",
+        "pred_sim_time_ps_10x",
+        "pred_steps_100x",
+        "pred_hours_100x",
+        "pred_sim_time_ps_100x",
+    ]
+
+    with out_csv.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+
+    print(f"Wrote: {out_csv}")
+
 
 def main():
     script_path = Path(__file__).resolve()
@@ -329,6 +416,7 @@ def main():
     plot_stats_grid(data_dir, reports_dir)
     plot_cumtime_grid(data_dir, reports_dir / "dftb_cumtime_grid.png")
     plot_predictions_grid(data_dir, reports_dir / "dftb_predictions_grid.png")
+    write_csv_report(data_dir, reports_dir)
 
     print("Wrote plots to reports/")
 
