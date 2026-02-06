@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SYSTEMS_DIR="$ROOT/systems"
-DATA_DIR="$ROOT/data"
+DATA_DIR="$ROOT/data/prep"
 OUT="$DATA_DIR/buffer_vs_water.dat"
 mkdir -p "$DATA_DIR"
 

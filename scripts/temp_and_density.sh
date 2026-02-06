@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SYSTEMS_DIR="$ROOT/systems"
-OUT_BASE="$ROOT/data"
+OUT_BASE="$ROOT/data/mdequil"
 mkdir -p "$OUT_BASE"
 
 for sysdir in "$SYSTEMS_DIR"/*/; do

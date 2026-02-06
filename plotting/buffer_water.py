@@ -142,7 +142,7 @@ def main():
     script_path = Path(__file__).resolve()
     root = script_path.parents[1]
 
-    dat_path = root / "data" / "buffer_vs_water.dat"
+    dat_path = root / "data" / "prep" / "buffer_vs_water.dat"
     reports_dir = root / "reports"
     reports_dir.mkdir(exist_ok=True)
 

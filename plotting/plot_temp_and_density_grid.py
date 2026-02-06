@@ -165,7 +165,7 @@ def main():
     script_path = Path(__file__).resolve()
     root = script_path.parents[1]
 
-    data_dir = root / "data"
+    data_dir = root / "data" / "mdequil"
     reports_dir = root / "reports"
     reports_dir.mkdir(parents=True, exist_ok=True)
 
