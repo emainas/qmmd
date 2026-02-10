@@ -1,0 +1,5 @@
+parm no_ion.parm7
+parmstrip :124@H1
+parmwrite out out.parm7
+run
+quit

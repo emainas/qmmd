@@ -6,7 +6,7 @@ trajin last_no_ion.rst7
 
 strip :124@H1
 
-trajout ready.xyz xyz
+trajout out.rst7 rst7
 
 run
 quit

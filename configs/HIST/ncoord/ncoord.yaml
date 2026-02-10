@@ -1,0 +1,13 @@
+system: HIST
+buffer: 6.5
+prefix: solv
+job_name: 
+
+gausswidth: 0.02
+group1: 1
+group2: 
+nexp: 6
+mexp: 12
+refdist: 1.4
+method: "LABELS" # this can be LABELS or SPECIES
+norm: "SUM" # this can be either SUM or AVERAGE
