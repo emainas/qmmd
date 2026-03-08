@@ -34,3 +34,10 @@
 
 # dftb outputs
 systems/**/dftb/
+
+# Generated systems
+systems/
+
+# Python bytecode
+__pycache__/
+*.pyc
