@@ -5,6 +5,7 @@ from qmmd.mdequil import run_mdequil
 from qmmd.salt import run_salt
 from qmmd.dftb import run_dftb_prep, run_dftb_submit
 from qmmd.ncoord import run_ncoord
+from qmmd.meta import run_meta_prep, run_meta_submit
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -28,6 +29,12 @@ def main():
     ncoord = sub.add_parser("ncoord", help="Write metacv.dat for selected runs based on dftb.inp")
     ncoord.add_argument("yaml", type=Path)
 
+    meta_prep = sub.add_parser("meta-prep", help="Write metadynamics inputs/scripts for selected runs (no submit)")
+    meta_prep.add_argument("yaml", type=Path)
+
+    meta_submit = sub.add_parser("meta-submit", help="Submit metadynamics jobs for runs matching the config (no writes)")
+    meta_submit.add_argument("yaml", type=Path)
+
     args = p.parse_args()
 
     if args.cmd == "prep":
@@ -42,3 +49,7 @@ def main():
         run_dftb_submit(args.yaml)
     elif args.cmd == "ncoord":
         run_ncoord(args.yaml)
+    elif args.cmd == "meta-prep":
+        run_meta_prep(args.yaml)
+    elif args.cmd == "meta-submit":
+        run_meta_submit(args.yaml)

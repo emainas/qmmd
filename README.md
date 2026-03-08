@@ -126,3 +126,44 @@ Generates `metacv.dat` for selected runs by reading atom indices from the `dftb.
 ```bash
 qmmd ncoord configs/<molecule>/ncoord/ncoord.yaml
 ```
+
+---
+
+## meta-prep - Prepare Metadynamics Runs
+
+Writes metadynamics inputs/scripts in a CV directory (created by `ncoord`)
+
+**Inputs**
+- `dftb.inp` (from equil)
+- `metacv.dat`
+- `meta.yaml`
+
+**Output**
+- `dftb.inp`
+- `run.sh`
+- `slurm.sh`
+- `meta_spec.yaml`
+- `restart` (copied from equil)
+
+**Notes**
+- `cv_dirname` must already exist (created by `ncoord`)
+- `run_ids` supports a list or a range string like `"1-2"`
+- `MD=(... SEEDTYPE=3 RANDOMSEED=0 ...)` will replace `0` with a unique seed per run
+
+**Run**
+
+```bash
+qmmd meta-prep configs/<molecule>/meta/meta.yaml
+```
+
+---
+
+## meta-submit - Submit Metadynamics Runs
+
+Submits Slurm jobs for meta directories that match the provided config (by meta_spec.yaml)
+
+**Run**
+
+```bash
+qmmd meta-submit configs/<molecule>/meta/meta.yaml
+```
