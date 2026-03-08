@@ -101,3 +101,28 @@ Submits Slurm jobs for run directories that match the provided config (by spec.y
 ```bash
 qmmd dftb-submit configs/<molecule>/dftb/dftb.yaml
 ```
+
+---
+
+## ncoord - Write metacv.dat from dftb.inp
+
+Generates `metacv.dat` for selected runs by reading atom indices from the `dftb.inp` coordinate block
+
+**Inputs**
+- `dftb.inp` (from equil)
+- `ncoord.yaml`
+
+**Output**
+- `metacv.dat`
+- `spec.yaml`
+
+**Notes**
+- `group` can be `indices`, `range`, or `all_water_H`
+- `all_water_H` selects all H atoms after `solute_end` and can include extra `indices` (listed first)
+- `run_ids` supports a list or a range string like `"1-2"`
+
+**Run**
+
+```bash
+qmmd ncoord configs/<molecule>/ncoord/ncoord.yaml
+```
