@@ -4,7 +4,7 @@ Minimize
   maxcyc=500,
   ncyc=200,
   ntb=1,
-  cut=3.5,
+  cut=3,
   ntr=0,
   ntpr=100,
 /

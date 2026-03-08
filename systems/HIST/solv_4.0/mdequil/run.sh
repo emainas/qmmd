@@ -14,8 +14,8 @@ if [[ ! -f min.out ]]; then
     echo "  Minimization..."
     sander -O \
       -i min.in \
-      -p "/nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/HIST/solv_4.0/prep/solv.parm7" \
-      -c "/nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/HIST/solv_4.0/prep/solv.rst7" \
+      -p "/users/e/m/emainas/qmmd/systems/HIST/solv_4.0/prep/solv.parm7" \
+      -c "/users/e/m/emainas/qmmd/systems/HIST/solv_4.0/prep/solv.rst7" \
       -r min.rst7 \
       -o min.out \
       -inf min.info
@@ -28,7 +28,7 @@ if [[ ! -f heat.out ]]; then
     echo "  Heating..."
     sander -O \
       -i heat.in \
-      -p "/nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/HIST/solv_4.0/prep/solv.parm7" \
+      -p "/users/e/m/emainas/qmmd/systems/HIST/solv_4.0/prep/solv.parm7" \
       -c min.rst7 \
       -r heat.rst7 \
       -o heat.out \
@@ -43,7 +43,7 @@ if [[ ! -f equil-nvt.out ]]; then
     echo "  Equilibration (NVT)..."
     sander -O \
       -i equil-nvt.in \
-      -p "/nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/HIST/solv_4.0/prep/solv.parm7" \
+      -p "/users/e/m/emainas/qmmd/systems/HIST/solv_4.0/prep/solv.parm7" \
       -c heat.rst7 \
       -r equil-nvt.rst7 \
       -o equil-nvt.out \
@@ -58,7 +58,7 @@ if [[ ! -f equil-npt.out ]]; then
     echo "  Equilibration (NPT)..."
     sander -O \
       -i equil-npt.in \
-      -p "/nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/HIST/solv_4.0/prep/solv.parm7" \
+      -p "/users/e/m/emainas/qmmd/systems/HIST/solv_4.0/prep/solv.parm7" \
       -c equil-nvt.rst7 \
       -r equil-npt.rst7 \
       -o equil-npt.out \

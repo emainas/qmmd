@@ -15,7 +15,7 @@ Equilibrate at 300 K and 1.0 bar
   pres0=1.0,
   ntc=2,
   ntf=2,
-  cut=3.5,
+  cut=3,
   ntpr=500,
   ntwx=1000,
   ntwe=0,

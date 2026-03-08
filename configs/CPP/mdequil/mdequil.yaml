@@ -1,4 +1,4 @@
-system: HIST
+system: CPP
 buffer: 4.0
 prefix: solv          # matches prep output solv.parm7 / solv.rst7
 job_name: mdequil     # output folder name next to prep
@@ -11,7 +11,7 @@ md:
       maxcyc: 500
       ncyc: 200
       ntb: 1
-      cut: 3
+      cut: 3.5
       ntr: 0
       ntpr: 100
 
@@ -31,7 +31,7 @@ md:
       ntp: 0
       ntc: 2
       ntf: 2
-      cut: 3
+      cut: 3.5
       ntpr: 500
       ntwx: 1000
       ntwe: 0
@@ -59,7 +59,7 @@ md:
       ntp: 0
       ntc: 2
       ntf: 2
-      cut: 3
+      cut: 3.5
       ntpr: 500
       ntwx: 1000
       ntwe: 0
@@ -82,7 +82,7 @@ md:
       pres0: 1.0
       ntc: 2
       ntf: 2
-      cut: 3
+      cut: 3.5
       ntpr: 500
       ntwx: 1000
       ntwe: 0
@@ -101,7 +101,7 @@ slurm:
     name: mdequil
     partition: small
     nodes: 2
-    time: "5-0:00:00"
+    time: "10:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
 

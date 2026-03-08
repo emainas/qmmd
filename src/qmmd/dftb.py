@@ -4,6 +4,7 @@ import sys
 import yaml
 import shutil
 import subprocess
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
@@ -64,6 +65,9 @@ class SimulationConfig:
     dftb: DFTBConfig
     runtime: RuntimeConfig
     slurm: Optional[SlurmConfig] = None
+    replicas: int = 1
+    append: bool = False
+    replica_dirname: str = "equil"
 
 def find_repo_root(start: Path) -> Path:
     p = start.resolve()
@@ -143,6 +147,9 @@ def load_config(yaml_path: Path) -> SimulationConfig:
         prefix=data.get("prefix", "solv"),
         dftb_dirname=data.get("dftb_dirname", "dftb"),
         salt_dirname=data.get("salt_dirname", "salt"),
+        replicas=int(data.get("replicas", 1)),
+        append=bool(data.get("append", False)),
+        replica_dirname=data.get("replica_dirname", "equil"),
         dftb=dftb_cfg,
         runtime=runtime_cfg,
         slurm=slurm_cfg,
@@ -260,7 +267,23 @@ def render_coords_block(coords: List[Tuple[str, float, float, float]]) -> str:
     return "\n".join(f"{sym:<2s}{x:>15.8f}{y:>15.8f}{z:>15.8f}" for sym, x, y, z in coords) + "\n"
 
 
-def write_dftb_inp(cfg: SimulationConfig, repo_root: Path, out_dir_path: Path) -> Path:
+def apply_seed_to_header_lines(header_lines: List[str], seed: Optional[int]) -> List[str]:
+    if seed is None:
+        return header_lines
+    updated: List[str] = []
+    replaced = False
+    for line in header_lines:
+        if "RANDOMSEED=0" in line:
+            updated.append(line.replace("RANDOMSEED=0", f"RANDOMSEED={seed}"))
+            replaced = True
+        else:
+            updated.append(line)
+    if not replaced:
+        return header_lines
+    return updated
+
+
+def write_dftb_inp(cfg: SimulationConfig, repo_root: Path, out_dir_path: Path, seed: Optional[int] = None) -> Path:
     sdir = salt_dir(cfg, repo_root)
     ready_xyz = sdir / "ready.xyz"
     if not ready_xyz.exists() or ready_xyz.stat().st_size == 0:
@@ -277,7 +300,8 @@ def write_dftb_inp(cfg: SimulationConfig, repo_root: Path, out_dir_path: Path) -
     ordered = [e.symbol for e in cfg.dftb.elements]
     stage_skf_files(repo_params, out_dir_path, ordered)
 
-    header = "\n".join(cfg.dftb.header_lines).rstrip() + "\n"
+    header_lines = apply_seed_to_header_lines(cfg.dftb.header_lines, seed)
+    header = "\n".join(header_lines).rstrip() + "\n"
     elem_block = render_element_blocks(cfg.dftb, xyz_syms)
 
     inp_path = out_dir_path / "dftb.inp"
@@ -363,13 +387,25 @@ def run_local(run_sh: Path) -> None:
     subprocess.run(["bash", run_sh.name], cwd=run_sh.parent, check=True)
 
 
-def run_dftb(yaml_path: Path) -> None:
-    cfg = load_config(yaml_path)
+def find_existing_run_indices(bench_dir: Path) -> List[int]:
+    if not bench_dir.exists():
+        return []
+    indices: List[int] = []
+    for p in bench_dir.iterdir():
+        if p.is_dir() and p.name.startswith("run-"):
+            try:
+                indices.append(int(p.name.split("-", 1)[1]))
+            except ValueError:
+                continue
+    return sorted(indices)
 
-    repo_root = find_repo_root(yaml_path)
+
+def run_equil_dir(bench_dir: Path, run_index: int, replica_dirname: str) -> Path:
+    return bench_dir / f"run-{run_index}" / replica_dirname
+
+
+def validate_inputs(cfg: SimulationConfig, repo_root: Path) -> None:
     sdir = salt_dir(cfg, repo_root)
-    odir = out_dir(cfg, repo_root)
-
     ready_xyz = sdir / "ready.xyz"
     if not ready_xyz.exists() or ready_xyz.stat().st_size == 0:
         raise RuntimeError(f"Missing/empty required input (from salt): {ready_xyz}")
@@ -378,25 +414,114 @@ def run_dftb(yaml_path: Path) -> None:
     if not repo_params.exists():
         raise RuntimeError(f"Missing repo params dir: {repo_params}")
 
-    odir.mkdir(parents=True, exist_ok=True)
-    (odir / "spec.yaml").write_text(yaml_path.read_text())
 
-    inp = write_dftb_inp(cfg, repo_root, odir)
-    run_sh = write_run_sh(cfg, odir)
-    slurm_sh = write_slurm_sh(cfg, odir)
+def write_single_run(cfg: SimulationConfig, repo_root: Path, out_path: Path, yaml_text: str, seed: Optional[int]) -> None:
+    out_path.mkdir(parents=True, exist_ok=True)
+    (out_path / "spec.yaml").write_text(yaml_text)
 
-    print(f"OK: wrote {inp.name}, {run_sh.name}" + (f", {slurm_sh.name}" if slurm_sh else "") + f" in {odir}")
-    print(f"OK: using input from {ready_xyz}")
-    print(f"OK: staged SKF files in {stage_params_dir(odir)} (relative paths in dftb.inp)")
+    inp = write_dftb_inp(cfg, repo_root, out_path, seed=seed)
+    run_sh = write_run_sh(cfg, out_path)
+    slurm_sh = write_slurm_sh(cfg, out_path)
 
-    if slurm_sh is not None:
-        print("Submitting job via sbatch...")
+    print(f"OK: wrote {inp.name}, {run_sh.name}" + (f", {slurm_sh.name}" if slurm_sh else "") + f" in {out_path}")
+    print(f"OK: staged SKF files in {stage_params_dir(out_path)} (relative paths in dftb.inp)")
+
+
+def run_dftb_prep(yaml_path: Path) -> None:
+    cfg = load_config(yaml_path)
+    repo_root = find_repo_root(yaml_path)
+    validate_inputs(cfg, repo_root)
+
+    bench_dir = out_dir(cfg, repo_root)
+    yaml_text = yaml_path.read_text()
+
+    if cfg.replicas <= 1:
+        write_single_run(cfg, repo_root, bench_dir, yaml_text, seed=None)
+        return
+
+    bench_dir.mkdir(parents=True, exist_ok=True)
+    existing = find_existing_run_indices(bench_dir)
+    start_index = (max(existing) + 1) if (cfg.append and existing) else 1
+
+    skipped: List[Path] = []
+    for i in range(start_index, start_index + cfg.replicas):
+        odir = run_equil_dir(bench_dir, i, cfg.replica_dirname)
+        if odir.exists():
+            print(f"SKIP: {odir} already exists; not touching or submitting")
+            skipped.append(odir)
+            continue
+        seed = secrets.randbelow(2**31 - 1) + 1
+        write_single_run(cfg, repo_root, odir, yaml_text, seed=seed)
+
+    if skipped:
+        print(f"SKIP: {len(skipped)} existing equil dirs (not touched)")
+
+
+def matching_run_dirs(bench_dir: Path, replica_dirname: str, yaml_text: str) -> List[Path]:
+    matches: List[Path] = []
+    if not bench_dir.exists():
+        return matches
+    for run_dir in bench_dir.iterdir():
+        if not (run_dir.is_dir() and run_dir.name.startswith("run-")):
+            continue
+        odir = run_dir / replica_dirname
+        spec = odir / "spec.yaml"
+        if spec.exists() and spec.read_text() == yaml_text:
+            matches.append(odir)
+    return matches
+
+
+def run_dftb_submit(yaml_path: Path) -> None:
+    cfg = load_config(yaml_path)
+    repo_root = find_repo_root(yaml_path)
+    bench_dir = out_dir(cfg, repo_root)
+    yaml_text = yaml_path.read_text()
+
+    if cfg.slurm is None:
+        print("NOTE: slurm config not provided; no submissions made")
+        return
+
+    if cfg.replicas <= 1:
+        spec = bench_dir / "spec.yaml"
+        if not spec.exists() or spec.read_text() != yaml_text:
+            print(f"SKIP: {bench_dir} spec.yaml does not match config (not submitting)")
+            return
+        slurm_sh = bench_dir / "slurm.sh"
+        if not slurm_sh.exists():
+            print(f"SKIP: missing {slurm_sh} (not submitting)")
+            return
+        resp = input(f"About to submit 1 job: {bench_dir}. Proceed? [y/N] ").strip().lower()
+        if resp not in ("y", "yes"):
+            print("Cancelled by user.")
+            return
+        print(f"Submitting job via sbatch for {bench_dir}...")
         submit_slurm(slurm_sh)
         print("OK: job submitted")
-    else:
-        print("Running locally...")
-        run_local(run_sh)
-        print("OK: local DFTB run finished")
+        return
+
+    targets = matching_run_dirs(bench_dir, cfg.replica_dirname, yaml_text)
+    if not targets:
+        print("NOTE: no matching run dirs found for this config; nothing submitted")
+        return
+
+    print("Will submit the following run dirs:")
+    for odir in targets:
+        print(f"  - {odir}")
+    resp = input(f"Proceed to submit {len(targets)} jobs? [y/N] ").strip().lower()
+    if resp not in ("y", "yes"):
+        print("Cancelled by user.")
+        return
+
+    for odir in targets:
+        slurm_sh = odir / "slurm.sh"
+        if not slurm_sh.exists():
+            print(f"SKIP: missing {slurm_sh} (not submitting)")
+            continue
+        print(f"Submitting job via sbatch for {odir}...")
+        submit_slurm(slurm_sh)
+        print("OK: job submitted")
+
+
 
 
 def main() -> None:
@@ -409,4 +534,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
