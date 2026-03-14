@@ -65,6 +65,29 @@ qmmd salt configs/<molecule>/salt/salt.yaml
 
 ---
 
+## density - Solute/Box Volume
+
+Computes solute volume (mask) and total box volume from salt outputs
+
+**Inputs**
+- `ready.rst7`
+- `ready.parm7`
+- `density.yaml`
+
+**Output**
+- `cpptraj.in`
+- `cpptraj.out`
+- `solute_volume.dat`
+- `box_volume.dat`
+
+**Run**
+
+```bash
+qmmd density configs/<molecule>/density/density.yaml
+```
+
+---
+
 ## dftb-prep - Prepare DCDFTBMD Runs
 
 Reads the xyz file from previous step and writes one or many DFTB runs (no submission)

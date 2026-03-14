@@ -6,6 +6,7 @@ from qmmd.salt import run_salt
 from qmmd.dftb import run_dftb_prep, run_dftb_submit
 from qmmd.ncoord import run_ncoord
 from qmmd.meta import run_meta_prep, run_meta_submit
+from qmmd.density import run_density
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -35,6 +36,9 @@ def main():
     meta_submit = sub.add_parser("meta-submit", help="Submit metadynamics jobs for runs matching the config (no writes)")
     meta_submit.add_argument("yaml", type=Path)
 
+    density = sub.add_parser("density", help="Compute solute/box volume from salt outputs")
+    density.add_argument("yaml", type=Path)
+
     args = p.parse_args()
 
     if args.cmd == "prep":
@@ -53,3 +57,5 @@ def main():
         run_meta_prep(args.yaml)
     elif args.cmd == "meta-submit":
         run_meta_submit(args.yaml)
+    elif args.cmd == "density":
+        run_density(args.yaml)
