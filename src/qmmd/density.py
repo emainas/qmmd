@@ -20,6 +20,7 @@ class DensityConfig:
     center_mask: str
     grid: Tuple[float, float, float]
     buffer_pad: float
+    rho_target: float = 1.0
 
 
 def find_repo_root(start: Path) -> Path:
@@ -56,6 +57,7 @@ def load_config(yaml_path: Path) -> DensityConfig:
         center_mask=data.get("center_mask", ":HIS"),
         grid=(float(grid[0]), float(grid[1]), float(grid[2])),
         buffer_pad=float(data.get("buffer_pad", 4.0)),
+        rho_target=float(data.get("rho_target", 1.0)),
     )
 
 
@@ -142,6 +144,56 @@ def read_box_lengths(rst7: Path) -> Tuple[float, float, float]:
     return float(last[0]), float(last[1]), float(last[2])
 
 
+def count_water_residues(parm7: Path) -> int:
+    text = parm7.read_text().splitlines()
+    start = None
+    for i, line in enumerate(text):
+        if line.strip() == "%FLAG RESIDUE_LABEL":
+            start = i + 2  # skip flag + format line
+            break
+    if start is None:
+        raise RuntimeError(f"RESIDUE_LABEL section not found in {parm7}")
+
+    labels: List[str] = []
+    for line in text[start:]:
+        if line.startswith("%FLAG"):
+            break
+        labels.extend([line[j:j + 4].strip() for j in range(0, len(line), 4)])
+
+    labels = [x for x in labels if x]
+    if not labels:
+        raise RuntimeError(f"No residue labels parsed from {parm7}")
+
+    return sum(1 for x in labels if x == "WAT")
+
+
+def water_density_g_cm3(nwat: int, vol_ang3: float) -> float:
+    # 1 Å^3 = 1e-24 cm^3
+    na = 6.02214076e23
+    mw = 18.01528  # g/mol
+    mass_g = (nwat * mw) / na
+    vol_cm3 = vol_ang3 * 1e-24
+    return mass_g / vol_cm3
+
+
+def scaled_box_lengths_for_target_rho(
+    l1: float,
+    l2: float,
+    l3: float,
+    solute_vol_ang3: float,
+    nwat: int,
+    rho_target: float,
+) -> Tuple[float, float, float]:
+    na = 6.02214076e23
+    mw = 18.01528  # g/mol
+    mass_g = (nwat * mw) / na
+    vol_solvent_target_ang3 = (mass_g / rho_target) * 1e24
+    box_vol_target = solute_vol_ang3 + vol_solvent_target_ang3
+    box_vol_current = l1 * l2 * l3
+    scale = (box_vol_target / box_vol_current) ** (1.0 / 3.0)
+    return l1 * scale, l2 * scale, l3 * scale
+
+
 def run_density(yaml_path: Path) -> None:
     cfg = load_config(yaml_path)
     repo_root = find_repo_root(yaml_path)
@@ -163,15 +215,33 @@ def run_density(yaml_path: Path) -> None:
     solute_vol, total_vol = parse_volumes(cppout)
     l1, l2, l3 = read_box_lengths(rst7)
     box_vol = l1 * l2 * l3
+    nwat = count_water_residues(parm7)
 
     if abs(box_vol - total_vol) > 1e-2:
         raise RuntimeError(f"Box volume mismatch: L1*L2*L3={box_vol:.4f} vs VOLUME Avg={total_vol:.4f}")
 
     solvent_vol = total_vol - solute_vol
-    print(f"OK: solute volume = {solute_vol:.4f} Ang^3")
-    print(f"OK: total volume  = {total_vol:.4f} Ang^3")
-    print(f"OK: solvent volume = {solvent_vol:.4f} Ang^3")
-    print(f"OK: box lengths (L1,L2,L3) = {l1:.4f}, {l2:.4f}, {l3:.4f}")
+    rho = water_density_g_cm3(nwat, solvent_vol)
+    l1_t, l2_t, l3_t = scaled_box_lengths_for_target_rho(
+        l1, l2, l3, solute_vol, nwat, cfg.rho_target
+    )
+    new_box_vol = l1_t * l2_t * l3_t
+    new_solvent_vol = new_box_vol - solute_vol
+    new_rho = water_density_g_cm3(nwat, new_solvent_vol)
+    print(f"OK: solute volume = {solute_vol:.4f} Å^3")
+    print(f"OK: total volume  = {total_vol:.4f} Å^3")
+    print(f"OK: solvent volume = {solvent_vol:.4f} Å^3")
+    print(f"OK: box lengths (L1,L2,L3) = {l1:.4f}, {l2:.4f}, {l3:.4f} Å")
+    print(f"OK: water residues (WAT) = {nwat}")
+    print(f"OK: water density (using solvent volume) = {rho:.4f} g/cm^3")
+    print(
+        f"OK: target box lengths for rho={cfg.rho_target:.3f} g/cm^3 "
+        f"-> {l1_t:.4f}, {l2_t:.4f}, {l3_t:.4f} Å"
+    )
+    if abs(new_rho - cfg.rho_target) > 1e-4:
+        raise RuntimeError(
+            f"Target density check failed: rho={new_rho:.6f} vs target={cfg.rho_target:.6f}"
+        )
 
 
 def main() -> None:

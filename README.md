@@ -80,6 +80,15 @@ Computes solute volume (mask) and total box volume from salt outputs
 - `solute_volume.dat`
 - `box_volume.dat`
 
+**Notes**
+- Let r2 = L2/L1 and r3 = L3/L1 (keep box ratios fixed)
+- Water mass: m = (Nw * 18.01528) / NA  [g]
+- Target solvent volume (Ang^3): Vsolv = (m / rho_target) * 1e24
+- Target box volume: Vbox = Vsolv + Vsolute
+- L1 = (Vbox / (r2 * r3))^(1/3)
+- L2 = r2 * L1
+- L3 = r3 * L1
+
 **Run**
 
 ```bash
