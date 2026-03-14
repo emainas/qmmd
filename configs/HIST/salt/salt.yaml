@@ -1,7 +1,9 @@
 system: HIST
-buffer: 15.0
+buffer: 4.5
 prefix: solv
 job_name: mdequil
+
+input_source: prep 
 
 counterion: Cl-
 solute_mask: ":1"

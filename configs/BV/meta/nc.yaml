@@ -1,12 +1,12 @@
-system: HIST
-buffer: 5.5
+system: BV
+buffer: 4.0
 prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
-cv_dirname: all-meta-hie
+cv_dirname: meta-hic
 
-run_ids: "1-20"
+run_ids: "11-20"
 bench_tag: N1T64C1
 restart_name: restart
 
@@ -51,7 +51,7 @@ runtime:
 
 slurm:
   job:
-    name: HIST
+    name: BVC
     partition: batch
     nodes: 1
     ntasks: 64
