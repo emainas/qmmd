@@ -144,6 +144,38 @@ def read_box_lengths(rst7: Path) -> Tuple[float, float, float]:
     return float(last[0]), float(last[1]), float(last[2])
 
 
+def write_scaled_rst7(src_rst7: Path, dst_rst7: Path, l1: float, l2: float, l3: float) -> None:
+    lines = src_rst7.read_text().splitlines()
+    if len(lines) < 1:
+        raise RuntimeError(f"rst7 too short: {src_rst7}")
+    last = lines[-1].split()
+    if len(last) < 3:
+        raise RuntimeError(f"Could not read box lengths from last line of {src_rst7}")
+    # Preserve any extra box/angle fields beyond L1/L2/L3
+    last[0] = f"{l1:.6f}"
+    last[1] = f"{l2:.6f}"
+    last[2] = f"{l3:.6f}"
+    lines[-1] = " ".join(last)
+    dst_rst7.write_text("\n".join(lines) + "\n")
+
+
+def write_scaled_xyz(src_xyz: Path, dst_xyz: Path, l1: float, l2: float, l3: float) -> None:
+    lines = src_xyz.read_text().splitlines()
+    if len(lines) < 2:
+        raise RuntimeError(f"xyz too short: {src_xyz}")
+    line = lines[1]
+    # Expect format: Conf 1. Box X: L1 0.000 0.000 Y: 0.000 L2 0.000 Z: 0.000 0.000 L3
+    parts = line.split("Box X:")
+    if len(parts) != 2:
+        raise RuntimeError(f"Unexpected XYZ comment line (missing 'Box X:'): {line!r}")
+    prefix = parts[0]
+    suffix = parts[1]
+    # Rebuild the box vector portion to avoid brittle token replacement
+    box = f"Box X: {l1:.3f} 0.000 0.000 Y: 0.000 {l2:.3f} 0.000 Z: 0.000 0.000 {l3:.3f}"
+    lines[1] = prefix + box
+    dst_xyz.write_text("\n".join(lines) + "\n")
+
+
 def count_water_residues(parm7: Path) -> int:
     text = parm7.read_text().splitlines()
     start = None
@@ -203,10 +235,13 @@ def run_density(yaml_path: Path) -> None:
 
     parm7 = sdir / "ready.parm7"
     rst7 = sdir / "ready.rst7"
+    xyz = sdir / "ready.xyz"
     if not parm7.exists() or parm7.stat().st_size == 0:
         raise RuntimeError(f"Missing/empty parm7: {parm7}")
     if not rst7.exists() or rst7.stat().st_size == 0:
         raise RuntimeError(f"Missing/empty rst7: {rst7}")
+    if not xyz.exists() or xyz.stat().st_size == 0:
+        raise RuntimeError(f"Missing/empty xyz: {xyz}")
 
     (odir / "spec.yaml").write_text(yaml_path.read_text())
     cppin = write_cpptraj_in(cfg, parm7, rst7, odir)
@@ -228,16 +263,22 @@ def run_density(yaml_path: Path) -> None:
     new_box_vol = l1_t * l2_t * l3_t
     new_solvent_vol = new_box_vol - solute_vol
     new_rho = water_density_g_cm3(nwat, new_solvent_vol)
-    print(f"OK: solute volume = {solute_vol:.4f} Å^3")
-    print(f"OK: total volume  = {total_vol:.4f} Å^3")
-    print(f"OK: solvent volume = {solvent_vol:.4f} Å^3")
-    print(f"OK: box lengths (L1,L2,L3) = {l1:.4f}, {l2:.4f}, {l3:.4f} Å")
-    print(f"OK: water residues (WAT) = {nwat}")
-    print(f"OK: water density (using solvent volume) = {rho:.4f} g/cm^3")
-    print(
-        f"OK: target box lengths for rho={cfg.rho_target:.3f} g/cm^3 "
-        f"-> {l1_t:.4f}, {l2_t:.4f}, {l3_t:.4f} Å"
-    )
+    print("OK: density summary")
+    print(f"{'Quantity':<32} {'Value':>20} {'Units':>10}")
+    print(f"{'-'*32} {'-'*20} {'-'*10}")
+    print(f"{'Solute volume':<32} {solute_vol:>20.4f} {'Å^3':>10}")
+    print(f"{'Total volume':<32} {total_vol:>20.4f} {'Å^3':>10}")
+    print(f"{'Solvent volume':<32} {solvent_vol:>20.4f} {'Å^3':>10}")
+    print(f"{'Water residues (WAT)':<32} {nwat:>20d} {'count':>10}")
+    print(f"{'Water density (solvent)':<32} {rho:>20.4f} {'g/cm^3':>10}")
+    print(f"{'Box lengths L1,L2,L3':<32} {l1:>6.2f}, {l2:>6.2f}, {l3:>6.2f} {'Å':>10}")
+    print(f"{'Target rho':<32} {cfg.rho_target:>20.4f} {'g/cm^3':>10}")
+    print(f"{'Target L1,L2,L3':<32} {l1_t:>6.2f}, {l2_t:>6.2f}, {l3_t:>6.2f} {'Å':>10}")
+
+    scaled_rst7 = odir / "ready.rst7"
+    write_scaled_rst7(rst7, scaled_rst7, l1_t, l2_t, l3_t)
+    write_scaled_xyz(xyz, odir / "ready.xyz", l1_t, l2_t, l3_t)
+    shutil.copy2(parm7, odir / "ready.parm7")
     if abs(new_rho - cfg.rho_target) > 1e-4:
         raise RuntimeError(
             f"Target density check failed: rho={new_rho:.6f} vs target={cfg.rho_target:.6f}"

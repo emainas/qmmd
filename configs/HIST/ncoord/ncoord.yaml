@@ -1,10 +1,10 @@
 system: HIST
-buffer: 5.5
+buffer: 4.5
 prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
-cv_dirname: all-meta-hid
+cv_dirname: all-meta-hie
 
 run_ids: "1-20"
 bench_tag: N1T64C1
@@ -17,14 +17,14 @@ refdist: 1.6
 method: LABELS
 norm: AVERAGE
 grid_min: 0.0
-grid_max: 1.0
+grid_max: 2.0
 grid_step: 0.01
 
 group1:
   mode: indices
-  indices: [10]
+  indices: [14]
 
 group2:
   mode: all_water_H
   solute_end: 21
-  indices: [11]
+  indices: [11,15]
