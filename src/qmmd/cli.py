@@ -7,6 +7,8 @@ from qmmd.dftb import run_dftb_prep, run_dftb_submit
 from qmmd.ncoord import run_ncoord
 from qmmd.meta import run_meta_prep, run_meta_submit
 from qmmd.density import run_density
+from qmmd.cv_coord import run_cv_coord
+from qmmd.cv_dist import run_cv_dist
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -39,6 +41,13 @@ def main():
     density = sub.add_parser("density", help="Compute solute/box volume from salt outputs")
     density.add_argument("yaml", type=Path)
 
+    cv_coord = sub.add_parser("cv-coord", help="Compute rational coordination CV from XYZ trajectories")
+    cv_coord.add_argument("yaml", type=Path)
+    cv_coord.add_argument("--validate", action="store_true", help="Validate against biaspot Coordinate series")
+
+    cv_dist = sub.add_parser("cv-dist", help="Compute group distance CV from XYZ trajectories")
+    cv_dist.add_argument("yaml", type=Path)
+
     args = p.parse_args()
 
     if args.cmd == "prep":
@@ -59,3 +68,7 @@ def main():
         run_meta_submit(args.yaml)
     elif args.cmd == "density":
         run_density(args.yaml)
+    elif args.cmd == "cv-coord":
+        run_cv_coord(args.yaml, validate=args.validate)
+    elif args.cmd == "cv-dist":
+        run_cv_dist(args.yaml)

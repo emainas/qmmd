@@ -199,3 +199,33 @@ Submits Slurm jobs for meta directories that match the provided config (by meta_
 ```bash
 qmmd meta-submit configs/<molecule>/meta/meta.yaml
 ```
+
+---
+
+## cv-coord - Compute Coordination from Trajectory
+
+Computes rational coordination from xyz trajectories and optionally validates against biaspot
+
+**Inputs**
+- `traject` (equil + prod)
+- `biaspot` (prod, optional for validation)
+- `coord.yaml`
+
+**Output**
+- `manual-cv/coord.dat` (equil + prod)
+- `manual-cv/coord_prod.dat` (prod only)
+- `manual-cv/dist.dat`
+- `manual-cv/dist_prod.dat`
+
+**Notes**
+- Uses formula: s(r) = (1-(r/r0)^p) / (1-(r/r0)^q)
+- `run_ids` supports a list or range string like `"1-20"`
+- Validation compares prod-only values to biaspot Coordinate lines
+
+**Run**
+
+```bash
+qmmd cv-coord configs/<molecule>/cv/coord.yaml --validate
+```
+
+---

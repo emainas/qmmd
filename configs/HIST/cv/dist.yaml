@@ -1,0 +1,16 @@
+system: HIST
+buffer: 5.5
+prefix: solv
+dftb_dirname: dftb
+bench_tag: N1T64C1
+cv_dir: meta-hid
+traj_name: traject
+biaspot_name: biaspot
+
+run_ids: "1-20"
+
+group1: [1, 2, 3]    # 1-based indices
+group2: [10, 11, 12] # 1-based indices
+
+freq_traj: 80
+freq_bias: 160

@@ -11,4 +11,6 @@ dependencies:
   - scipy
   - pandas
   - openpyxl
+  - tqdm
+  - imageio
 prefix: /nas/longleaf/home/emainas/.conda/envs/qmmd
