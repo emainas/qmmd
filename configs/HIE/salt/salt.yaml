@@ -1,7 +1,7 @@
 system: HIE
-buffer: 5.5
+buffer: 4.5
 prefix: solv
-job_name: mdequil
+input_source: prep
 
 counterion:
 solute_mask: ":1"

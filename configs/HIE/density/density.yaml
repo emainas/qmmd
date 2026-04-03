@@ -1,0 +1,9 @@
+system: HIE
+buffer: 4.5
+prefix: solv
+
+salt_dirname: salt
+mask: ":HIE"
+center_mask: ":HIE"
+grid: [0.25, 0.25, 0.25]
+buffer_pad: 4.0

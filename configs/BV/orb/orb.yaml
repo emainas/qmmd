@@ -1,0 +1,50 @@
+system: BV
+buffer: 4.0
+prefix: solv
+orb_dirname: orb
+input_source: salt
+input_name: ready.xyz
+
+replicas: 20
+append: false
+replica_dirname: equil
+
+runtime:
+  module: anaconda
+  conda_env: orb
+  python: python
+  env:
+    OMP_NUM_THREADS: 4
+  strict_mode: true
+
+md:
+  T: 300
+  dt_fs: 1.0
+  friction_per_fs: 0.01
+  equil_ps: 40.0
+
+output:
+  log_stride: 10
+  traj_stride: 10
+
+orb:
+  model: orb_v3_conservative_omol
+  precision: float32-high
+  compile: false
+  charge: 0
+  spin: 1
+  device: auto
+
+slurm:
+  job:
+    name: orb
+    partition: l40-gpu
+    nodes: 1
+    ntasks: 1
+    cpus_per_task: 4
+    mem: 50G
+    time: 4-00:00:00
+    stdout: orb.%j.out
+    stderr: orb.%j.err
+    gres: gpu:1
+    qos: gpu_access

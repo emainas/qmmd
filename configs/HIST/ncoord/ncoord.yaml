@@ -4,7 +4,7 @@ prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
-cv_dirname: all-meta-hie
+cv_dirname: all-wtmeta-20-hid
 
 run_ids: "1-20"
 bench_tag: N1T64C1
@@ -22,9 +22,9 @@ grid_step: 0.01
 
 group1:
   mode: indices
-  indices: [14]
+  indices: [10]
 
 group2:
-  mode: all_water_H
+  mode: all_water_h
   solute_end: 21
-  indices: [11,15]
+  indices: [11]

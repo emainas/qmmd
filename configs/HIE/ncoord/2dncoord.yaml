@@ -1,0 +1,52 @@
+system: HIE
+buffer: 4.5
+prefix: solv
+
+dftb_dirname: dftb
+replica_dirname: equil
+cv_dirname: 2dwtmeta-23
+
+run_ids: "1-20"
+bench_tag: N1T64C1
+
+cv1:
+  cv_title: RATIONALCOORDINATIONNUMBER
+  gausswidth: 0.1
+  nexp: 6
+  mexp: 12
+  refdist: 1.6
+  method: LABELS
+  norm: AVERAGE
+  grid_min: 0.0
+  grid_max: 2.0
+  grid_step: 0.01
+
+  group1:
+    mode: indices
+    indices: [14] # Index for Nitrogen Epsilon
+
+  group2:
+    mode: all_water_h
+    solute_end: 20
+    indices: [] # Empty because there is no Hydrogen Epsilon
+
+cv2:
+  cv_title: RATIONALCOORDINATIONNUMBER
+  gausswidth: 0.1
+  nexp: 6
+  mexp: 12
+  refdist: 1.6
+  method: LABELS
+  norm: AVERAGE
+  grid_min: 0.0
+  grid_max: 2.0
+  grid_step: 0.01
+
+  group1:
+    mode: indices
+    indices: [10] # Index for Nitrogen Delta
+
+  group2:
+    mode: all_water_h
+    solute_end: 20
+    indices: [11] # The index of Hydrogen Delta

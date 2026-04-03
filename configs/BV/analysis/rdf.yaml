@@ -1,0 +1,18 @@
+system: BV
+buffer: 4.0
+prefix: solv
+
+method_dir: dftb
+bench_tag: N1T64C1
+run_ids: "1-20"
+cv_dir: equil
+traj_name: traject
+dftb_inp_name: dftb.inp
+parm_path: systems/BV/solv_4.0/salt/ready.parm7
+
+rdf:
+  dr: 0.01
+  r_max: 7.0
+  mask1: ":1@NB"
+  mask2: ":WAT@O"
+  volume: true

@@ -1,14 +1,16 @@
-system: HIST
+system: HID
 buffer: 4.5
 prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
-cv_dirname: meta-hid
+cv_dirname: 2dwtmeta-23
 
 run_ids: "1-20"
 bench_tag: N1T64C1
 restart_name: restart
+
+gamma: 23.0   # bias factor, make sure this matched the cv_dirname 
 
 dftb:
   title: "DC-DFTB3/3ob, PBC (NVT)"
@@ -18,14 +20,14 @@ dftb:
     - "SCC=(READCHARGE=NONE)"
     - "SCC=(MAXITER=1000)"
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
-    - "MD=(NSTEP=100000 DELTAT=2.5D-16)"
+    - "MD=(NSTEP=200000 DELTAT=2.5D-16)"
     - "MD=(RESTART=TRUE READVELOCITY=FALSE)"
     - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0)"
     - "MD=(COLLISIONFREQ=0.01)"
     - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
     - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
     - "MD=(PRINT=40 SEEDTYPE=3 RANDOMSEED=0)"
-    - "MD=(METADYNAMICS=TRUE METAPRINTFES=TRUE METARESTART=FALSE)"
+    - "MD=(WTMETADYNAMICS=TRUE METAPRINTFES=TRUE METARESTART=FALSE)"
     - "MD=(METAFREQ=160 METAHEIGHT=5e-4)"
     - "MISC=(PRINTLAPTIME=TRUE)"
     - "MISC=(WRITECHRGFILE=FALSE)"
@@ -52,7 +54,7 @@ runtime:
 
 slurm:
   job:
-    name: HIST
+    name: HID
     partition: batch
     nodes: 1
     ntasks: 64

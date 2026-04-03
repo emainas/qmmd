@@ -1,31 +1,14 @@
 #!/usr/bin/env python3
-"""Plot prod-only coordination time-series grids."""
+"""Plot equil+prod coordination time-series grids."""
 
 from __future__ import annotations
 
 import argparse
-import re
 from pathlib import Path
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-TIME_RE = re.compile(r"\*\*\* AT T=\s*([0-9.]+)\s*FSEC")
-
-
-def parse_biaspot_times(path: Path) -> np.ndarray:
-    times: List[float] = []
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            m = TIME_RE.search(line)
-            if m:
-                times.append(float(m.group(1)) / 1000.0)
-    t = np.array(times, dtype=float)
-    if t.size:
-        t = t - t[0]
-    return t
 
 
 def read_series(path: Path) -> np.ndarray:
@@ -38,7 +21,7 @@ def read_series(path: Path) -> np.ndarray:
     return np.array(vals, dtype=float)
 
 
-def discover_runs(runs_path: Path, cv_dir: str, biaspot_name: str) -> List[Tuple[int, Path, Path]]:
+def discover_runs(runs_path: Path, cv_dir: str) -> List[Tuple[int, Path, Path]]:
     out: List[Tuple[int, Path, Path]] = []
     for p in sorted(runs_path.iterdir()):
         if not (p.is_dir() and p.name.startswith("run-")):
@@ -48,10 +31,10 @@ def discover_runs(runs_path: Path, cv_dir: str, biaspot_name: str) -> List[Tuple
         except ValueError:
             continue
         run_cv = p / cv_dir
-        series = run_cv / "manual-cv" / "coord_prod.dat"
-        biaspot = run_cv / biaspot_name
-        if series.exists() and biaspot.exists():
-            out.append((run_id, series, biaspot))
+        series_all = run_cv / "manual-cv" / "coord.dat"
+        series_prod = run_cv / "manual-cv" / "coord_prod.dat"
+        if series_all.exists() and series_prod.exists():
+            out.append((run_id, series_all, series_prod))
     return out
 
 
@@ -74,17 +57,16 @@ def infer_system(runs_path: Path) -> str:
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description="Plot prod-only coordination grids.")
+    p = argparse.ArgumentParser(description="Plot equil+prod coordination grids.")
     p.add_argument("--runs-path", required=True, type=Path)
     p.add_argument("--cv-dir", required=True)
-    p.add_argument("--biaspot-name", default="biaspot")
     p.add_argument("--style", type=Path, default=Path("src/prl.mplstyle"))
     p.add_argument("--out", type=Path, default=None)
     args = p.parse_args()
 
-    runs = discover_runs(args.runs_path, args.cv_dir, args.biaspot_name)
+    runs = discover_runs(args.runs_path, args.cv_dir)
     if not runs:
-        raise SystemExit("No coord_prod.dat + biaspot found.")
+        raise SystemExit("No coord.dat + coord_prod.dat found.")
 
     if args.style.exists():
         plt.style.use(args.style)
@@ -94,20 +76,36 @@ def main() -> None:
     fig, axes = plt.subplots(rows, cols, figsize=(3.6 * cols, 2.8 * rows), dpi=220, sharex=False, sharey=True)
     axes_flat = axes.flatten() if isinstance(axes, np.ndarray) else [axes]
 
-    for i, (run_id, series_path, biaspot) in enumerate(runs):
+    eq_window_ps = 20.0
+    prod_window_ps = 15.0
+    run1_prod_ps = 5.0
+
+    special_runs = {1, 3, 4, 9, 12, 16}
+    for i, (run_id, series_all_path, series_prod_path) in enumerate(runs):
         ax = axes_flat[i]
-        y = read_series(series_path)
-        t = parse_biaspot_times(biaspot)
-        if y.size == 0:
+        all_vals = read_series(series_all_path)
+        prod_vals = read_series(series_prod_path)
+        if all_vals.size == 0:
             ax.set_axis_off()
             continue
-        if t.size == y.size:
-            x = t
+        prod_vals = prod_vals.copy()
+        if run_id == 1:
+            prod_vals = prod_vals[: max(1, int(prod_vals.size * (run1_prod_ps / prod_window_ps)))]
+            prod_ps = run1_prod_ps
         else:
-            x = np.arange(y.size, dtype=float)
-        ax.plot(x, y, color="#1f77b4", lw=1.6)
-        ax.set_xlim(x.min(), x.max())
-        ylo, yhi = np.min(y), np.max(y)
+            prod_ps = prod_window_ps
+        if prod_vals.size > 1:
+            t_prod = np.linspace(eq_window_ps, eq_window_ps + prod_ps, prod_vals.size)
+        elif prod_vals.size == 1:
+            t_prod = np.array([eq_window_ps])
+        else:
+            t_prod = np.array([])
+        if prod_vals.size:
+            color = "lightgreen" if run_id in special_runs else "#1f77b4"
+            ax.plot(t_prod, prod_vals, color=color, lw=1.6)
+        ax.set_xlim(eq_window_ps, eq_window_ps + prod_ps)
+        ylo = np.min(prod_vals) if prod_vals.size else 0.0
+        yhi = np.max(prod_vals) if prod_vals.size else 1.0
         pad = 0.05 * (yhi - ylo) if yhi > ylo else 0.05
         ax.set_ylim(ylo - pad, yhi + pad)
         ax.set_title(f"run-{run_id}", fontsize=10)

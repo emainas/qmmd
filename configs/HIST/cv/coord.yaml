@@ -21,7 +21,7 @@ prod:
   cv_dir: meta-hid
   traj_name: traject
   biaspot_name: biaspot
-  start: null
-  stop: 9999999
+  start: 0
+  stop: null
   stride: 1
 validate_tol: 3e-2

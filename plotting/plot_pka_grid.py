@@ -200,6 +200,7 @@ def main() -> None:
         ylo, yhi = np.min(pka_vals), np.max(pka_vals)
         pad = 0.05 * (yhi - ylo) if yhi > ylo else 0.5
         ax.set_ylim(ylo - pad, yhi + pad)
+        ax.set_ylim(-10,10)
         ax.grid(alpha=0.25)
         ax.tick_params(labelsize=8)
         all_y.append(pka_vals)

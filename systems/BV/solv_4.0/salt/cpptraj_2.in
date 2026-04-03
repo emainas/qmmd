@@ -3,10 +3,17 @@
 
 parm no_ion.parm7
 trajin last_no_ion.rst7
-
 strip :30@H1
-
 trajout ready.xyz xyz
-
+trajout ready.rst7 rst7
 run
+
+# block 2
+clear trajin
+clear parm
+parm no_ion.parm7
+parmstrip :30@H1
+parmwrite out ready.parm7
+run
+
 quit

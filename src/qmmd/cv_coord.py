@@ -128,6 +128,8 @@ def rational_coordination(dists: np.ndarray, r0: float, p: float, q: float) -> f
 
 
 def compute_run(cfg: CVCfg, run: CVRun, validate: bool = False) -> Path:
+    user_start = cfg.meta_start is not None
+    user_stride = cfg.meta_stride is not None
     n_bias = parse_biaspot_count(run.biaspot)
     if n_bias == 0:
         raise RuntimeError(f"No Coordinate entries in {run.biaspot}")
@@ -156,7 +158,10 @@ def compute_run(cfg: CVCfg, run: CVRun, validate: bool = False) -> Path:
         meta_start = int(cfg.meta_start)
 
     if cfg.meta_stop is None:
-        meta_stop = meta_start + (n_bias - 1) * meta_stride
+        if not user_start and not user_stride:
+            meta_stop = meta_start + (n_bias - 1) * meta_stride
+        else:
+            meta_stop = None
     else:
         meta_stop = cfg.meta_stop
 

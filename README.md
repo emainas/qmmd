@@ -161,6 +161,30 @@ qmmd ncoord configs/<molecule>/ncoord/ncoord.yaml
 
 ---
 
+## 2dncoord - Write 2D metacv.dat from dftb.inp
+
+Generates `metacv.dat` with two CV blocks back-to-back
+
+**Inputs**
+- `dftb.inp` (from equil)
+- `2dncoord.yaml`
+
+**Output**
+- `metacv.dat`
+- `spec.yaml`
+
+**Notes**
+- `cv1` and `cv2` each define a full CV spec (title, exponents, groups, grid)
+- `run_ids` supports a list or a range string like `"1-2"`
+
+**Run**
+
+```bash
+qmmd 2dncoord configs/<molecule>/ncoord/2dncoord.yaml
+```
+
+---
+
 ## meta-prep - Prepare Metadynamics Runs
 
 Writes metadynamics inputs/scripts in a CV directory (created by `ncoord`)
