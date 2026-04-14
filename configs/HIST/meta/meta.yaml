@@ -4,9 +4,9 @@ prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
-cv_dirname: meta-hid
+cv_dirname: all-meta-hie
 
-run_ids: "1-20"
+run_ids: "21-100"
 bench_tag: N1T64C1
 restart_name: restart
 

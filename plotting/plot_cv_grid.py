@@ -103,7 +103,8 @@ def main() -> None:
         ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x + t0:.1f}"))
         ylo, yhi = np.min(y), np.max(y)
         pad = 0.05 * (yhi - ylo) if yhi > ylo else 0.05
-        ax.set_ylim(ylo - pad, yhi + pad)
+        #ax.set_ylim(ylo - pad, yhi + pad)
+        ax.set_ylim(0.0,2.0)
         ax.set_title(f"run-{run_id}", fontsize=10)
         ax.grid(alpha=0.25)
         ax.tick_params(labelsize=8)

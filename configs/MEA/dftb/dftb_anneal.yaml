@@ -1,34 +1,22 @@
-system: HIST
-buffer: 4.5
+system: MEA
+buffer: 5.5
 prefix: solv
-
-dftb_dirname: dftb
-replica_dirname: equil
-cv_dirname: all-wtmeta-26-hie
-
-run_ids: "1-20"
-bench_tag: N1T64C1
-restart_name: restart
-
-gamma: 26.0   # bias factor, make sure this matched the cv_dirname 
-
+job_name: dftb
+salt_dirname: salt
 dftb:
   title: "DC-DFTB3/3ob, PBC (NVT)"
 
   header_lines:
     - "SCC=(THIRDFULL=TRUE DAMPXH=TRUE ALMIX=0.3)"
     - "SCC=(READCHARGE=NONE)"
-    - "SCC=(MAXITER=1000)"
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
-    - "MD=(NSTEP=200000 DELTAT=2.5D-16)"
-    - "MD=(RESTART=TRUE READVELOCITY=FALSE)"
-    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0)"
+    - "MD=(NSTEP=1000 DELTAT=5.0D-16)"
+    - "MD=(RESTART=FALSE READVELOCITY=FALSE)"
+    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=313.15)"
     - "MD=(COLLISIONFREQ=0.01)"
-    - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
+    - "MD=(INITTEMP=313.15 ERRORTEMP=1000)"
     - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
-    - "MD=(PRINT=40 SEEDTYPE=3 RANDOMSEED=0)"
-    - "MD=(WTMETADYNAMICS=TRUE METAPRINTFES=TRUE METARESTART=FALSE)"
-    - "MD=(METAFREQ=160 METAHEIGHT=5e-4)"
+    - "MD=(PRINT=1 SEEDTYPE=2)"
     - "MISC=(PRINTLAPTIME=TRUE)"
     - "MISC=(WRITECHRGFILE=FALSE)"
     - "PBC=TRUE"
@@ -54,12 +42,25 @@ runtime:
 
 slurm:
   job:
-    name: HIST
+    name: MEA
     partition: batch
     nodes: 1
     ntasks: 64
     mem: "50G"
     cpus_per_task: 1
-    time: "5-00:00:00"
+    time: "10:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
+
+anneal:
+  - "C 1 100.0"
+  - "L 4000 120.0"
+  - "L 4000 140.0"
+  - "L 4000 160.0"
+  - "L 4000 180.0"
+  - "L 4000 200.0"
+  - "L 4000 220.0"
+  - "L 4000 240.0"
+  - "L 4000 260.0"
+  - "L 4000 280.0"
+  - "L 3999 300.0"

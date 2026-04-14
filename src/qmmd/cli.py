@@ -4,6 +4,7 @@ from qmmd.prep import run_prep
 from qmmd.mdequil import run_mdequil
 from qmmd.salt import run_salt
 from qmmd.dftb import run_dftb_prep, run_dftb_submit
+from qmmd.dftb_anneal import run_dftb_anneal_prep, run_dftb_anneal_submit
 from qmmd.ncoord import run_ncoord
 from qmmd.ncoord2d import run_2dncoord
 from qmmd.meta import run_meta_prep, run_meta_submit
@@ -36,6 +37,12 @@ def main():
 
     dftb_submit = sub.add_parser("dftb-submit", help="Submit DCDFTBMD jobs for runs matching the config (no writes)")
     dftb_submit.add_argument("yaml", type=Path)
+
+    dftb_anneal_prep = sub.add_parser("dftb-anneal", help="Write DCDFTBMD anneal inputs/scripts for one or many equil runs (no submit)")
+    dftb_anneal_prep.add_argument("yaml", type=Path)
+
+    dftb_anneal_submit = sub.add_parser("dftb-anneal-submit", help="Submit DCDFTBMD anneal jobs for runs matching the config (no writes)")
+    dftb_anneal_submit.add_argument("yaml", type=Path)
 
     ncoord = sub.add_parser("ncoord", help="Write metacv.dat for selected runs based on dftb.inp")
     ncoord.add_argument("yaml", type=Path)
@@ -98,6 +105,10 @@ def main():
         run_dftb_prep(args.yaml)
     elif args.cmd == "dftb-submit":
         run_dftb_submit(args.yaml)
+    elif args.cmd == "dftb-anneal":
+        run_dftb_anneal_prep(args.yaml)
+    elif args.cmd == "dftb-anneal-submit":
+        run_dftb_anneal_submit(args.yaml)
     elif args.cmd == "ncoord":
         run_ncoord(args.yaml)
     elif args.cmd == "2dncoord":

@@ -4,8 +4,8 @@ prefix: solv
 job_name: dftb
 salt_dirname: density
 
-replicas: 20          
-append: false          
+replicas: 80          
+append: true          
 replica_dirname: equil
 
 

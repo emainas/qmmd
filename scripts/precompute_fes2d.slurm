@@ -11,8 +11,8 @@
 set -euo pipefail
 
 # Adjust these two variables before submitting
-RUNS_PATH="systems/HID/solv_4.5/dftb/N1T64C1"
-CV_DIR="2dwtmeta-20"
+RUNS_PATH="../systems/HIST/solv_4.5/dftb/N1T64C1"
+CV_DIR="2dmeta"
 WINDOW="0.1"
 
-python scripts/precompute_fes2d.py --runs-path "${RUNS_PATH}" --cv-dir "${CV_DIR}" --window "${WINDOW}"
+python precompute_fes2d.py --runs-path "${RUNS_PATH}" --cv-dir "${CV_DIR}" --window "${WINDOW}"

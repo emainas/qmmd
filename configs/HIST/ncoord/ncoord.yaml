@@ -4,9 +4,9 @@ prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
-cv_dirname: all-wtmeta-20-hid
+cv_dirname: all-meta-hid
 
-run_ids: "1-20"
+run_ids: "21-100"
 bench_tag: N1T64C1
 
 cv_title: RATIONALCOORDINATIONNUMBER
@@ -27,4 +27,4 @@ group1:
 group2:
   mode: all_water_h
   solute_end: 21
-  indices: [11]
+  indices: [11,15]
