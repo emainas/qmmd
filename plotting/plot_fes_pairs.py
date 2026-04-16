@@ -11,19 +11,53 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import gridspec
+try:
+    from scipy.signal import savgol_filter, find_peaks
+except Exception:  # pragma: no cover
+    savgol_filter = None
+    find_peaks = None
 
 # Edit this list to choose which (run_id, time_ps) to overlay
 PAIRS: List[Tuple[int, float]] = [
-    (11, 25.0),
-    (19, 25.0),
+    (14, 24.0),
+    (15, 22.0),
     (20, 24.0),
-    (6, 25.0),
-    # (9, 22.0),
+    (22, 20.0),
+    (27, 25.0),
+    (30, 22.0),
+    (31, 21.0),
+    (36, 25.0),
+    (49, 25.0),
+    (51, 25.0),
+    (56, 22.0),
+    (57, 22.0),
+    (58, 20.0),
+    (6, 17.0),
+    (63, 22.0),
+    (65, 22.0),
+    (67, 25.0),
+    (70, 25.0),
+    (71, 25.0),
+    (72, 25.0),
+    (73, 22.0),
+    (75, 24.0),
+    (77, 25.0),
+    (78, 17.0),
+    (81, 25.0),
+    (82, 25.0),
+    (83, 17.0),
+    (86, 25.0),
+    (90, 19.0),
+    (91, 20.0),
+    (96, 17.0)
 ]
 
 TIME_RE = re.compile(r"\*\*\* AT T=\s*([0-9.]+)\s*FSEC")
 EH_TO_KCALMOL = 627.509474
 PKA_FACTOR = 0.004576
+SMOOTH_WINDOW = 9  # odd
+MINIMA_GLOBAL_RANGE = (0.0, 1.25)
+PROMINENCE = 0.1
 
 
 def parse_biaspot_times_ps(path: Path) -> np.ndarray:
@@ -61,6 +95,38 @@ def read_fes_blocks(path: Path) -> List[np.ndarray]:
     if cur:
         blocks.append(np.array(cur, dtype=float))
     return blocks
+
+
+def smooth(y: np.ndarray, window: int) -> np.ndarray:
+    if window < 3:
+        return y
+    if window % 2 == 0:
+        window += 1
+    pad = window // 2
+    ypad = np.pad(y, (pad, pad), mode="edge")
+    kernel = np.ones(window) / window
+    return np.convolve(ypad, kernel, mode="valid")
+
+
+def derivative_curve(x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    if savgol_filter is None or find_peaks is None:
+        raise RuntimeError("scipy is required for Savitzky-Golay smoothing (pip/conda install scipy).")
+    ys = smooth(y, SMOOTH_WINDOW)
+    if len(x) < 6:
+        return x, np.zeros_like(x)
+    # Restrict to global range for fitting stability
+    gmin, gmax = MINIMA_GLOBAL_RANGE
+    gmask = (x >= gmin) & (x <= gmax)
+    x = x[gmask]
+    ys = ys[gmask]
+    if len(x) < 6:
+        return x, np.zeros_like(x)
+    win = min(9, len(x) // 2 * 2 + 1)
+    if win < 5:
+        win = 5
+    ys_sg = savgol_filter(ys, window_length=win, polyorder=3, mode="interp")
+    dy = np.gradient(ys_sg, x)
+    return x, dy
 
 
 def grid_shape(n: int) -> Tuple[int, int]:
@@ -149,12 +215,15 @@ def main() -> None:
     if args.style.exists():
         plt.style.use(args.style)
 
-    fig = plt.figure(figsize=(9.0, 4.5), dpi=220)
-    gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1], wspace=0.25)
+    fig = plt.figure(figsize=(10.5, 8.0), dpi=220)
+    gs = gridspec.GridSpec(2, 2, width_ratios=[3, 2], wspace=0.3, hspace=0.3)
     ax = fig.add_subplot(gs[0, 0])
-    ax_hist = fig.add_subplot(gs[0, 1])
+    ax_df = fig.add_subplot(gs[0, 1])
+    ax_dfds = fig.add_subplot(gs[1, 0])
+    ax_pka = fig.add_subplot(gs[1, 1])
 
     pka_vals: List[float] = []
+    df_vals: List[float] = []
     pka_labels: List[str] = []
     pka_colors: List[str] = []
     color_cycle = plt.rcParams["axes.prop_cycle"].by_key().get("color", [])
@@ -185,10 +254,11 @@ def main() -> None:
 
         try:
             df = deltaf(data, args.min1_x, args.min2_x, args.half_window, args.fes_xmin, args.fes_xmax)
+            df_vals.append(df)
             pka = df / (PKA_FACTOR * args.temp)
             pka_vals.append(pka)
         except Exception as e:
-            print(f"SKIP: run-{run_id} pKa failed: {e}")
+            print(f"SKIP: run-{run_id} deltaF/pKa failed: {e}")
 
         try:
             min_x, min_y = find_minimum_near_target(
@@ -208,36 +278,74 @@ def main() -> None:
         ax.plot(
             data_plot[:, 0],
             data_plot[:, 1],
-            lw=1.6,
+            lw=0.8,
             color=color,
             label=f"run-{run_id} @ {time_ps:.2f} ps",
+        )
+        ax.text(
+            data_plot[-1, 0],
+            data_plot[-1, 1],
+            f"run-{run_id}",
+            fontsize=7,
+            color=color,
+            alpha=0.8,
+            ha="left",
+            va="center",
         )
         if len(pka_vals) > len(pka_colors):
             pka_colors.append(color or "#4c72b0")
             pka_labels.append(f"run-{run_id}")
+        try:
+            x_d, dy = derivative_curve(data[:, 0], data[:, 1])
+            ax_dfds.plot(x_d, dy, lw=0.8, color=color, alpha=0.8)
+        except Exception as e:
+            print(f"SKIP: run-{run_id} dF/ds failed: {e}")
 
     ax.set_xlabel("s")
     ax.set_ylabel("F (kcal mol$^{-1}$)")
     ax.set_ylim(-40.0, 0.0)
+    ax.set_xlim(args.fes_xmin, args.fes_xmax)
     ax.grid(alpha=0.25)
-    ax.legend(fontsize=8)
+    # No legend; too many curves
+
+    if df_vals:
+        vals = np.array(df_vals, dtype=float)
+        x = np.arange(len(vals))
+        ax_df.bar(x, vals, color=pka_colors, alpha=0.85, edgecolor="white")
+        ax_df.set_title("ΔF (kcal/mol)", fontsize=10)
+        ax_df.set_ylabel("ΔF")
+        ax_df.set_xticks(x)
+        ax_df.set_xticklabels(pka_labels, rotation=90, ha="center", fontsize=5)
+        ax_df.grid(alpha=0.25, axis="y")
+        for i, v in enumerate(vals):
+            ax_df.text(i, v, f"{v:.2f}", ha="center", va="bottom", fontsize=8)
+    else:
+        ax_df.set_axis_off()
+
+    ax_dfds.set_title("dF/ds (smoothed)", fontsize=10)
+    ax_dfds.set_xlabel("s")
+    ax_dfds.set_ylabel("dF/ds")
+    ax_dfds.set_xlim(args.fes_xmin, args.fes_xmax)
+    ax_dfds.grid(alpha=0.25)
 
     if pka_vals:
         vals = np.array(pka_vals, dtype=float)
         x = np.arange(len(vals))
-        ax_hist.bar(x, vals, color=pka_colors, alpha=0.85, edgecolor="white")
+        ax_pka.bar(x, vals, color=pka_colors, alpha=0.85, edgecolor="white")
         mean = float(np.mean(vals))
-        ax_hist.set_title("pKa", fontsize=10)
-        ax_hist.set_ylabel("pKa")
-        ax_hist.set_xticks(x)
-        ax_hist.set_xticklabels(pka_labels, rotation=45, ha="right", fontsize=8)
-        ax_hist.grid(alpha=0.25, axis="y")
+        std = float(np.std(vals, ddof=1)) if len(vals) > 1 else 0.0
+        ax_pka.set_title("pKa", fontsize=10)
+        ax_pka.set_ylabel("pKa")
+        ax_pka.set_xticks(x)
+        ax_pka.set_xticklabels(pka_labels, rotation=90, ha="center", fontsize=5)
+        ax_pka.grid(alpha=0.25, axis="y")
         for i, v in enumerate(vals):
-            ax_hist.text(i, v, f"{v:.2f}", ha="center", va="bottom", fontsize=8)
-        ax_hist.plot([], [], label=f"mean={mean:.2f}", color="none")
-        ax_hist.legend(loc="upper right", frameon=False, fontsize=9)
+            ax_pka.text(i, v, f"{v:.2f}", ha="center", va="bottom", fontsize=8)
+        ax_pka.plot([], [], label=f"mean={mean:.2f}", color="none")
+        ax_pka.plot([], [], label=f"±std={std:.2f}", color="none")
+        ax_pka.legend(loc="upper right", frameon=False, fontsize=9)
     else:
-        ax_hist.set_axis_off()
+        ax_pka.set_axis_off()
 
     system = infer_system(args.runs_path)
     out = args.out

@@ -1,0 +1,18 @@
+system: HIST
+buffer: 4.5
+prefix: solv
+
+method_dir: dftb
+bench_tag: N1T64C1
+run_ids: "1-100"
+cv_dir: equil
+traj_name: traject
+dftb_inp_name: dftb.inp
+parm_path: systems/HIST/solv_4.5/salt/ready.parm7
+
+dihedrals:
+ - name: chi1
+   atoms: [":1@N", ":1@CA", ":1@CB", ":1@CG"]
+ - name: chi2
+   atoms: [":1@CA", ":1@CB", ":1@CG", ":1@ND1"]
+range360: true

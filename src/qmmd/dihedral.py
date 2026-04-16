@@ -30,6 +30,7 @@ class DihedralConfig:
     parm_path: str
     dftb_inp_name: Optional[str]
     dihedrals: List[DihedralSpec]
+    range360: bool = False
 
 
 def find_repo_root(start: Path) -> Path:
@@ -120,6 +121,7 @@ def load_config(yaml_path: Path) -> DihedralConfig:
         parm_path=str(data["parm_path"]),
         dftb_inp_name=data.get("dftb_inp_name"),
         dihedrals=dihedral_specs,
+        range360=bool(data.get("range360", False)),
     )
 
 
@@ -285,6 +287,7 @@ def write_cpptraj_in(cfg: DihedralConfig, parm: Path, traj: Path, out_dir: Path)
         f"parm {parm}",
         _trajin_line(traj),
     ]
+    range_token = " range360" if cfg.range360 else ""
     for spec in cfg.dihedrals:
         name = spec.name or _format_dih_filename(spec).removesuffix(".dat")
         atoms = spec.atoms
@@ -292,7 +295,7 @@ def write_cpptraj_in(cfg: DihedralConfig, parm: Path, traj: Path, out_dir: Path)
             atoms = [f"@{i}" for i in spec.indices]
         out_dat = _format_dih_filename(spec)
         parts.append(
-            f"dihedral {name} {atoms[0]} {atoms[1]} {atoms[2]} {atoms[3]} out {out_dat}"
+            f"dihedral {name} {atoms[0]} {atoms[1]} {atoms[2]} {atoms[3]} out {out_dat}{range_token}"
         )
     parts.append("run")
     parts.append("")
