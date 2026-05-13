@@ -4,8 +4,8 @@ prefix: solv
 
 method_dir: dftb
 bench_tag: N1T64C1
-run_ids: "21-100"
-cv_dir: equil
+run_ids: "1-2"
+cv_dir: equil-nvt-postAmberNPT
 traj_name: traject
 dftb_inp_name: dftb.inp
 parm_path: systems/HIST/solv_4.5/salt/ready.parm7
@@ -13,6 +13,6 @@ parm_path: systems/HIST/solv_4.5/salt/ready.parm7
 rdf:
   dr: 0.01
   r_max: 9.0
-  mask1: "@11"
+  mask1: "@14"
   mask2: ":WAT@O"
   volume: true

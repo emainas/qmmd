@@ -18,6 +18,8 @@ from qmmd.dihedral import run_dihedral
 from qmmd.rmsd import run_rmsd
 from qmmd.radgyr import run_radgyr
 from qmmd.hbond import run_hbond
+from qmmd.gif import run_gif_submit, run_gif_run
+from qmmd.station import run_station
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -93,6 +95,15 @@ def main():
     hbond = sub.add_parser("hbond", help="Compute hydrogen bond time series and lifetimes with cpptraj")
     hbond.add_argument("yaml", type=Path)
 
+    gif_submit = sub.add_parser("gif-submit", help="Generate Slurm script and submit FES flooding GIF jobs")
+    gif_submit.add_argument("yaml", type=Path)
+
+    gif_run = sub.add_parser("gif-run", help="Run FES flooding GIF generation from config (internal)")
+    gif_run.add_argument("yaml", type=Path)
+
+    station = sub.add_parser("station", help="Plot station FES curves grid from config")
+    station.add_argument("yaml", type=Path)
+
     args = p.parse_args()
 
     if args.cmd == "prep":
@@ -141,3 +152,13 @@ def main():
         run_radgyr(args.yaml)
     elif args.cmd == "hbond":
         run_hbond(args.yaml)
+    elif args.cmd == "gif-submit":
+        run_gif_submit(args.yaml)
+    elif args.cmd == "gif-run":
+        run_gif_run(args.yaml)
+    elif args.cmd == "station":
+        run_station(args.yaml)
+
+
+if __name__ == "__main__":
+    main()

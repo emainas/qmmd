@@ -1,0 +1,64 @@
+system: HIST
+buffer: 4.5
+prefix: solv
+
+method_dir: dftb
+bench_tag: N1T64C1
+cv_dir: all-meta-hid
+fes_name: fes.dat
+biaspot_name: biaspot
+
+style: plotting/prl.mplstyle
+out: reports/HIST_solv_4.5_station_grid.png
+dpi: 160
+label_size: 9
+time_unit: ps
+
+runs:
+  - run_id: 15
+    t_fill: 18.0
+    t_interval: 1.0
+  - run_id: 22
+    t_fill: 17.0
+    t_interval: 1.0
+  - run_id: 30
+    t_fill: 18.0
+    t_interval: 1.0
+  - run_id: 49
+    t_fill: 20.0
+    t_interval: 1.0
+  - run_id: 51
+    t_fill: 19.0
+    t_interval: 1.0
+  - run_id: 56
+    t_fill: 20.0
+    t_interval: 1.0
+  - run_id: 58
+    t_fill: 16.0
+    t_interval: 1.0
+  - run_id: 63
+    t_fill: 20.0
+    t_interval: 1.0
+  - run_id: 65
+    t_fill: 19.0
+    t_interval: 1.0
+  - run_id: 67
+    t_fill: 22.0
+    t_interval: 1.0
+    restart_max_curves: 10
+  - run_id: 73
+    t_fill: 21.0
+    t_interval: 1.0
+  - run_id: 81
+    t_fill: 23.0
+    t_interval: 1.0
+    restart_max_curves: 10
+  - run_id: 86
+    t_fill: 21.0
+    t_interval: 1.0
+  - run_id: 91
+    t_fill: 18.0
+    t_interval: 1.0
+  - run_id: 96
+    t_fill: 15.0
+    t_interval: 1.0 

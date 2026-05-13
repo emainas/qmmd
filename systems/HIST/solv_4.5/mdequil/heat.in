@@ -13,7 +13,7 @@ Heat from 0 to 300 K
   ntp=0,
   ntc=2,
   ntf=2,
-  cut=3.0,
+  cut=4.5,
   ntpr=500,
   ntwx=1000,
   ntwe=0,

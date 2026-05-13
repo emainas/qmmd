@@ -1,0 +1,132 @@
+system: HIST
+buffer: 4.5
+prefix: solv
+dftb_dirname: dftb
+bench_tag: N1T64C1
+cv_dir: all-meta-hid
+
+biaspot_name: biaspot
+fes_name: fes.dat
+out_dir: reports/flooding_HIST_solv_4.5_all-meta-hid
+style: plotting/prl.mplstyle
+
+runtime:
+  python: /nas/longleaf/home/emainas/.conda/envs/qmmd/bin/python
+  env: {}
+
+slurm:
+  job:
+    name: qmmd-fes-flood
+    nodes: 1
+    ntasks: 48
+    mem: 8G
+    time: 2-00:00:00
+    stdout: slurm.%j.out
+    stderr: slurm.%j.err
+    flags: []
+
+options:
+  fps: 4
+  step: 1
+  time_min: null
+  time_unit: ps
+  tu: ps
+  use_vmax_from_end: false
+  vmin: null
+  vmax: null
+  xlim: [0.0, 1.25]
+  ylim: null
+  cmap: RdYlBu_r
+  xlabel: s
+  ylabel: "F (kcal mol$^{-1}$)"
+  label_size: 10
+  image_size: [6.2, 4.2]
+  image_size_unit: in
+  dpi: 160
+  enable_loop: true
+  clear_temporary_folder: true
+  temporary_folder_name: temp_fes_gif
+  contours_spacing: null
+  levels: null
+  opacity: null
+  per_run_gifs: true
+  grid_gif: true
+  grid_gif_name: flooding_grid.gif
+  mode: html
+  show_sampling: true
+  sampling_color: black
+  sampling_size: 60
+  sampling_offset: 0.5
+  basin_stats: true
+
+minima:
+  with_minima: true
+  use_minima_from_end: false
+  precise: true
+  nbins: 20
+  temp: 313.15
+  energy_unit: kcal/mol
+
+pairs:
+  - run_id: 14
+    ceiling_time_ps: 24.0
+  - run_id: 15
+    ceiling_time_ps: 22.0
+  - run_id: 20
+    ceiling_time_ps: 24.0
+  - run_id: 22
+    ceiling_time_ps: 20.0
+  - run_id: 27
+    ceiling_time_ps: 25.0
+  - run_id: 30
+    ceiling_time_ps: 22.0
+  - run_id: 31
+    ceiling_time_ps: 21.0
+  - run_id: 36
+    ceiling_time_ps: 25.0
+  - run_id: 49
+    ceiling_time_ps: 25.0
+  - run_id: 51
+    ceiling_time_ps: 25.0
+  - run_id: 56
+    ceiling_time_ps: 22.0
+  - run_id: 57
+    ceiling_time_ps: 22.0
+  - run_id: 58
+    ceiling_time_ps: 20.0
+  - run_id: 6
+    ceiling_time_ps: 17.0
+  - run_id: 63
+    ceiling_time_ps: 22.0
+  - run_id: 65
+    ceiling_time_ps: 22.0
+  - run_id: 67
+    ceiling_time_ps: 25.0
+  - run_id: 70
+    ceiling_time_ps: 25.0
+  - run_id: 71
+    ceiling_time_ps: 25.0
+  - run_id: 72
+    ceiling_time_ps: 25.0
+  - run_id: 73
+    ceiling_time_ps: 22.0
+  - run_id: 75
+    ceiling_time_ps: 24.0
+  - run_id: 77
+    ceiling_time_ps: 25.0
+  - run_id: 78
+    ceiling_time_ps: 17.0
+  - run_id: 81
+    ceiling_time_ps: 25.0
+  - run_id: 82
+    ceiling_time_ps: 25.0
+  - run_id: 83
+    ceiling_time_ps: 17.0
+  - run_id: 86
+    ceiling_time_ps: 25.0
+  - run_id: 90
+    ceiling_time_ps: 19.0
+  - run_id: 91
+    ceiling_time_ps: 20.0
+  - run_id: 96
+    ceiling_time_ps: 17.0

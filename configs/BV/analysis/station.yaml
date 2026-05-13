@@ -1,0 +1,117 @@
+system: BV
+buffer: 4.0
+prefix: solv
+
+method_dir: dftb
+bench_tag: N1T64C1
+cv_dir: equil
+fes_name: fes.dat
+biaspot_name: biaspot
+
+style: plotting/prl.mplstyle
+out: reports/BV_solv_4.0_station_grid.png
+dpi: 160
+label_size: 9
+time_unit: ps
+
+runs:
+  - run_id: 1
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 2
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 3
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 4
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 5
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 6
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 7
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 8
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 9
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 10
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 11
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 12
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 13
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 14
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 15
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 16
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 17
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 18
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 19
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10
+  - run_id: 20
+    t_fill: 10.0
+    t_interval: 1.0
+    restart_t_fill: null
+    restart_max_curves: 10

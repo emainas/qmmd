@@ -3,7 +3,7 @@ buffer: 4.5
 prefix: solv
 job_name: mdequil
 
-input_source: prep 
+input_source: mdequil
 
 counterion: Cl-
 solute_mask: ":1"

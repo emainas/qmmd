@@ -5,9 +5,12 @@ dftb_dirname: dftb
 bench_tag: N1T64C1
 run_ids: "1-20"
 group1:
-- 10
+  mode: indices
+  indices: [14]
+
 group2:
-- 11
+  mode: indices
+  indices: [15]
 r0: 1.6
 p: 6
 q: 12
@@ -17,11 +20,3 @@ equil:
   start: null
   stop: null
   stride: 1
-prod:
-  cv_dir: meta-hid
-  traj_name: traject
-  biaspot_name: biaspot
-  start: 0
-  stop: null
-  stride: 1
-validate_tol: 3e-2

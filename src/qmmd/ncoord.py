@@ -50,9 +50,19 @@ class NcoordConfig:
 
     group1: GroupSpec
     group2: GroupSpec
+    wall: Optional["WallSpec"] = None
 
     slurm: Optional[SlurmConfig] = None
     bench_tag: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class WallSpec:
+    kind: str  # "U" or "L"
+    coord: int
+    kspring: float
+    value: float
+    power: int
 
 
 def find_repo_root(start: Path) -> Path:
@@ -120,6 +130,19 @@ def load_config(yaml_path: Path) -> NcoordConfig:
         raise RuntimeError("run_ids must be provided (e.g., [1,2,3])")
     run_ids = parse_run_ids(run_ids_val)
 
+    wall_cfg = None
+    if data.get("wall") is not None:
+        w = data["wall"]
+        wall_cfg = WallSpec(
+            kind=str(w["kind"]).strip().upper(),
+            coord=int(w.get("coord", 1)),
+            kspring=float(w["kspring"]),
+            value=float(w["value"]),
+            power=int(w.get("power", 2)),
+        )
+        if wall_cfg.kind not in ("U", "L"):
+            raise RuntimeError("wall.kind must be 'U' or 'L'")
+
     return NcoordConfig(
         system=data["system"],
         buffer=float(data["buffer"]),
@@ -140,6 +163,7 @@ def load_config(yaml_path: Path) -> NcoordConfig:
         grid_step=float(data["grid_step"]),
         group1=load_group(data["group1"]),
         group2=load_group(data["group2"]),
+        wall=wall_cfg,
         slurm=slurm_cfg,
         bench_tag=data.get("bench_tag"),
     )
@@ -240,6 +264,9 @@ def write_metacv(path: Path, cfg: NcoordConfig, group1: List[int], group2: List[
         f"{cfg.grid_min} {cfg.grid_max} {cfg.grid_step}"
     )
     text = header + "\n" + " ".join(map(str, group1)) + "\n" + " ".join(map(str, group2)) + "\n"
+    if cfg.wall is not None:
+        text += "\n"
+        text += f"{cfg.wall.kind} {cfg.wall.coord} {cfg.wall.kspring} {cfg.wall.value} {cfg.wall.power}\n"
     path.write_text(text)
 
 
@@ -279,3 +306,15 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    wall_cfg = None
+    if data.get("wall") is not None:
+        w = data["wall"]
+        wall_cfg = WallSpec(
+            kind=str(w["kind"]).strip().upper(),
+            coord=int(w.get("coord", 1)),
+            kspring=float(w["kspring"]),
+            value=float(w["value"]),
+            power=int(w.get("power", 2)),
+        )
+        if wall_cfg.kind not in ("U", "L"):
+            raise RuntimeError("wall.kind must be 'U' or 'L'")

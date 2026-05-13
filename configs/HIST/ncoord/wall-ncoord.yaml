@@ -1,0 +1,37 @@
+system: HIST
+buffer: 4.5
+prefix: solv
+
+dftb_dirname: dftb
+replica_dirname: equil-nvt-postAmberNPT
+cv_dirname: 2000wall1p15-all-wtmeta-26-hid
+
+run_ids: "1-2"
+bench_tag: N1T64C1
+
+cv_title: RATIONALCOORDINATIONNUMBER
+gausswidth: 0.1
+nexp: 6
+mexp: 12
+refdist: 1.6
+method: LABELS
+norm: AVERAGE
+grid_min: 0.0
+grid_max: 2.0
+grid_step: 0.01
+
+group1:
+  mode: indices
+  indices: [14]
+
+group2:
+  mode: all_water_h
+  solute_end: 21
+  indices: [11,15]
+
+wall:
+  kind: U       
+  coord: 1       
+  kspring: 2000.0
+  value: 1.15
+  power: 2

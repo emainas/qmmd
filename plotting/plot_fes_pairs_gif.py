@@ -140,7 +140,9 @@ def main() -> None:
     with imageio.get_writer(out, mode="I", fps=args.fps) as writer:
         for frame_idx in range(0, max_frames, args.step):
             frac = frame_idx / (max_frames - 1) if max_frames > 1 else 1.0
-            fig, axes = plt.subplots(rows, cols, figsize=(3.2 * cols, 2.8 * rows), dpi=160, sharex=True, sharey=True)
+            fig, axes = plt.subplots(
+                rows, cols, figsize=(3.2 * cols, 2.8 * rows), dpi=160, sharex=True, sharey=True
+            )
             axes_flat = axes.flatten() if isinstance(axes, np.ndarray) else [axes]
 
             for i, (run_id, time_ps, times, blocks) in enumerate(series):
@@ -165,13 +167,13 @@ def main() -> None:
             for ax in axes_flat[len(pairs):]:
                 ax.set_axis_off()
 
-        fig.text(0.5, 0.04, "s", ha="center")
-        fig.text(0.04, 0.5, "F (kcal mol$^{-1}$)", va="center", rotation="vertical")
-        fig.tight_layout(rect=[0.05, 0.05, 0.98, 0.98])
-        fig.canvas.draw()
-        image = np.asarray(fig.canvas.buffer_rgba())[:, :, :3]
-        writer.append_data(image)
-        plt.close(fig)
+            fig.text(0.5, 0.04, "s", ha="center")
+            fig.text(0.04, 0.5, "F (kcal mol$^{-1}$)", va="center", rotation="vertical")
+            fig.tight_layout(rect=[0.05, 0.05, 0.98, 0.98])
+            fig.canvas.draw()
+            image = np.asarray(fig.canvas.buffer_rgba())[:, :, :3]
+            writer.append_data(image)
+            plt.close(fig)
 
     print(f"Wrote {out}")
 

@@ -2,11 +2,11 @@ system: HIST
 buffer: 4.5
 prefix: solv
 job_name: dftb
-salt_dirname: density
+salt_dirname: salt
 
-replicas: 80          
-append: true          
-replica_dirname: equil
+replicas: 2          
+append: false          
+replica_dirname: equil-npt
 
 
 dftb:
@@ -19,9 +19,9 @@ dftb:
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
     - "MD=(NSTEP=40000 DELTAT=1.0D-15)"
     - "MD=(RESTART=FALSE READVELOCITY=FALSE)"
-    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0)"
-    - "MD=(COLLISIONFREQ=0.01)"
-    - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
+    - "MD=(NPT=TRUE EXTPRESSURE=1.01325e+05 NPTTYPE=1 COUPLINGSTRLAT=1.5e+01 ISOSCALING=TRUE)"
+    - "MD=(STRESS=TRUE)"
+    - "MD=(INITTEMP=300.0 ERRORTEMP=1000 BATHTEMP=300)"
     - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
     - "MD=(PRINT=10 SEEDTYPE=3 RANDOMSEED=0)"
     - "MISC=(PRINTLAPTIME=TRUE)"

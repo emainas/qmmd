@@ -60,6 +60,48 @@ def load_fes_blocks(path: Path) -> List[np.ndarray]:
     return blocks
 
 
+def load_biaspot_with_restart(run_dir: Path, cv_dir: str) -> np.ndarray:
+    base_biaspot = run_dir / cv_dir / "biaspot"
+    t0 = parse_biaspot_times(base_biaspot)
+    if t0.size == 0:
+        return t0
+
+    restart_dir = run_dir / cv_dir / "metad-restart"
+    restart_biaspot = restart_dir / "biaspot"
+    if not restart_biaspot.exists():
+        return t0
+
+    t1 = parse_biaspot_times(restart_biaspot)
+    if t1.size == 0:
+        return t0
+
+    last_base = float(t0[-1])
+    if float(t1[-1]) > last_base:
+        keep = t1 > last_base
+        t1 = t1[keep]
+        return np.concatenate([t0, t1])
+
+    t1 = t1 + last_base
+    return np.concatenate([t0, t1])
+
+
+def load_fes_with_restart(run_dir: Path, cv_dir: str) -> List[np.ndarray]:
+    base_fes = run_dir / cv_dir / "fes.dat"
+    blocks = load_fes_blocks(base_fes)
+
+    restart_dir = run_dir / cv_dir / "metad-restart"
+    restart_fes = restart_dir / "fes.dat"
+    if not restart_fes.exists():
+        return blocks
+
+    restart_blocks = load_fes_blocks(restart_fes)
+    if len(restart_blocks) >= 2:
+        restart_blocks = restart_blocks[1:]
+    elif restart_blocks:
+        restart_blocks = []
+    return blocks + restart_blocks
+
+
 def discover_runs(runs_path: Path, cv_dir: str) -> List[Tuple[int, Path, Path]]:
     out: List[Tuple[int, Path, Path]] = []
     for p in sorted(runs_path.iterdir()):
@@ -170,8 +212,9 @@ def main() -> None:
     all_y = []
     for i, (run_id, biaspot, fes_path) in enumerate(runs):
         ax = axes_flat[i]
-        times = parse_biaspot_times(biaspot)
-        blocks = load_fes_blocks(fes_path)
+        run_dir = biaspot.parent.parent
+        times = load_biaspot_with_restart(run_dir, args.cv_dir)
+        blocks = load_fes_with_restart(run_dir, args.cv_dir)
         if times.size == 0 or not blocks:
             ax.set_axis_off()
             continue

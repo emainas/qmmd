@@ -3,10 +3,10 @@ buffer: 4.5
 prefix: solv
 
 dftb_dirname: dftb
-replica_dirname: equil
-cv_dirname: all-meta-hie
+replica_dirname: equil-nvt-postAmberNPT
+cv_dirname: 1000wall1p15-all-meta-hid
 
-run_ids: "21-100"
+run_ids: "1-2"
 bench_tag: N1T64C1
 restart_name: restart
 
@@ -18,7 +18,7 @@ dftb:
     - "SCC=(READCHARGE=NONE)"
     - "SCC=(MAXITER=1000)"
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
-    - "MD=(NSTEP=100000 DELTAT=2.5D-16)"
+    - "MD=(NSTEP=100000 DELTAT=0.5D-16)"
     - "MD=(RESTART=TRUE READVELOCITY=FALSE)"
     - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0)"
     - "MD=(COLLISIONFREQ=0.01)"

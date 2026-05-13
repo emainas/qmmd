@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #SBATCH -J qmmd-fes-gif
-#SBATCH -p batch
 #SBATCH -N 1
 #SBATCH --ntasks 48
 #SBATCH -t 2-00:00:00

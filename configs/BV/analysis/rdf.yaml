@@ -13,6 +13,6 @@ parm_path: systems/BV/solv_4.0/salt/ready.parm7
 rdf:
   dr: 0.01
   r_max: 7.0
-  mask1: ":1@NB"
+  mask1: ":1@HD"
   mask2: ":WAT@O"
   volume: true
