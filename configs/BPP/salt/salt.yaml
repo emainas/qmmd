@@ -1,9 +1,9 @@
-system: BV
-buffer: 5.5
+system: BPP
+buffer: 4.0
 prefix: solv
 job_name: mdequil
 
-counterion: Cl-
+counterion: 
 solute_mask: ":1"
 nclosest: 999999
-delete_h: "H1"   # or H2
+delete_h: "H1,H2,O"   # or H2

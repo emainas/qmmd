@@ -1,12 +1,12 @@
 system: BV
-buffer: 4.0
+buffer: 5.5
 prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
 cv_dirname: meta-hib
 
-run_ids: "11-20"
+run_ids: "1-20"
 bench_tag: N1T64C1
 
 cv_title: RATIONALCOORDINATIONNUMBER

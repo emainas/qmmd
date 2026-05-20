@@ -1,10 +1,10 @@
 system: BV
-buffer: 4.0
+buffer: 5.5
 prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 10
+replicas: 20
 append: yes
 replica_dirname: equil
 
@@ -14,10 +14,11 @@ dftb:
   header_lines:
     - "SCC=(THIRDFULL=TRUE DAMPXH=TRUE ALMIX=0.3)"
     - "SCC=(READCHARGE=NONE)"
+    - "SCC=(MAXITER=1000)"
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
-    - "MD=(NSTEP=20000 DELTAT=1.0D-15)"
+    - "MD=(NSTEP=40000 DELTAT=1.0D-15)"
     - "MD=(RESTART=FALSE READVELOCITY=FALSE)"
-    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0)"
+    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0 CALCPRESSURE=TRUE)"
     - "MD=(COLLISIONFREQ=0.01)"
     - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
     - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
@@ -25,7 +26,8 @@ dftb:
     - "MISC=(PRINTLAPTIME=TRUE)"
     - "MISC=(WRITECHRGFILE=FALSE)"
     - "PBC=TRUE"
-
+    - "PBC=(STRESS=TRUE)"
+  
   charge: 0
   multiplicity: 1
 

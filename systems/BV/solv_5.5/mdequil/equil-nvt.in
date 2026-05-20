@@ -12,7 +12,7 @@ Equilibrate at 300 K
   ntp=0,
   ntc=2,
   ntf=2,
-  cut=4.5,
+  cut=8.0,
   ntpr=500,
   ntwx=1000,
   ntwe=0,

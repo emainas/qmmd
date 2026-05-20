@@ -1,12 +1,12 @@
 system: HIST
-buffer: 4.5
+buffer: 5.5
 prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 2          
-append: false          
-replica_dirname: equil-nvt-postAmberNPT
+replicas: 60          
+append: true 
+replica_dirname: equil
 
 
 dftb:

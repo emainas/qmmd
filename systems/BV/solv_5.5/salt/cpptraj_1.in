@@ -2,8 +2,8 @@
 # System: BV  buffer=5.5  prefix=solv  job=mdequil
 
 # block 1: autoimage
-parm /nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/BV/solv_5.5/prep/solv.parm7
-trajin /nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/BV/solv_5.5/mdequil/equil-npt.nc
+parm /users/e/m/emainas/qmmd/systems/BV/solv_5.5/prep/solv.parm7
+trajin /users/e/m/emainas/qmmd/systems/BV/solv_5.5/mdequil/equil-npt.nc
 autoimage
 trajout production.autoimaged.nc netcdf
 run
@@ -24,7 +24,7 @@ run
 # block 4: strip ion from topology and write stripped parm
 clear parm
 clear trajin
-parm /nas/longleaf/home/emainas/software/dcdftbmd.2.0/molecules/MEA/qmmd/systems/BV/solv_5.5/prep/solv.parm7
+parm /users/e/m/emainas/qmmd/systems/BV/solv_5.5/prep/solv.parm7
 parmstrip :Cl-
 parmwrite out no_ion.parm7
 run

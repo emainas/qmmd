@@ -1,16 +1,16 @@
 system: HIST
-buffer: 5.5
+buffer: 4.5
 prefix: solv
 dftb_dirname: dftb
 bench_tag: N1T64C1
-run_ids: "1-20"
+run_ids: "18"
 group1:
   mode: indices
-  indices: [14]
+  indices: [10]
 
 group2:
   mode: indices
-  indices: [15]
+  indices: [11]
 r0: 1.6
 p: 6
 q: 12

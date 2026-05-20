@@ -7,7 +7,7 @@ frcmod: systems/BPP/bpp.frcmod
 mol2: systems/BPP/bpp.mol2
 
 water_model: TIP3PBOX
-buffer: 4.0
+buffer: 6.5
 counterion: 
 counterion_num: 0
 
