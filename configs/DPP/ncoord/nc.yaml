@@ -1,0 +1,29 @@
+system: DPP
+buffer: 4.0
+prefix: solv
+
+dftb_dirname: dftb
+replica_dirname: equil
+cv_dirname: meta-hic
+
+run_ids: "1-10"
+bench_tag: N1T64C1
+
+cv_title: RATIONALCOORDINATIONNUMBER
+gausswidth: 0.1
+nexp: 6
+mexp: 12
+refdist: 1.6
+method: LABELS
+norm: AVERAGE
+grid_min: 0.0
+grid_max: 1.0
+grid_step: 0.01
+
+group1:
+  mode: indices
+  indices: [31]
+
+group2:
+  mode: indices
+  indices: [32]

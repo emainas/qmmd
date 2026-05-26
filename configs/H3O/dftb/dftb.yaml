@@ -1,15 +1,12 @@
-system: HIST
-buffer: 5.5
+system: H3O
+buffer: 6.5
 prefix: solv
+job_name: dftb
+salt_dirname: salt
 
-dftb_dirname: dftb
+replicas: 10
+append: no
 replica_dirname: equil
-cv_dirname: meta-hid
-
-#run_ids: [41, 42, 43, 46, 47, 48, 49, 50, 51, 53, 54, 56, 60, 62, 63, 68, 69, 71, 74, 75, 76, 85, 86, 88, 91, 92, 94, 95, 97, 100]
-run_ids: [44, 45, 52, 55, 57, 58, 59, 61, 64, 65, 66, 67, 70, 72, 73, 77, 78, 79, 80, 81, 82, 83, 84, 87, 89, 90, 93, 96, 98, 99]
-bench_tag: N1T64C1
-restart_name: restart
 
 dftb:
   title: "DC-DFTB3/3ob, PBC (NVT)"
@@ -19,27 +16,24 @@ dftb:
     - "SCC=(READCHARGE=NONE)"
     - "SCC=(MAXITER=1000)"
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
-    - "MD=(NSTEP=80000 DELTAT=0.5D-15)"
-    - "MD=(RESTART=TRUE READVELOCITY=FALSE)"
-    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0)"
+    - "MD=(NSTEP=40000 DELTAT=1.0D-15)"
+    - "MD=(RESTART=FALSE READVELOCITY=FALSE)"
+    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0 CALCPRESSURE=TRUE)"
     - "MD=(COLLISIONFREQ=0.01)"
     - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
     - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
-    - "MD=(PRINT=40 SEEDTYPE=3 RANDOMSEED=0)"
-    - "MD=(METADYNAMICS=TRUE METAPRINTFES=TRUE METARESTART=FALSE)"
-    - "MD=(METAFREQ=80 METAHEIGHT=5e-4)"
+    - "MD=(PRINT=10 SEEDTYPE=3 RANDOMSEED=0)"
     - "MISC=(PRINTLAPTIME=TRUE)"
     - "MISC=(WRITECHRGFILE=FALSE)"
     - "PBC=TRUE"
-
+    - "PBC=(STRESS=TRUE)"
+  
   charge: 0
   multiplicity: 1
 
   elements:
     - { symbol: H, lmax: 1, hubbard: -0.1857 }
     - { symbol: O, lmax: 2, hubbard: -0.1575 }
-    - { symbol: C, lmax: 2, hubbard: -0.1492 }
-    - { symbol: N, lmax: 2, hubbard: -0.1535 }
 
   params_dir: "params"
 
@@ -53,8 +47,8 @@ runtime:
 
 slurm:
   job:
-    name: HIST
-    partition: batch
+    name: H3O
+    partition: small
     nodes: 1
     ntasks: 64
     mem: "50G"
@@ -62,3 +56,4 @@ slurm:
     time: "5-00:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
+
