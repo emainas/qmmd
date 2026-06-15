@@ -1,12 +1,14 @@
-system: BV
-buffer: 4.0
+system: H2O
+buffer: 6.0
 prefix: solv
-job_name: dftb
-salt_dirname: salt
 
-replicas: 10
-append: yes
+dftb_dirname: dftb
 replica_dirname: equil
+cv_dirname: meta-h2o
+
+run_ids: "1-90"
+bench_tag: N1T16C1
+restart_name: restart
 
 dftb:
   title: "DC-DFTB3/3ob, PBC (NVT)"
@@ -14,14 +16,17 @@ dftb:
   header_lines:
     - "SCC=(THIRDFULL=TRUE DAMPXH=TRUE ALMIX=0.3)"
     - "SCC=(READCHARGE=NONE)"
+    - "SCC=(MAXITER=1000)" 
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
-    - "MD=(NSTEP=20000 DELTAT=1.0D-15)"
-    - "MD=(RESTART=FALSE READVELOCITY=FALSE)"
+    - "MD=(NSTEP=60000 DELTAT=0.5D-15)"
+    - "MD=(RESTART=TRUE READVELOCITY=FALSE)"
     - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0)"
     - "MD=(COLLISIONFREQ=0.01)"
     - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
     - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
-    - "MD=(PRINT=10 SEEDTYPE=3 RANDOMSEED=0)"
+    - "MD=(PRINT=40 SEEDTYPE=3 RANDOMSEED=0)"
+    - "MD=(METADYNAMICS=TRUE METAPRINTFES=TRUE METARESTART=FALSE)"
+    - "MD=(METAFREQ=80 METAHEIGHT=5e-4)"
     - "MISC=(PRINTLAPTIME=TRUE)"
     - "MISC=(WRITECHRGFILE=FALSE)"
     - "PBC=TRUE"
@@ -32,8 +37,6 @@ dftb:
   elements:
     - { symbol: H, lmax: 1, hubbard: -0.1857 }
     - { symbol: O, lmax: 2, hubbard: -0.1575 }
-    - { symbol: C, lmax: 2, hubbard: -0.1492 }
-    - { symbol: N, lmax: 2, hubbard: -0.1535 }
 
   params_dir: "params"
 
@@ -47,25 +50,12 @@ runtime:
 
 slurm:
   job:
-    name: BV
-    partition: batch
+    name: H2O
+    partition: small
     nodes: 1
-    ntasks: 64
+    ntasks: 16
     mem: "50G"
     cpus_per_task: 1
-    time: "5-00:00:00"
+    time: "10:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
-
-anneal:
-  - "C 1 100.0"
-  - "L 4000 120.0"
-  - "L 4000 140.0"
-  - "L 4000 160.0"
-  - "L 4000 180.0"
-  - "L 4000 200.0"
-  - "L 4000 220.0"
-  - "L 4000 240.0"
-  - "L 4000 260.0"
-  - "L 4000 280.0"
-  - "L 3999 300.0"

@@ -6,8 +6,8 @@ dftb_dirname: dftb
 replica_dirname: equil
 cv_dirname: meta-hia
 
-run_ids: "11-20"
-bench_tag: N1T64C1
+run_ids: "1-50"
+bench_tag: N1T48C1
 
 cv_title: RATIONALCOORDINATIONNUMBER
 gausswidth: 0.1

@@ -1,10 +1,10 @@
 system: BV
-buffer: 5.5
+buffer: 4.0
 prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 20
+replicas: 50
 append: yes
 replica_dirname: equil
 
@@ -52,10 +52,10 @@ slurm:
     name: BV
     partition: batch
     nodes: 1
-    ntasks: 64
+    ntasks: 48
     mem: "50G"
     cpus_per_task: 1
-    time: "5-00:00:00"
+    time: "3-00:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
 

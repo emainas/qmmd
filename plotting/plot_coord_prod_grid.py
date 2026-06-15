@@ -1025,6 +1025,7 @@ def main() -> None:
             box = read_box_lengths_from_dftb_inp(dftb_inp) if dftb_inp.exists() else None
             n_series = {nid: [] for nid in n_ids}
             n_series_least = {nid: [] for nid in n_ids}
+            oo_series: List[float] = []
             t_series: List[float] = []
             max_frames = len(times)
             for idx, coords in enumerate(iter_xyz_coords(traj_path)):
@@ -1036,6 +1037,7 @@ def main() -> None:
                     for nid in n_ids:
                         n_series[nid].append(np.nan)
                         n_series_least[nid].append(np.nan)
+                    oo_series.append(np.nan)
                     t_series.append(times[idx])
                     continue
                 o_idx = int(o_id) - 1
@@ -1058,14 +1060,22 @@ def main() -> None:
                 else:
                     for nid in n_ids:
                         n_series_least[nid].append(np.nan)
+                    oo_series.append(np.nan)
+                if np.isfinite(o2_id):
+                    o2_idx = int(o2_id) - 1
+                    d_oo = coords[o2_idx] - coords[o_idx]
+                    if box is not None:
+                        d_oo = d_oo - box * np.round(d_oo / box)
+                    oo_series.append(float(np.linalg.norm(d_oo)))
                 t_series.append(times[idx])
             colors = ["green", "orange"]
             least_colors = ["red", "purple"]
             for i, nid in enumerate(n_ids):
                 color = colors[i % len(colors)]
-                ax_dist.scatter(t_series, n_series[nid], s=6, color=color, label=f"N{nid}")
+                ax_dist.scatter(t_series, n_series[nid], s=6, color=color, alpha=0.75, zorder=3, label=f"N{nid}")
                 least_color = least_colors[i % len(least_colors)]
-                ax_dist.scatter(t_series, n_series_least[nid], s=6, color=least_color, alpha=0.6, label=f"N{nid} (least)")
+                ax_dist.scatter(t_series, n_series_least[nid], s=6, color=least_color, alpha=0.6, zorder=2, label=f"N{nid} (least)")
+            ax_dist.scatter(t_series, oo_series, s=14, color="blue", alpha=0.5, marker="x", zorder=1, label="O–O")
             ax_dist.set_xlabel("Time (ps)")
             ax_dist.set_ylabel("N–O distance (Å)")
             ax_dist.legend(frameon=False, fontsize=6, loc="upper right")

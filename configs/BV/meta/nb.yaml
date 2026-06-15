@@ -1,13 +1,13 @@
 system: BV
-buffer: 5.5
+buffer: 4.0
 prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
 cv_dirname: meta-hib
 
-run_ids: "1-20"
-bench_tag: N1T64C1
+run_ids: "1-50"
+bench_tag: N1T48C1
 restart_name: restart
 
 dftb:
@@ -55,9 +55,9 @@ slurm:
     name: BVB
     partition: batch
     nodes: 1
-    ntasks: 64
+    ntasks: 48
     mem: "50G"
     cpus_per_task: 1
-    time: "5-00:00:00"
+    time: "3-00:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"

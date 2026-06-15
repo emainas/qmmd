@@ -181,6 +181,16 @@ def deltaf(
     m2 = find_minimum_near_target(block[:, 0], block[:, 1], min2_x, half_window, xmin, xmax)
     return m1[1] - m2[1]
 
+def parse_exp_pkas(raw: str | None) -> List[float]:
+    if raw is None:
+        return []
+    items = re.split(r"[,\s]+", raw.strip())
+    out: List[float] = []
+    for item in items:
+        if not item:
+            continue
+        out.append(float(item))
+    return out
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Plot pKa grids from biaspot + fes.dat.")
@@ -194,8 +204,14 @@ def main() -> None:
     p.add_argument("--half-window", type=float, default=0.1)
     p.add_argument("--fes-xmin", type=float, default=0.0)
     p.add_argument("--fes-xmax", type=float, default=1.25)
-    p.add_argument("--exp-pka", type=float, default=None, help="Experimental pKa (horizontal reference line)")
+    p.add_argument(
+        "--exp-pka",
+        type=str,
+        default=None,
+        help="Experimental pKa(s), comma or space separated (horizontal dashed lines)",
+    )
     args = p.parse_args()
+    exp_pkas = parse_exp_pkas(args.exp_pka)
 
     runs = discover_runs(args.runs_path, args.cv_dir)
     if not runs:
@@ -235,15 +251,17 @@ def main() -> None:
         pka_vals = df_vals / (PKA_FACTOR * args.temp)
         ax.plot(times_rel, pka_vals, color="black", lw=1.6)
         ax.scatter(times_rel, pka_vals, color="#FFA500", edgecolor=(0.0, 0.0, 0.0, 0.35), s=18)
-        if args.exp_pka is not None:
-            ax.axhline(args.exp_pka, color="#0000FF", lw=1.6, ls="--")
+        if exp_pkas:
+            for j, pka in enumerate(exp_pkas):
+                color = f"C{j % 10}"
+                ax.axhline(pka, color=color, lw=1.2, ls="--", alpha=0.85)
         ax.set_title(f"run-{run_id}", fontsize=10)
         ax.set_xlim(0.0, float(times_rel[-1]))
         ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x + t0:.1f}"))
         ylo, yhi = np.min(pka_vals), np.max(pka_vals)
         pad = 0.05 * (yhi - ylo) if yhi > ylo else 0.5
         ax.set_ylim(ylo - pad, yhi + pad)
-        ax.set_ylim(-10,10)
+        ax.set_ylim(-20,20)
         ax.grid(alpha=0.25)
         ax.tick_params(labelsize=8)
         all_y.append(pka_vals)

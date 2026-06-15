@@ -4,8 +4,8 @@ prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 10
-append: no
+replicas: 90
+append: yes
 replica_dirname: equil
 
 dftb:
@@ -16,7 +16,7 @@ dftb:
     - "SCC=(READCHARGE=NONE)"
     - "SCC=(MAXITER=1000)"
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
-    - "MD=(NSTEP=40000 DELTAT=1.0D-15)"
+    - "MD=(NSTEP=20000 DELTAT=1.0D-15)"
     - "MD=(RESTART=FALSE READVELOCITY=FALSE)"
     - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0 CALCPRESSURE=TRUE)"
     - "MD=(COLLISIONFREQ=0.01)"
@@ -50,10 +50,10 @@ slurm:
     name: H2O
     partition: small
     nodes: 1
-    ntasks: 64
+    ntasks: 16
     mem: "50G"
     cpus_per_task: 1
-    time: "5-00:00:00"
+    time: "10:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
 
