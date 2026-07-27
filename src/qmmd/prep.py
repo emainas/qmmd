@@ -121,26 +121,22 @@ quit
 
 
 def require_amber() -> Path:
-    amberhome = os.environ.get("AMBERHOME")
-    if not amberhome:
-        raise RuntimeError("AMBERHOME is not set.")
-
     tleap = shutil.which("tleap")
     if not tleap:
-        raise RuntimeError("tleap not found in PATH. Did you load Amber?")
+        raise RuntimeError("tleap not found in PATH. Did you load AmberTools?")
 
     tleap_path = Path(tleap).resolve()
 
-    expected = Path(amberhome).resolve() / "bin" / "tleap"
-    if tleap_path != expected:
+    result = subprocess.run([str(tleap_path), "-f", "-"], input="quit\n", text=True, capture_output=True, timeout=10,)  
+    if result.returncode != 0:
         raise RuntimeError(
-            f"tleap mismatch:\n"
-            f"  PATH tleap: {tleap_path}\n"
-            f"  AMBERHOME: {amberhome}\n"
-            f"  expected: {expected}\n"
-            f"Fix by re-loading the correct Amber module."
+            f"tleap was found but failed to run:\n"
+            f"  executable: {tleap_path}\n"
+            f"  return code: {result.returncode}\n"
+            f"  stdout: {result.stdout.strip()}\n"
+            f"  stderr: {result.stderr.strip()}"
         )
-
+    
     return tleap_path
 
 def run_tleap(cfg: PrepConfig, tleap_in: Path) -> None: 

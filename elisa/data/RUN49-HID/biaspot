@@ -1,0 +1,3000 @@
+ GAUSSIAN BIAS POTENTIAL:        1
+ *** AT T=      20040.00 FSEC, THIS RUN'S STEP NO.=   40080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9415670056
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:        2
+ *** AT T=      20080.00 FSEC, THIS RUN'S STEP NO.=   40160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9417999435
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:        3
+ *** AT T=      20120.00 FSEC, THIS RUN'S STEP NO.=   40240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9359566048
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:        4
+ *** AT T=      20160.00 FSEC, THIS RUN'S STEP NO.=   40320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9302975216
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:        5
+ *** AT T=      20200.00 FSEC, THIS RUN'S STEP NO.=   40400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9406799167
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:        6
+ *** AT T=      20240.00 FSEC, THIS RUN'S STEP NO.=   40480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9452724685
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:        7
+ *** AT T=      20280.00 FSEC, THIS RUN'S STEP NO.=   40560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9307151608
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:        8
+ *** AT T=      20320.00 FSEC, THIS RUN'S STEP NO.=   40640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9459393452
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:        9
+ *** AT T=      20360.00 FSEC, THIS RUN'S STEP NO.=   40720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9330934476
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       10
+ *** AT T=      20400.00 FSEC, THIS RUN'S STEP NO.=   40800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9269524008
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       11
+ *** AT T=      20440.00 FSEC, THIS RUN'S STEP NO.=   40880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9298417440
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       12
+ *** AT T=      20480.00 FSEC, THIS RUN'S STEP NO.=   40960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9416248145
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       13
+ *** AT T=      20520.00 FSEC, THIS RUN'S STEP NO.=   41040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9302279795
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       14
+ *** AT T=      20560.00 FSEC, THIS RUN'S STEP NO.=   41120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9318466064
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       15
+ *** AT T=      20600.00 FSEC, THIS RUN'S STEP NO.=   41200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9202088697
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       16
+ *** AT T=      20640.00 FSEC, THIS RUN'S STEP NO.=   41280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9332546713
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       17
+ *** AT T=      20680.00 FSEC, THIS RUN'S STEP NO.=   41360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9298744686
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       18
+ *** AT T=      20720.00 FSEC, THIS RUN'S STEP NO.=   41440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9328182815
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       19
+ *** AT T=      20760.00 FSEC, THIS RUN'S STEP NO.=   41520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9352381325
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       20
+ *** AT T=      20800.00 FSEC, THIS RUN'S STEP NO.=   41600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9359555239
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       21
+ *** AT T=      20840.00 FSEC, THIS RUN'S STEP NO.=   41680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9399520105
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       22
+ *** AT T=      20880.00 FSEC, THIS RUN'S STEP NO.=   41760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9409460352
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       23
+ *** AT T=      20920.00 FSEC, THIS RUN'S STEP NO.=   41840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9422847884
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       24
+ *** AT T=      20960.00 FSEC, THIS RUN'S STEP NO.=   41920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9435721035
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       25
+ *** AT T=      21000.00 FSEC, THIS RUN'S STEP NO.=   42000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9285544336
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       26
+ *** AT T=      21040.00 FSEC, THIS RUN'S STEP NO.=   42080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9234496908
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       27
+ *** AT T=      21080.00 FSEC, THIS RUN'S STEP NO.=   42160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9424645331
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       28
+ *** AT T=      21120.00 FSEC, THIS RUN'S STEP NO.=   42240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9216103763
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       29
+ *** AT T=      21160.00 FSEC, THIS RUN'S STEP NO.=   42320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9411420217
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       30
+ *** AT T=      21200.00 FSEC, THIS RUN'S STEP NO.=   42400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9246159553
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       31
+ *** AT T=      21240.00 FSEC, THIS RUN'S STEP NO.=   42480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9250325246
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       32
+ *** AT T=      21280.00 FSEC, THIS RUN'S STEP NO.=   42560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9322551220
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       33
+ *** AT T=      21320.00 FSEC, THIS RUN'S STEP NO.=   42640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9420866135
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       34
+ *** AT T=      21360.00 FSEC, THIS RUN'S STEP NO.=   42720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9103168316
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       35
+ *** AT T=      21400.00 FSEC, THIS RUN'S STEP NO.=   42800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9550302495
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       36
+ *** AT T=      21440.00 FSEC, THIS RUN'S STEP NO.=   42880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9181214212
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       37
+ *** AT T=      21480.00 FSEC, THIS RUN'S STEP NO.=   42960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9007246122
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       38
+ *** AT T=      21520.00 FSEC, THIS RUN'S STEP NO.=   43040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8938261121
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       39
+ *** AT T=      21560.00 FSEC, THIS RUN'S STEP NO.=   43120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9097215835
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       40
+ *** AT T=      21600.00 FSEC, THIS RUN'S STEP NO.=   43200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9379458594
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       41
+ *** AT T=      21640.00 FSEC, THIS RUN'S STEP NO.=   43280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9322999825
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       42
+ *** AT T=      21680.00 FSEC, THIS RUN'S STEP NO.=   43360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9403520296
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       43
+ *** AT T=      21720.00 FSEC, THIS RUN'S STEP NO.=   43440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9449546500
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       44
+ *** AT T=      21760.00 FSEC, THIS RUN'S STEP NO.=   43520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9393224105
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       45
+ *** AT T=      21800.00 FSEC, THIS RUN'S STEP NO.=   43600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9205252567
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       46
+ *** AT T=      21840.00 FSEC, THIS RUN'S STEP NO.=   43680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9399171122
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       47
+ *** AT T=      21880.00 FSEC, THIS RUN'S STEP NO.=   43760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9283189643
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       48
+ *** AT T=      21920.00 FSEC, THIS RUN'S STEP NO.=   43840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9433911799
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       49
+ *** AT T=      21960.00 FSEC, THIS RUN'S STEP NO.=   43920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9252668135
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       50
+ *** AT T=      22000.00 FSEC, THIS RUN'S STEP NO.=   44000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9435088090
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       51
+ *** AT T=      22040.00 FSEC, THIS RUN'S STEP NO.=   44080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9326813108
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       52
+ *** AT T=      22080.00 FSEC, THIS RUN'S STEP NO.=   44160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9159695071
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       53
+ *** AT T=      22120.00 FSEC, THIS RUN'S STEP NO.=   44240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9216306202
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       54
+ *** AT T=      22160.00 FSEC, THIS RUN'S STEP NO.=   44320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9465452375
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       55
+ *** AT T=      22200.00 FSEC, THIS RUN'S STEP NO.=   44400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9452003651
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       56
+ *** AT T=      22240.00 FSEC, THIS RUN'S STEP NO.=   44480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9384665400
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       57
+ *** AT T=      22280.00 FSEC, THIS RUN'S STEP NO.=   44560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9175504519
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       58
+ *** AT T=      22320.00 FSEC, THIS RUN'S STEP NO.=   44640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9460216612
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       59
+ *** AT T=      22360.00 FSEC, THIS RUN'S STEP NO.=   44720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9267908261
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       60
+ *** AT T=      22400.00 FSEC, THIS RUN'S STEP NO.=   44800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9386613865
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       61
+ *** AT T=      22440.00 FSEC, THIS RUN'S STEP NO.=   44880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9449696168
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       62
+ *** AT T=      22480.00 FSEC, THIS RUN'S STEP NO.=   44960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9295337688
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       63
+ *** AT T=      22520.00 FSEC, THIS RUN'S STEP NO.=   45040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9280042087
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       64
+ *** AT T=      22560.00 FSEC, THIS RUN'S STEP NO.=   45120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9295853928
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       65
+ *** AT T=      22600.00 FSEC, THIS RUN'S STEP NO.=   45200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9284816322
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       66
+ *** AT T=      22640.00 FSEC, THIS RUN'S STEP NO.=   45280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9333646822
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       67
+ *** AT T=      22680.00 FSEC, THIS RUN'S STEP NO.=   45360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9362709915
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       68
+ *** AT T=      22720.00 FSEC, THIS RUN'S STEP NO.=   45440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9394646792
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       69
+ *** AT T=      22760.00 FSEC, THIS RUN'S STEP NO.=   45520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9290992627
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       70
+ *** AT T=      22800.00 FSEC, THIS RUN'S STEP NO.=   45600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9367043442
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       71
+ *** AT T=      22840.00 FSEC, THIS RUN'S STEP NO.=   45680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9307162611
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       72
+ *** AT T=      22880.00 FSEC, THIS RUN'S STEP NO.=   45760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9260162675
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       73
+ *** AT T=      22920.00 FSEC, THIS RUN'S STEP NO.=   45840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9458485982
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       74
+ *** AT T=      22960.00 FSEC, THIS RUN'S STEP NO.=   45920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9347659687
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       75
+ *** AT T=      23000.00 FSEC, THIS RUN'S STEP NO.=   46000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9535709466
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       76
+ *** AT T=      23040.00 FSEC, THIS RUN'S STEP NO.=   46080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9514094731
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       77
+ *** AT T=      23080.00 FSEC, THIS RUN'S STEP NO.=   46160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9192271893
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       78
+ *** AT T=      23120.00 FSEC, THIS RUN'S STEP NO.=   46240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9130722824
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       79
+ *** AT T=      23160.00 FSEC, THIS RUN'S STEP NO.=   46320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9160980858
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       80
+ *** AT T=      23200.00 FSEC, THIS RUN'S STEP NO.=   46400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9127513064
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       81
+ *** AT T=      23240.00 FSEC, THIS RUN'S STEP NO.=   46480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9247580849
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       82
+ *** AT T=      23280.00 FSEC, THIS RUN'S STEP NO.=   46560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9271697239
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       83
+ *** AT T=      23320.00 FSEC, THIS RUN'S STEP NO.=   46640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9533196446
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       84
+ *** AT T=      23360.00 FSEC, THIS RUN'S STEP NO.=   46720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9339479775
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       85
+ *** AT T=      23400.00 FSEC, THIS RUN'S STEP NO.=   46800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9299140313
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       86
+ *** AT T=      23440.00 FSEC, THIS RUN'S STEP NO.=   46880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9315979653
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       87
+ *** AT T=      23480.00 FSEC, THIS RUN'S STEP NO.=   46960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9529676698
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       88
+ *** AT T=      23520.00 FSEC, THIS RUN'S STEP NO.=   47040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9554920358
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       89
+ *** AT T=      23560.00 FSEC, THIS RUN'S STEP NO.=   47120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9522764487
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       90
+ *** AT T=      23600.00 FSEC, THIS RUN'S STEP NO.=   47200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9486626814
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       91
+ *** AT T=      23640.00 FSEC, THIS RUN'S STEP NO.=   47280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9077406671
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       92
+ *** AT T=      23680.00 FSEC, THIS RUN'S STEP NO.=   47360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9297848223
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       93
+ *** AT T=      23720.00 FSEC, THIS RUN'S STEP NO.=   47440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9109290926
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       94
+ *** AT T=      23760.00 FSEC, THIS RUN'S STEP NO.=   47520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9250992813
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       95
+ *** AT T=      23800.00 FSEC, THIS RUN'S STEP NO.=   47600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9445174034
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       96
+ *** AT T=      23840.00 FSEC, THIS RUN'S STEP NO.=   47680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9360276891
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       97
+ *** AT T=      23880.00 FSEC, THIS RUN'S STEP NO.=   47760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9367453540
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       98
+ *** AT T=      23920.00 FSEC, THIS RUN'S STEP NO.=   47840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7046611534
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:       99
+ *** AT T=      23960.00 FSEC, THIS RUN'S STEP NO.=   47920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7757752451
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      100
+ *** AT T=      24000.00 FSEC, THIS RUN'S STEP NO.=   48000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9034512516
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      101
+ *** AT T=      24040.00 FSEC, THIS RUN'S STEP NO.=   48080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9146895346
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      102
+ *** AT T=      24080.00 FSEC, THIS RUN'S STEP NO.=   48160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7659282468
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      103
+ *** AT T=      24120.00 FSEC, THIS RUN'S STEP NO.=   48240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8247986584
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      104
+ *** AT T=      24160.00 FSEC, THIS RUN'S STEP NO.=   48320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7172413435
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      105
+ *** AT T=      24200.00 FSEC, THIS RUN'S STEP NO.=   48400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6500426841
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      106
+ *** AT T=      24240.00 FSEC, THIS RUN'S STEP NO.=   48480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7006935315
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      107
+ *** AT T=      24280.00 FSEC, THIS RUN'S STEP NO.=   48560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7444811016
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      108
+ *** AT T=      24320.00 FSEC, THIS RUN'S STEP NO.=   48640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7304393681
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      109
+ *** AT T=      24360.00 FSEC, THIS RUN'S STEP NO.=   48720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4212302946
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      110
+ *** AT T=      24400.00 FSEC, THIS RUN'S STEP NO.=   48800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6536847747
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      111
+ *** AT T=      24440.00 FSEC, THIS RUN'S STEP NO.=   48880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6063972381
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      112
+ *** AT T=      24480.00 FSEC, THIS RUN'S STEP NO.=   48960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5191549898
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      113
+ *** AT T=      24520.00 FSEC, THIS RUN'S STEP NO.=   49040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5775942035
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      114
+ *** AT T=      24560.00 FSEC, THIS RUN'S STEP NO.=   49120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6896979688
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      115
+ *** AT T=      24600.00 FSEC, THIS RUN'S STEP NO.=   49200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7493583434
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      116
+ *** AT T=      24640.00 FSEC, THIS RUN'S STEP NO.=   49280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5802186481
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      117
+ *** AT T=      24680.00 FSEC, THIS RUN'S STEP NO.=   49360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7202841715
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      118
+ *** AT T=      24720.00 FSEC, THIS RUN'S STEP NO.=   49440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6393675748
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      119
+ *** AT T=      24760.00 FSEC, THIS RUN'S STEP NO.=   49520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6886841277
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      120
+ *** AT T=      24800.00 FSEC, THIS RUN'S STEP NO.=   49600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7417737789
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      121
+ *** AT T=      24840.00 FSEC, THIS RUN'S STEP NO.=   49680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7754923569
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      122
+ *** AT T=      24880.00 FSEC, THIS RUN'S STEP NO.=   49760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4343361692
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      123
+ *** AT T=      24920.00 FSEC, THIS RUN'S STEP NO.=   49840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7314850352
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      124
+ *** AT T=      24960.00 FSEC, THIS RUN'S STEP NO.=   49920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5373217511
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      125
+ *** AT T=      25000.00 FSEC, THIS RUN'S STEP NO.=   50000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3268661816
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      126
+ *** AT T=      25040.00 FSEC, THIS RUN'S STEP NO.=   50080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6256136710
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      127
+ *** AT T=      25080.00 FSEC, THIS RUN'S STEP NO.=   50160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7718082656
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      128
+ *** AT T=      25120.00 FSEC, THIS RUN'S STEP NO.=   50240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2530183955
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      129
+ *** AT T=      25160.00 FSEC, THIS RUN'S STEP NO.=   50320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3475122515
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      130
+ *** AT T=      25200.00 FSEC, THIS RUN'S STEP NO.=   50400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2082126336
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      131
+ *** AT T=      25240.00 FSEC, THIS RUN'S STEP NO.=   50480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3854126743
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      132
+ *** AT T=      25280.00 FSEC, THIS RUN'S STEP NO.=   50560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3362373431
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      133
+ *** AT T=      25320.00 FSEC, THIS RUN'S STEP NO.=   50640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2220169234
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      134
+ *** AT T=      25360.00 FSEC, THIS RUN'S STEP NO.=   50720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2726125980
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      135
+ *** AT T=      25400.00 FSEC, THIS RUN'S STEP NO.=   50800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2744625780
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      136
+ *** AT T=      25440.00 FSEC, THIS RUN'S STEP NO.=   50880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1969520045
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      137
+ *** AT T=      25480.00 FSEC, THIS RUN'S STEP NO.=   50960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1783775423
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      138
+ *** AT T=      25520.00 FSEC, THIS RUN'S STEP NO.=   51040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2176919737
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      139
+ *** AT T=      25560.00 FSEC, THIS RUN'S STEP NO.=   51120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3563978501
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      140
+ *** AT T=      25600.00 FSEC, THIS RUN'S STEP NO.=   51200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3816429662
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      141
+ *** AT T=      25640.00 FSEC, THIS RUN'S STEP NO.=   51280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2463979298
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      142
+ *** AT T=      25680.00 FSEC, THIS RUN'S STEP NO.=   51360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1410424785
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      143
+ *** AT T=      25720.00 FSEC, THIS RUN'S STEP NO.=   51440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0392797715
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      144
+ *** AT T=      25760.00 FSEC, THIS RUN'S STEP NO.=   51520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0242817563
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      145
+ *** AT T=      25800.00 FSEC, THIS RUN'S STEP NO.=   51600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0264200429
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      146
+ *** AT T=      25840.00 FSEC, THIS RUN'S STEP NO.=   51680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0402432784
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      147
+ *** AT T=      25880.00 FSEC, THIS RUN'S STEP NO.=   51760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0429221873
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      148
+ *** AT T=      25920.00 FSEC, THIS RUN'S STEP NO.=   51840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1693497898
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      149
+ *** AT T=      25960.00 FSEC, THIS RUN'S STEP NO.=   51920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2013642410
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      150
+ *** AT T=      26000.00 FSEC, THIS RUN'S STEP NO.=   52000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1688000376
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      151
+ *** AT T=      26040.00 FSEC, THIS RUN'S STEP NO.=   52080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2178735477
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      152
+ *** AT T=      26080.00 FSEC, THIS RUN'S STEP NO.=   52160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2171576481
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      153
+ *** AT T=      26120.00 FSEC, THIS RUN'S STEP NO.=   52240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5187420752
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      154
+ *** AT T=      26160.00 FSEC, THIS RUN'S STEP NO.=   52320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5304491859
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      155
+ *** AT T=      26200.00 FSEC, THIS RUN'S STEP NO.=   52400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4900337298
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      156
+ *** AT T=      26240.00 FSEC, THIS RUN'S STEP NO.=   52480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3661818600
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      157
+ *** AT T=      26280.00 FSEC, THIS RUN'S STEP NO.=   52560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5936250658
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      158
+ *** AT T=      26320.00 FSEC, THIS RUN'S STEP NO.=   52640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4610197394
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      159
+ *** AT T=      26360.00 FSEC, THIS RUN'S STEP NO.=   52720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4950496694
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      160
+ *** AT T=      26400.00 FSEC, THIS RUN'S STEP NO.=   52800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6837855154
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      161
+ *** AT T=      26440.00 FSEC, THIS RUN'S STEP NO.=   52880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4107134388
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      162
+ *** AT T=      26480.00 FSEC, THIS RUN'S STEP NO.=   52960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6640214614
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      163
+ *** AT T=      26520.00 FSEC, THIS RUN'S STEP NO.=   53040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5857421184
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      164
+ *** AT T=      26560.00 FSEC, THIS RUN'S STEP NO.=   53120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4532877518
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      165
+ *** AT T=      26600.00 FSEC, THIS RUN'S STEP NO.=   53200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3955916309
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      166
+ *** AT T=      26640.00 FSEC, THIS RUN'S STEP NO.=   53280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1790613891
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      167
+ *** AT T=      26680.00 FSEC, THIS RUN'S STEP NO.=   53360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2277632998
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      168
+ *** AT T=      26720.00 FSEC, THIS RUN'S STEP NO.=   53440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5016672561
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      169
+ *** AT T=      26760.00 FSEC, THIS RUN'S STEP NO.=   53520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6538079829
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      170
+ *** AT T=      26800.00 FSEC, THIS RUN'S STEP NO.=   53600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5302375457
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      171
+ *** AT T=      26840.00 FSEC, THIS RUN'S STEP NO.=   53680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4437810439
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      172
+ *** AT T=      26880.00 FSEC, THIS RUN'S STEP NO.=   53760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7284063753
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      173
+ *** AT T=      26920.00 FSEC, THIS RUN'S STEP NO.=   53840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7577075661
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      174
+ *** AT T=      26960.00 FSEC, THIS RUN'S STEP NO.=   53920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7780089582
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      175
+ *** AT T=      27000.00 FSEC, THIS RUN'S STEP NO.=   54000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7865503509
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      176
+ *** AT T=      27040.00 FSEC, THIS RUN'S STEP NO.=   54080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6983329679
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      177
+ *** AT T=      27080.00 FSEC, THIS RUN'S STEP NO.=   54160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5951282184
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      178
+ *** AT T=      27120.00 FSEC, THIS RUN'S STEP NO.=   54240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6748314276
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      179
+ *** AT T=      27160.00 FSEC, THIS RUN'S STEP NO.=   54320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4758729850
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      180
+ *** AT T=      27200.00 FSEC, THIS RUN'S STEP NO.=   54400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6455766690
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      181
+ *** AT T=      27240.00 FSEC, THIS RUN'S STEP NO.=   54480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5595989453
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      182
+ *** AT T=      27280.00 FSEC, THIS RUN'S STEP NO.=   54560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4150164186
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      183
+ *** AT T=      27320.00 FSEC, THIS RUN'S STEP NO.=   54640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4845374573
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      184
+ *** AT T=      27360.00 FSEC, THIS RUN'S STEP NO.=   54720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3590202003
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      185
+ *** AT T=      27400.00 FSEC, THIS RUN'S STEP NO.=   54800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3554306363
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      186
+ *** AT T=      27440.00 FSEC, THIS RUN'S STEP NO.=   54880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3970056810
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      187
+ *** AT T=      27480.00 FSEC, THIS RUN'S STEP NO.=   54960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2403081617
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      188
+ *** AT T=      27520.00 FSEC, THIS RUN'S STEP NO.=   55040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1910977525
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      189
+ *** AT T=      27560.00 FSEC, THIS RUN'S STEP NO.=   55120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3144958278
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      190
+ *** AT T=      27600.00 FSEC, THIS RUN'S STEP NO.=   55200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6849429536
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      191
+ *** AT T=      27640.00 FSEC, THIS RUN'S STEP NO.=   55280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5331205958
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      192
+ *** AT T=      27680.00 FSEC, THIS RUN'S STEP NO.=   55360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2418265122
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      193
+ *** AT T=      27720.00 FSEC, THIS RUN'S STEP NO.=   55440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0988254030
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      194
+ *** AT T=      27760.00 FSEC, THIS RUN'S STEP NO.=   55520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0534091682
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      195
+ *** AT T=      27800.00 FSEC, THIS RUN'S STEP NO.=   55600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0067374812
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      196
+ *** AT T=      27840.00 FSEC, THIS RUN'S STEP NO.=   55680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0102079385
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      197
+ *** AT T=      27880.00 FSEC, THIS RUN'S STEP NO.=   55760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0057161142
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      198
+ *** AT T=      27920.00 FSEC, THIS RUN'S STEP NO.=   55840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0080627337
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      199
+ *** AT T=      27960.00 FSEC, THIS RUN'S STEP NO.=   55920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0091831514
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      200
+ *** AT T=      28000.00 FSEC, THIS RUN'S STEP NO.=   56000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0110073531
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      201
+ *** AT T=      28040.00 FSEC, THIS RUN'S STEP NO.=   56080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0067427720
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      202
+ *** AT T=      28080.00 FSEC, THIS RUN'S STEP NO.=   56160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0140321479
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      203
+ *** AT T=      28120.00 FSEC, THIS RUN'S STEP NO.=   56240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0054926861
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      204
+ *** AT T=      28160.00 FSEC, THIS RUN'S STEP NO.=   56320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0101400303
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      205
+ *** AT T=      28200.00 FSEC, THIS RUN'S STEP NO.=   56400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0031064923
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      206
+ *** AT T=      28240.00 FSEC, THIS RUN'S STEP NO.=   56480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0136064634
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      207
+ *** AT T=      28280.00 FSEC, THIS RUN'S STEP NO.=   56560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0108555721
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      208
+ *** AT T=      28320.00 FSEC, THIS RUN'S STEP NO.=   56640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0162444681
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      209
+ *** AT T=      28360.00 FSEC, THIS RUN'S STEP NO.=   56720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0580745437
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      210
+ *** AT T=      28400.00 FSEC, THIS RUN'S STEP NO.=   56800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0259684738
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      211
+ *** AT T=      28440.00 FSEC, THIS RUN'S STEP NO.=   56880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1424740131
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      212
+ *** AT T=      28480.00 FSEC, THIS RUN'S STEP NO.=   56960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1945032080
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      213
+ *** AT T=      28520.00 FSEC, THIS RUN'S STEP NO.=   57040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3663398004
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      214
+ *** AT T=      28560.00 FSEC, THIS RUN'S STEP NO.=   57120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4617354208
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      215
+ *** AT T=      28600.00 FSEC, THIS RUN'S STEP NO.=   57200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3263270818
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      216
+ *** AT T=      28640.00 FSEC, THIS RUN'S STEP NO.=   57280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2971309458
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      217
+ *** AT T=      28680.00 FSEC, THIS RUN'S STEP NO.=   57360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3844854479
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      218
+ *** AT T=      28720.00 FSEC, THIS RUN'S STEP NO.=   57440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4189407611
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      219
+ *** AT T=      28760.00 FSEC, THIS RUN'S STEP NO.=   57520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5032577986
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      220
+ *** AT T=      28800.00 FSEC, THIS RUN'S STEP NO.=   57600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2779016993
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      221
+ *** AT T=      28840.00 FSEC, THIS RUN'S STEP NO.=   57680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1827617474
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      222
+ *** AT T=      28880.00 FSEC, THIS RUN'S STEP NO.=   57760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2165596735
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      223
+ *** AT T=      28920.00 FSEC, THIS RUN'S STEP NO.=   57840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0524864875
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      224
+ *** AT T=      28960.00 FSEC, THIS RUN'S STEP NO.=   57920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0682214956
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      225
+ *** AT T=      29000.00 FSEC, THIS RUN'S STEP NO.=   58000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0825733990
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      226
+ *** AT T=      29040.00 FSEC, THIS RUN'S STEP NO.=   58080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0128667227
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      227
+ *** AT T=      29080.00 FSEC, THIS RUN'S STEP NO.=   58160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0063614887
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      228
+ *** AT T=      29120.00 FSEC, THIS RUN'S STEP NO.=   58240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0045768465
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      229
+ *** AT T=      29160.00 FSEC, THIS RUN'S STEP NO.=   58320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0089993579
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      230
+ *** AT T=      29200.00 FSEC, THIS RUN'S STEP NO.=   58400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0086260006
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      231
+ *** AT T=      29240.00 FSEC, THIS RUN'S STEP NO.=   58480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0097676887
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      232
+ *** AT T=      29280.00 FSEC, THIS RUN'S STEP NO.=   58560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0135675291
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      233
+ *** AT T=      29320.00 FSEC, THIS RUN'S STEP NO.=   58640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0117730409
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      234
+ *** AT T=      29360.00 FSEC, THIS RUN'S STEP NO.=   58720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0090157028
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      235
+ *** AT T=      29400.00 FSEC, THIS RUN'S STEP NO.=   58800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0035827762
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      236
+ *** AT T=      29440.00 FSEC, THIS RUN'S STEP NO.=   58880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0030567778
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      237
+ *** AT T=      29480.00 FSEC, THIS RUN'S STEP NO.=   58960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0042380796
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      238
+ *** AT T=      29520.00 FSEC, THIS RUN'S STEP NO.=   59040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0050916353
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      239
+ *** AT T=      29560.00 FSEC, THIS RUN'S STEP NO.=   59120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0065686640
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      240
+ *** AT T=      29600.00 FSEC, THIS RUN'S STEP NO.=   59200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0132698082
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      241
+ *** AT T=      29640.00 FSEC, THIS RUN'S STEP NO.=   59280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0117110455
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      242
+ *** AT T=      29680.00 FSEC, THIS RUN'S STEP NO.=   59360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0115157102
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      243
+ *** AT T=      29720.00 FSEC, THIS RUN'S STEP NO.=   59440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0042881846
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      244
+ *** AT T=      29760.00 FSEC, THIS RUN'S STEP NO.=   59520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0030866667
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      245
+ *** AT T=      29800.00 FSEC, THIS RUN'S STEP NO.=   59600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0045048288
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      246
+ *** AT T=      29840.00 FSEC, THIS RUN'S STEP NO.=   59680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0098869721
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      247
+ *** AT T=      29880.00 FSEC, THIS RUN'S STEP NO.=   59760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0140000360
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      248
+ *** AT T=      29920.00 FSEC, THIS RUN'S STEP NO.=   59840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0293676162
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      249
+ *** AT T=      29960.00 FSEC, THIS RUN'S STEP NO.=   59920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0306122967
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      250
+ *** AT T=      30000.00 FSEC, THIS RUN'S STEP NO.=   60000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0145820117
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      251
+ *** AT T=      30040.00 FSEC, THIS RUN'S STEP NO.=   60080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0248200444
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      252
+ *** AT T=      30080.00 FSEC, THIS RUN'S STEP NO.=   60160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0473202340
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      253
+ *** AT T=      30120.00 FSEC, THIS RUN'S STEP NO.=   60240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0403720692
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      254
+ *** AT T=      30160.00 FSEC, THIS RUN'S STEP NO.=   60320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0429376382
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      255
+ *** AT T=      30200.00 FSEC, THIS RUN'S STEP NO.=   60400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0153795312
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      256
+ *** AT T=      30240.00 FSEC, THIS RUN'S STEP NO.=   60480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0126842565
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      257
+ *** AT T=      30280.00 FSEC, THIS RUN'S STEP NO.=   60560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0110622078
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      258
+ *** AT T=      30320.00 FSEC, THIS RUN'S STEP NO.=   60640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0079903152
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      259
+ *** AT T=      30360.00 FSEC, THIS RUN'S STEP NO.=   60720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0215998286
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      260
+ *** AT T=      30400.00 FSEC, THIS RUN'S STEP NO.=   60800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0130058243
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      261
+ *** AT T=      30440.00 FSEC, THIS RUN'S STEP NO.=   60880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0108663815
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      262
+ *** AT T=      30480.00 FSEC, THIS RUN'S STEP NO.=   60960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0159803663
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      263
+ *** AT T=      30520.00 FSEC, THIS RUN'S STEP NO.=   61040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0107820835
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      264
+ *** AT T=      30560.00 FSEC, THIS RUN'S STEP NO.=   61120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0201081564
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      265
+ *** AT T=      30600.00 FSEC, THIS RUN'S STEP NO.=   61200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.0193356076
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      266
+ *** AT T=      30640.00 FSEC, THIS RUN'S STEP NO.=   61280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1864681330
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      267
+ *** AT T=      30680.00 FSEC, THIS RUN'S STEP NO.=   61360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3757481930
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      268
+ *** AT T=      30720.00 FSEC, THIS RUN'S STEP NO.=   61440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1233871205
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      269
+ *** AT T=      30760.00 FSEC, THIS RUN'S STEP NO.=   61520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2576719363
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      270
+ *** AT T=      30800.00 FSEC, THIS RUN'S STEP NO.=   61600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2886837262
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      271
+ *** AT T=      30840.00 FSEC, THIS RUN'S STEP NO.=   61680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3818733384
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      272
+ *** AT T=      30880.00 FSEC, THIS RUN'S STEP NO.=   61760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3347862655
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      273
+ *** AT T=      30920.00 FSEC, THIS RUN'S STEP NO.=   61840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3456399031
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      274
+ *** AT T=      30960.00 FSEC, THIS RUN'S STEP NO.=   61920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3713880228
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      275
+ *** AT T=      31000.00 FSEC, THIS RUN'S STEP NO.=   62000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2581530974
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      276
+ *** AT T=      31040.00 FSEC, THIS RUN'S STEP NO.=   62080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3608737539
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      277
+ *** AT T=      31080.00 FSEC, THIS RUN'S STEP NO.=   62160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1968964677
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      278
+ *** AT T=      31120.00 FSEC, THIS RUN'S STEP NO.=   62240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2890604704
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      279
+ *** AT T=      31160.00 FSEC, THIS RUN'S STEP NO.=   62320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3027490847
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      280
+ *** AT T=      31200.00 FSEC, THIS RUN'S STEP NO.=   62400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2421928132
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      281
+ *** AT T=      31240.00 FSEC, THIS RUN'S STEP NO.=   62480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3905657751
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      282
+ *** AT T=      31280.00 FSEC, THIS RUN'S STEP NO.=   62560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4062570203
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      283
+ *** AT T=      31320.00 FSEC, THIS RUN'S STEP NO.=   62640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5040759463
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      284
+ *** AT T=      31360.00 FSEC, THIS RUN'S STEP NO.=   62720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4716551314
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      285
+ *** AT T=      31400.00 FSEC, THIS RUN'S STEP NO.=   62800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4551307261
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      286
+ *** AT T=      31440.00 FSEC, THIS RUN'S STEP NO.=   62880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4590282726
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      287
+ *** AT T=      31480.00 FSEC, THIS RUN'S STEP NO.=   62960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1366975746
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      288
+ *** AT T=      31520.00 FSEC, THIS RUN'S STEP NO.=   63040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2354120221
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      289
+ *** AT T=      31560.00 FSEC, THIS RUN'S STEP NO.=   63120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2583493827
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      290
+ *** AT T=      31600.00 FSEC, THIS RUN'S STEP NO.=   63200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2420098168
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      291
+ *** AT T=      31640.00 FSEC, THIS RUN'S STEP NO.=   63280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3010580198
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      292
+ *** AT T=      31680.00 FSEC, THIS RUN'S STEP NO.=   63360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5091135411
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      293
+ *** AT T=      31720.00 FSEC, THIS RUN'S STEP NO.=   63440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5682820247
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      294
+ *** AT T=      31760.00 FSEC, THIS RUN'S STEP NO.=   63520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4390754341
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      295
+ *** AT T=      31800.00 FSEC, THIS RUN'S STEP NO.=   63600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6472841624
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      296
+ *** AT T=      31840.00 FSEC, THIS RUN'S STEP NO.=   63680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1655817596
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      297
+ *** AT T=      31880.00 FSEC, THIS RUN'S STEP NO.=   63760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2622835320
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      298
+ *** AT T=      31920.00 FSEC, THIS RUN'S STEP NO.=   63840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5129303974
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      299
+ *** AT T=      31960.00 FSEC, THIS RUN'S STEP NO.=   63920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5668786135
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      300
+ *** AT T=      32000.00 FSEC, THIS RUN'S STEP NO.=   64000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6200358801
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      301
+ *** AT T=      32040.00 FSEC, THIS RUN'S STEP NO.=   64080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4469029378
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      302
+ *** AT T=      32080.00 FSEC, THIS RUN'S STEP NO.=   64160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4434493941
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      303
+ *** AT T=      32120.00 FSEC, THIS RUN'S STEP NO.=   64240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4736534351
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      304
+ *** AT T=      32160.00 FSEC, THIS RUN'S STEP NO.=   64320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6655896652
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      305
+ *** AT T=      32200.00 FSEC, THIS RUN'S STEP NO.=   64400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6128763235
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      306
+ *** AT T=      32240.00 FSEC, THIS RUN'S STEP NO.=   64480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6958702260
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      307
+ *** AT T=      32280.00 FSEC, THIS RUN'S STEP NO.=   64560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7006241471
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      308
+ *** AT T=      32320.00 FSEC, THIS RUN'S STEP NO.=   64640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7385731260
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      309
+ *** AT T=      32360.00 FSEC, THIS RUN'S STEP NO.=   64720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7638332826
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      310
+ *** AT T=      32400.00 FSEC, THIS RUN'S STEP NO.=   64800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7603873431
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      311
+ *** AT T=      32440.00 FSEC, THIS RUN'S STEP NO.=   64880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7710155145
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      312
+ *** AT T=      32480.00 FSEC, THIS RUN'S STEP NO.=   64960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7007671052
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      313
+ *** AT T=      32520.00 FSEC, THIS RUN'S STEP NO.=   65040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7316325250
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      314
+ *** AT T=      32560.00 FSEC, THIS RUN'S STEP NO.=   65120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7452060815
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      315
+ *** AT T=      32600.00 FSEC, THIS RUN'S STEP NO.=   65200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7275662960
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      316
+ *** AT T=      32640.00 FSEC, THIS RUN'S STEP NO.=   65280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7654578579
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      317
+ *** AT T=      32680.00 FSEC, THIS RUN'S STEP NO.=   65360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8215044183
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      318
+ *** AT T=      32720.00 FSEC, THIS RUN'S STEP NO.=   65440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7566161307
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      319
+ *** AT T=      32760.00 FSEC, THIS RUN'S STEP NO.=   65520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7553608893
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      320
+ *** AT T=      32800.00 FSEC, THIS RUN'S STEP NO.=   65600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9496092056
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      321
+ *** AT T=      32840.00 FSEC, THIS RUN'S STEP NO.=   65680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8967436115
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      322
+ *** AT T=      32880.00 FSEC, THIS RUN'S STEP NO.=   65760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9216853642
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      323
+ *** AT T=      32920.00 FSEC, THIS RUN'S STEP NO.=   65840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8966615900
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      324
+ *** AT T=      32960.00 FSEC, THIS RUN'S STEP NO.=   65920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9496822151
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      325
+ *** AT T=      33000.00 FSEC, THIS RUN'S STEP NO.=   66000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8790746463
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      326
+ *** AT T=      33040.00 FSEC, THIS RUN'S STEP NO.=   66080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9540771533
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      327
+ *** AT T=      33080.00 FSEC, THIS RUN'S STEP NO.=   66160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8799858553
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      328
+ *** AT T=      33120.00 FSEC, THIS RUN'S STEP NO.=   66240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8994202045
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      329
+ *** AT T=      33160.00 FSEC, THIS RUN'S STEP NO.=   66320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9185552568
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      330
+ *** AT T=      33200.00 FSEC, THIS RUN'S STEP NO.=   66400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9575537914
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      331
+ *** AT T=      33240.00 FSEC, THIS RUN'S STEP NO.=   66480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9509294776
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      332
+ *** AT T=      33280.00 FSEC, THIS RUN'S STEP NO.=   66560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9401235133
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      333
+ *** AT T=      33320.00 FSEC, THIS RUN'S STEP NO.=   66640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9449510358
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      334
+ *** AT T=      33360.00 FSEC, THIS RUN'S STEP NO.=   66720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9429102483
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      335
+ *** AT T=      33400.00 FSEC, THIS RUN'S STEP NO.=   66800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9352724121
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      336
+ *** AT T=      33440.00 FSEC, THIS RUN'S STEP NO.=   66880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9296989758
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      337
+ *** AT T=      33480.00 FSEC, THIS RUN'S STEP NO.=   66960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9455286615
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      338
+ *** AT T=      33520.00 FSEC, THIS RUN'S STEP NO.=   67040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9493069795
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      339
+ *** AT T=      33560.00 FSEC, THIS RUN'S STEP NO.=   67120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9378580190
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      340
+ *** AT T=      33600.00 FSEC, THIS RUN'S STEP NO.=   67200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9131614234
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      341
+ *** AT T=      33640.00 FSEC, THIS RUN'S STEP NO.=   67280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9305907234
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      342
+ *** AT T=      33680.00 FSEC, THIS RUN'S STEP NO.=   67360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9526700220
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      343
+ *** AT T=      33720.00 FSEC, THIS RUN'S STEP NO.=   67440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9402788091
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      344
+ *** AT T=      33760.00 FSEC, THIS RUN'S STEP NO.=   67520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9480798319
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      345
+ *** AT T=      33800.00 FSEC, THIS RUN'S STEP NO.=   67600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9236973654
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      346
+ *** AT T=      33840.00 FSEC, THIS RUN'S STEP NO.=   67680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.8987795437
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      347
+ *** AT T=      33880.00 FSEC, THIS RUN'S STEP NO.=   67760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9530946582
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      348
+ *** AT T=      33920.00 FSEC, THIS RUN'S STEP NO.=   67840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7758239331
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      349
+ *** AT T=      33960.00 FSEC, THIS RUN'S STEP NO.=   67920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7661784397
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      350
+ *** AT T=      34000.00 FSEC, THIS RUN'S STEP NO.=   68000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6712712057
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      351
+ *** AT T=      34040.00 FSEC, THIS RUN'S STEP NO.=   68080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6878757635
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      352
+ *** AT T=      34080.00 FSEC, THIS RUN'S STEP NO.=   68160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7032741625
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      353
+ *** AT T=      34120.00 FSEC, THIS RUN'S STEP NO.=   68240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6625886630
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      354
+ *** AT T=      34160.00 FSEC, THIS RUN'S STEP NO.=   68320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6663332916
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      355
+ *** AT T=      34200.00 FSEC, THIS RUN'S STEP NO.=   68400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7166255337
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      356
+ *** AT T=      34240.00 FSEC, THIS RUN'S STEP NO.=   68480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7465626982
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      357
+ *** AT T=      34280.00 FSEC, THIS RUN'S STEP NO.=   68560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7697183137
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      358
+ *** AT T=      34320.00 FSEC, THIS RUN'S STEP NO.=   68640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6870315276
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      359
+ *** AT T=      34360.00 FSEC, THIS RUN'S STEP NO.=   68720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7022645072
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      360
+ *** AT T=      34400.00 FSEC, THIS RUN'S STEP NO.=   68800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5740198655
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      361
+ *** AT T=      34440.00 FSEC, THIS RUN'S STEP NO.=   68880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5588874157
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      362
+ *** AT T=      34480.00 FSEC, THIS RUN'S STEP NO.=   68960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5200618709
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      363
+ *** AT T=      34520.00 FSEC, THIS RUN'S STEP NO.=   69040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5861288184
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      364
+ *** AT T=      34560.00 FSEC, THIS RUN'S STEP NO.=   69120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5917217266
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      365
+ *** AT T=      34600.00 FSEC, THIS RUN'S STEP NO.=   69200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6312714910
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      366
+ *** AT T=      34640.00 FSEC, THIS RUN'S STEP NO.=   69280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5434655195
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      367
+ *** AT T=      34680.00 FSEC, THIS RUN'S STEP NO.=   69360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6270944323
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      368
+ *** AT T=      34720.00 FSEC, THIS RUN'S STEP NO.=   69440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3673603822
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      369
+ *** AT T=      34760.00 FSEC, THIS RUN'S STEP NO.=   69520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5232527800
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      370
+ *** AT T=      34800.00 FSEC, THIS RUN'S STEP NO.=   69600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5538598617
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      371
+ *** AT T=      34840.00 FSEC, THIS RUN'S STEP NO.=   69680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5812538739
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      372
+ *** AT T=      34880.00 FSEC, THIS RUN'S STEP NO.=   69760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5488418596
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      373
+ *** AT T=      34920.00 FSEC, THIS RUN'S STEP NO.=   69840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7644060570
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      374
+ *** AT T=      34960.00 FSEC, THIS RUN'S STEP NO.=   69920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6120699462
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      375
+ *** AT T=      35000.00 FSEC, THIS RUN'S STEP NO.=   70000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6620577165
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      376
+ *** AT T=      35040.00 FSEC, THIS RUN'S STEP NO.=   70080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2036166301
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      377
+ *** AT T=      35080.00 FSEC, THIS RUN'S STEP NO.=   70160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2456093435
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      378
+ *** AT T=      35120.00 FSEC, THIS RUN'S STEP NO.=   70240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4578075756
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      379
+ *** AT T=      35160.00 FSEC, THIS RUN'S STEP NO.=   70320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4438153034
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      380
+ *** AT T=      35200.00 FSEC, THIS RUN'S STEP NO.=   70400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2568093534
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      381
+ *** AT T=      35240.00 FSEC, THIS RUN'S STEP NO.=   70480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2063080121
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      382
+ *** AT T=      35280.00 FSEC, THIS RUN'S STEP NO.=   70560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3034308596
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      383
+ *** AT T=      35320.00 FSEC, THIS RUN'S STEP NO.=   70640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3470584607
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      384
+ *** AT T=      35360.00 FSEC, THIS RUN'S STEP NO.=   70720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3327735537
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      385
+ *** AT T=      35400.00 FSEC, THIS RUN'S STEP NO.=   70800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4905739605
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      386
+ *** AT T=      35440.00 FSEC, THIS RUN'S STEP NO.=   70880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5616977795
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      387
+ *** AT T=      35480.00 FSEC, THIS RUN'S STEP NO.=   70960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3234370485
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      388
+ *** AT T=      35520.00 FSEC, THIS RUN'S STEP NO.=   71040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4214097779
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      389
+ *** AT T=      35560.00 FSEC, THIS RUN'S STEP NO.=   71120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2142898552
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      390
+ *** AT T=      35600.00 FSEC, THIS RUN'S STEP NO.=   71200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2339970169
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      391
+ *** AT T=      35640.00 FSEC, THIS RUN'S STEP NO.=   71280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1982187528
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      392
+ *** AT T=      35680.00 FSEC, THIS RUN'S STEP NO.=   71360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2393532851
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      393
+ *** AT T=      35720.00 FSEC, THIS RUN'S STEP NO.=   71440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2146506915
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      394
+ *** AT T=      35760.00 FSEC, THIS RUN'S STEP NO.=   71520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2097083524
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      395
+ *** AT T=      35800.00 FSEC, THIS RUN'S STEP NO.=   71600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2547870330
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      396
+ *** AT T=      35840.00 FSEC, THIS RUN'S STEP NO.=   71680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4603192894
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      397
+ *** AT T=      35880.00 FSEC, THIS RUN'S STEP NO.=   71760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4913873811
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      398
+ *** AT T=      35920.00 FSEC, THIS RUN'S STEP NO.=   71840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5165098777
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      399
+ *** AT T=      35960.00 FSEC, THIS RUN'S STEP NO.=   71920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5860334684
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      400
+ *** AT T=      36000.00 FSEC, THIS RUN'S STEP NO.=   72000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7382287681
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      401
+ *** AT T=      36040.00 FSEC, THIS RUN'S STEP NO.=   72080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7708776519
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      402
+ *** AT T=      36080.00 FSEC, THIS RUN'S STEP NO.=   72160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7903594948
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      403
+ *** AT T=      36120.00 FSEC, THIS RUN'S STEP NO.=   72240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7681889534
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      404
+ *** AT T=      36160.00 FSEC, THIS RUN'S STEP NO.=   72320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7141480654
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      405
+ *** AT T=      36200.00 FSEC, THIS RUN'S STEP NO.=   72400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7336528076
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      406
+ *** AT T=      36240.00 FSEC, THIS RUN'S STEP NO.=   72480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7568642968
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      407
+ *** AT T=      36280.00 FSEC, THIS RUN'S STEP NO.=   72560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7640338945
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      408
+ *** AT T=      36320.00 FSEC, THIS RUN'S STEP NO.=   72640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7775729691
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      409
+ *** AT T=      36360.00 FSEC, THIS RUN'S STEP NO.=   72720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7525133547
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      410
+ *** AT T=      36400.00 FSEC, THIS RUN'S STEP NO.=   72800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9050077929
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      411
+ *** AT T=      36440.00 FSEC, THIS RUN'S STEP NO.=   72880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9344662993
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      412
+ *** AT T=      36480.00 FSEC, THIS RUN'S STEP NO.=   72960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9283726578
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      413
+ *** AT T=      36520.00 FSEC, THIS RUN'S STEP NO.=   73040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9433958237
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      414
+ *** AT T=      36560.00 FSEC, THIS RUN'S STEP NO.=   73120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9534720523
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      415
+ *** AT T=      36600.00 FSEC, THIS RUN'S STEP NO.=   73200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9312605234
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      416
+ *** AT T=      36640.00 FSEC, THIS RUN'S STEP NO.=   73280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9541120294
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      417
+ *** AT T=      36680.00 FSEC, THIS RUN'S STEP NO.=   73360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9403680579
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      418
+ *** AT T=      36720.00 FSEC, THIS RUN'S STEP NO.=   73440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9523884967
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      419
+ *** AT T=      36760.00 FSEC, THIS RUN'S STEP NO.=   73520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9331599795
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      420
+ *** AT T=      36800.00 FSEC, THIS RUN'S STEP NO.=   73600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9455198194
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      421
+ *** AT T=      36840.00 FSEC, THIS RUN'S STEP NO.=   73680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9505863274
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      422
+ *** AT T=      36880.00 FSEC, THIS RUN'S STEP NO.=   73760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9437909772
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      423
+ *** AT T=      36920.00 FSEC, THIS RUN'S STEP NO.=   73840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9465450581
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      424
+ *** AT T=      36960.00 FSEC, THIS RUN'S STEP NO.=   73920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9430769467
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      425
+ *** AT T=      37000.00 FSEC, THIS RUN'S STEP NO.=   74000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9363523232
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      426
+ *** AT T=      37040.00 FSEC, THIS RUN'S STEP NO.=   74080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9529142929
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      427
+ *** AT T=      37080.00 FSEC, THIS RUN'S STEP NO.=   74160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9277042340
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      428
+ *** AT T=      37120.00 FSEC, THIS RUN'S STEP NO.=   74240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9564444615
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      429
+ *** AT T=      37160.00 FSEC, THIS RUN'S STEP NO.=   74320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9340903452
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      430
+ *** AT T=      37200.00 FSEC, THIS RUN'S STEP NO.=   74400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9455701180
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      431
+ *** AT T=      37240.00 FSEC, THIS RUN'S STEP NO.=   74480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9179113959
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      432
+ *** AT T=      37280.00 FSEC, THIS RUN'S STEP NO.=   74560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9616315165
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      433
+ *** AT T=      37320.00 FSEC, THIS RUN'S STEP NO.=   74640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9178747530
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      434
+ *** AT T=      37360.00 FSEC, THIS RUN'S STEP NO.=   74720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9582034700
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      435
+ *** AT T=      37400.00 FSEC, THIS RUN'S STEP NO.=   74800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9569829447
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      436
+ *** AT T=      37440.00 FSEC, THIS RUN'S STEP NO.=   74880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9476924225
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      437
+ *** AT T=      37480.00 FSEC, THIS RUN'S STEP NO.=   74960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9477457333
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      438
+ *** AT T=      37520.00 FSEC, THIS RUN'S STEP NO.=   75040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9526144443
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      439
+ *** AT T=      37560.00 FSEC, THIS RUN'S STEP NO.=   75120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9469524615
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      440
+ *** AT T=      37600.00 FSEC, THIS RUN'S STEP NO.=   75200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9478990781
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      441
+ *** AT T=      37640.00 FSEC, THIS RUN'S STEP NO.=   75280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9293359794
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      442
+ *** AT T=      37680.00 FSEC, THIS RUN'S STEP NO.=   75360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9463361925
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      443
+ *** AT T=      37720.00 FSEC, THIS RUN'S STEP NO.=   75440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9402707516
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      444
+ *** AT T=      37760.00 FSEC, THIS RUN'S STEP NO.=   75520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9414335465
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      445
+ *** AT T=      37800.00 FSEC, THIS RUN'S STEP NO.=   75600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9399773527
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      446
+ *** AT T=      37840.00 FSEC, THIS RUN'S STEP NO.=   75680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9557464384
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      447
+ *** AT T=      37880.00 FSEC, THIS RUN'S STEP NO.=   75760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9367702998
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      448
+ *** AT T=      37920.00 FSEC, THIS RUN'S STEP NO.=   75840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9404955583
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      449
+ *** AT T=      37960.00 FSEC, THIS RUN'S STEP NO.=   75920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9574707052
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      450
+ *** AT T=      38000.00 FSEC, THIS RUN'S STEP NO.=   76000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9262345923
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      451
+ *** AT T=      38040.00 FSEC, THIS RUN'S STEP NO.=   76080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9569065921
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      452
+ *** AT T=      38080.00 FSEC, THIS RUN'S STEP NO.=   76160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9322488802
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      453
+ *** AT T=      38120.00 FSEC, THIS RUN'S STEP NO.=   76240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9406237664
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      454
+ *** AT T=      38160.00 FSEC, THIS RUN'S STEP NO.=   76320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9485314450
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      455
+ *** AT T=      38200.00 FSEC, THIS RUN'S STEP NO.=   76400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9406637720
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      456
+ *** AT T=      38240.00 FSEC, THIS RUN'S STEP NO.=   76480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9484073691
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      457
+ *** AT T=      38280.00 FSEC, THIS RUN'S STEP NO.=   76560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9426539268
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      458
+ *** AT T=      38320.00 FSEC, THIS RUN'S STEP NO.=   76640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9486531955
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      459
+ *** AT T=      38360.00 FSEC, THIS RUN'S STEP NO.=   76720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9479814953
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      460
+ *** AT T=      38400.00 FSEC, THIS RUN'S STEP NO.=   76800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9434856217
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      461
+ *** AT T=      38440.00 FSEC, THIS RUN'S STEP NO.=   76880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9290590176
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      462
+ *** AT T=      38480.00 FSEC, THIS RUN'S STEP NO.=   76960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9528065103
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      463
+ *** AT T=      38520.00 FSEC, THIS RUN'S STEP NO.=   77040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9544157884
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      464
+ *** AT T=      38560.00 FSEC, THIS RUN'S STEP NO.=   77120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9437033464
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      465
+ *** AT T=      38600.00 FSEC, THIS RUN'S STEP NO.=   77200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9507689815
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      466
+ *** AT T=      38640.00 FSEC, THIS RUN'S STEP NO.=   77280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9498935614
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      467
+ *** AT T=      38680.00 FSEC, THIS RUN'S STEP NO.=   77360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9440267120
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      468
+ *** AT T=      38720.00 FSEC, THIS RUN'S STEP NO.=   77440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9468641138
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      469
+ *** AT T=      38760.00 FSEC, THIS RUN'S STEP NO.=   77520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9463240910
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      470
+ *** AT T=      38800.00 FSEC, THIS RUN'S STEP NO.=   77600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9428994659
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      471
+ *** AT T=      38840.00 FSEC, THIS RUN'S STEP NO.=   77680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9422587185
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      472
+ *** AT T=      38880.00 FSEC, THIS RUN'S STEP NO.=   77760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9484026375
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      473
+ *** AT T=      38920.00 FSEC, THIS RUN'S STEP NO.=   77840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9447596955
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      474
+ *** AT T=      38960.00 FSEC, THIS RUN'S STEP NO.=   77920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.9283962252
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      475
+ *** AT T=      39000.00 FSEC, THIS RUN'S STEP NO.=   78000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4682272564
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      476
+ *** AT T=      39040.00 FSEC, THIS RUN'S STEP NO.=   78080
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7145836163
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      477
+ *** AT T=      39080.00 FSEC, THIS RUN'S STEP NO.=   78160
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3359919171
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      478
+ *** AT T=      39120.00 FSEC, THIS RUN'S STEP NO.=   78240
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.7149886564
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      479
+ *** AT T=      39160.00 FSEC, THIS RUN'S STEP NO.=   78320
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3405140374
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      480
+ *** AT T=      39200.00 FSEC, THIS RUN'S STEP NO.=   78400
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5808725033
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      481
+ *** AT T=      39240.00 FSEC, THIS RUN'S STEP NO.=   78480
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5749773197
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      482
+ *** AT T=      39280.00 FSEC, THIS RUN'S STEP NO.=   78560
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4552787649
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      483
+ *** AT T=      39320.00 FSEC, THIS RUN'S STEP NO.=   78640
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6010389760
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      484
+ *** AT T=      39360.00 FSEC, THIS RUN'S STEP NO.=   78720
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5937180496
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      485
+ *** AT T=      39400.00 FSEC, THIS RUN'S STEP NO.=   78800
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6179123951
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      486
+ *** AT T=      39440.00 FSEC, THIS RUN'S STEP NO.=   78880
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3283820920
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      487
+ *** AT T=      39480.00 FSEC, THIS RUN'S STEP NO.=   78960
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6220729123
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      488
+ *** AT T=      39520.00 FSEC, THIS RUN'S STEP NO.=   79040
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4668970896
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      489
+ *** AT T=      39560.00 FSEC, THIS RUN'S STEP NO.=   79120
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3786189235
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      490
+ *** AT T=      39600.00 FSEC, THIS RUN'S STEP NO.=   79200
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6031955776
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      491
+ *** AT T=      39640.00 FSEC, THIS RUN'S STEP NO.=   79280
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3622542709
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      492
+ *** AT T=      39680.00 FSEC, THIS RUN'S STEP NO.=   79360
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.2520417472
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      493
+ *** AT T=      39720.00 FSEC, THIS RUN'S STEP NO.=   79440
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.1950159701
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      494
+ *** AT T=      39760.00 FSEC, THIS RUN'S STEP NO.=   79520
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.4248455772
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      495
+ *** AT T=      39800.00 FSEC, THIS RUN'S STEP NO.=   79600
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5708161316
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      496
+ *** AT T=      39840.00 FSEC, THIS RUN'S STEP NO.=   79680
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3010489111
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      497
+ *** AT T=      39880.00 FSEC, THIS RUN'S STEP NO.=   79760
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.3796359051
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      498
+ *** AT T=      39920.00 FSEC, THIS RUN'S STEP NO.=   79840
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6233700513
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      499
+ *** AT T=      39960.00 FSEC, THIS RUN'S STEP NO.=   79920
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.5589706830
+       Gaussian width    =        0.1000000000
+ GAUSSIAN BIAS POTENTIAL:      500
+ *** AT T=      40000.00 FSEC, THIS RUN'S STEP NO.=   80000
+     Gaussian height     =        0.0005000000 a.u.
+     Collective variable =                   1
+       Coordinate        =        0.6695197158
+       Gaussian width    =        0.1000000000

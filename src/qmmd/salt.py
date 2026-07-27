@@ -63,24 +63,21 @@ def load_config(yaml_path: Path) -> CpptrajPostConfig:
 
 
 def require_cpptraj() -> Path:
-    amberhome = os.environ.get("AMBERHOME")
-    if not amberhome:
-        raise RuntimeError("AMBERHOME is not set. Did you load Amber?")
-
     cpptraj = shutil.which("cpptraj")
     if not cpptraj:
         raise RuntimeError("cpptraj not found in PATH. Did you load Amber?")
 
     cpptraj_path = Path(cpptraj).resolve()
-    expected = Path(amberhome).resolve() / "bin" / "cpptraj"
-    if cpptraj_path != expected:
+    result = subprocess.run([str(cpptraj_path)], input="quit\n", text=True, capture_output=True, timeout=10,)  
+    if result.returncode != 0:
         raise RuntimeError(
-            f"cpptraj mismatch:\n"
-            f"  PATH cpptraj: {cpptraj_path}\n"
-            f"  AMBERHOME: {amberhome}\n"
-            f"  expected: {expected}\n"
-            f"Fix by re-loading the correct Amber module."
+            f"cpptraj was found but failed to run:\n"
+            f"  executable: {cpptraj_path}\n"
+            f"  return code: {result.returncode}\n"
+            f"  stdout: {result.stdout.strip()}\n"
+            f"  stderr: {result.stderr.strip()}"
         )
+   
     return cpptraj_path
 
 

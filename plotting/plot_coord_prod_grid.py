@@ -386,6 +386,25 @@ def deltaf(
     m2 = find_minimum_near_target(block[:, 0], block[:, 1], min2_x, half_window, xmin, xmax)
     return m1[1] - m2[1]
 
+def smooth2d(arr: np.ndarray) -> np.ndarray:
+    """Light 2D smoothing to reduce blockiness from histogram binning."""
+    kernel = np.array(
+        [
+            [1, 2, 1],
+            [2, 4, 2],
+            [1, 2, 1],
+        ],
+        dtype=float,
+    )
+    kernel /= np.sum(kernel)
+    padded = np.pad(arr, 1, mode="edge")
+    out = np.zeros_like(arr, dtype=float)
+    for i in range(arr.shape[0]):
+        for j in range(arr.shape[1]):
+            window = padded[i : i + 3, j : j + 3]
+            out[i, j] = float(np.sum(window * kernel))
+    return out
+
 def main() -> None:
     p = argparse.ArgumentParser(description="Plot coordination report for a single run.")
     p.add_argument("--runs-path", required=True, type=Path)
@@ -443,6 +462,8 @@ def main() -> None:
     ax_mull = None
     ax_neg = None
     ax_dist = None
+    dist_fes_series = None
+    dist_fes_times = None
 
     # Panel labels
     panel_labels = list("abcdefgh")
@@ -1068,17 +1089,20 @@ def main() -> None:
                         d_oo = d_oo - box * np.round(d_oo / box)
                     oo_series.append(float(np.linalg.norm(d_oo)))
                 t_series.append(times[idx])
-            colors = ["green", "orange"]
-            least_colors = ["red", "purple"]
+            colors = ["red", "orange"]
+            least_colors = ["green", "purple"]
             for i, nid in enumerate(n_ids):
                 color = colors[i % len(colors)]
-                ax_dist.scatter(t_series, n_series[nid], s=6, color=color, alpha=0.75, zorder=3, label=f"N{nid}")
+                ax_dist.scatter(t_series, n_series[nid], s=6, color=color, alpha=0.75, zorder=3, label=f"N{nid} (defect+)")
                 least_color = least_colors[i % len(least_colors)]
                 ax_dist.scatter(t_series, n_series_least[nid], s=6, color=least_color, alpha=0.6, zorder=2, label=f"N{nid} (least)")
             ax_dist.scatter(t_series, oo_series, s=14, color="blue", alpha=0.5, marker="x", zorder=1, label="O–O")
             ax_dist.set_xlabel("Time (ps)")
             ax_dist.set_ylabel("N–O distance (Å)")
             ax_dist.legend(frameon=False, fontsize=6, loc="upper right")
+            if n_ids:
+                dist_fes_series = np.array(n_series[n_ids[0]], dtype=float)
+                dist_fes_times = np.array(t_series, dtype=float)
         else:
             ax_dist.text(0.5, 0.5, "traject not found", ha="center", va="center")
     else:
@@ -1122,6 +1146,79 @@ def main() -> None:
     fig.savefig(out)
     plt.close(fig)
     print(f"Wrote {out}")
+
+    # Optional 2D FES wireframe from s(t) and N-O distance
+    if is_prod and dist_fes_series is not None and dist_fes_times is not None and vals.size > 0:
+        s_times = np.array(t, dtype=float)
+        s_vals = np.array(vals, dtype=float)
+        mask = np.isfinite(dist_fes_series)
+        if args.t_fill is not None:
+            mask &= dist_fes_times >= args.t_fill
+        if args.T_max is not None:
+            mask &= dist_fes_times <= args.T_max
+        if s_times.size > 0:
+            mask &= dist_fes_times >= np.min(s_times)
+            mask &= dist_fes_times <= np.max(s_times)
+        if np.any(mask):
+            dist_use = dist_fes_series[mask]
+            t_use = dist_fes_times[mask]
+            s_use = np.interp(t_use, s_times, s_vals)
+            if dist_use.size > 1:
+                s_bins = np.linspace(-0.1, 1.1, 101)
+                d_min = float(np.nanmin(dist_use))
+                d_max = float(np.nanmax(dist_use))
+                if np.isfinite(d_min) and np.isfinite(d_max) and d_max > d_min:
+                    d_bins = np.linspace(d_min, d_max, 81)
+                    hist2d, s_edges, d_edges = np.histogram2d(s_use, dist_use, bins=[s_bins, d_bins], density=True)
+                    eps = 1e-12
+                    fes = -np.log(np.clip(hist2d, eps, None))
+                    finite = np.isfinite(fes)
+                    if np.any(finite):
+                        fes -= np.min(fes[finite])
+                    fes = smooth2d(fes)
+                    s_centers = 0.5 * (s_edges[:-1] + s_edges[1:])
+                    d_centers = 0.5 * (d_edges[:-1] + d_edges[1:])
+                    S, D = np.meshgrid(s_centers, d_centers)
+
+                    rotskoff_style = Path(__file__).resolve().parent / "rotskoff.mplstyle"
+                    style_ctx = plt.style.context(rotskoff_style) if rotskoff_style.exists() else plt.style.context([])
+                    with style_ctx:
+                        fig2, ax2 = plt.subplots(figsize=(7, 5), dpi=220)
+                        fes_plot = fes.T
+                        finite_plot = np.isfinite(fes_plot)
+                        if np.any(finite_plot):
+                            vmax = float(np.nanpercentile(fes_plot[finite_plot], 90))
+                            if vmax <= 0:
+                                vmax = float(np.nanmax(fes_plot[finite_plot]))
+                        else:
+                            vmax = 1.0
+                        if vmax <= 0:
+                            vmax = 1.0
+                        levels = np.linspace(0.0, vmax, 21)
+                        data_plot = np.clip(fes_plot, None, vmax)
+                        cf = ax2.contourf(S, D, data_plot, levels=levels, cmap="magma", extend="max")
+                        cs = ax2.contour(S, D, data_plot, levels=levels, colors="black", linewidths=0.55, alpha=0.85)
+                        ax2.clabel(cs, inline=True, fontsize=7, fmt="%.1f")
+                        ax2.set_xlabel("s")
+                        ax2.set_ylabel("N-O(defect) distance (Å)")
+                        ax2.set_xlim(-0.1, 1.1)
+                        ax2.set_xticks([0.0, 0.5, 1.0])
+                        cbar = fig2.colorbar(cf, ax=ax2)
+                        cbar.set_label("FES (k$_B$T)")
+                        fig2.subplots_adjust(left=0.12, right=0.90, bottom=0.12, top=0.95)
+                        fes2d_out = out.parent / f"{system}_{args.run_dir}_fes2d_{args.phase}_run{args.run_id}.png"
+                        fig2.savefig(fes2d_out)
+                        plt.close(fig2)
+                        print(f"Wrote {fes2d_out}")
+                else:
+                    print("Skipping 2D FES: distance range invalid.")
+            else:
+                print("Skipping 2D FES: not enough distance data.")
+        else:
+            print("Skipping 2D FES: no overlapping s/distance time window.")
+    else:
+        if is_prod:
+            print("Skipping 2D FES: missing distance series or coordination data.")
 
     # Optional interactive HTML for Mulliken time series
     if args.solute_atoms is not None and mull_data is not None:

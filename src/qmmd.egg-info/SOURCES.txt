@@ -22,6 +22,7 @@ src/qmmd/radgyr.py
 src/qmmd/rdf.py
 src/qmmd/rmsd.py
 src/qmmd/salt.py
+src/qmmd/station.py
 src/qmmd/wtmeta.py
 src/qmmd.egg-info/PKG-INFO
 src/qmmd.egg-info/SOURCES.txt
