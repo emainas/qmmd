@@ -243,7 +243,7 @@ def main() -> None:
                     n_series[nid].append(float(np.linalg.norm(d)))
                 t_series.append(times[idx])
             for nid in n_ids:
-                ax_d.scatter(t_series, n_series[nid], s=6, color="red", alpha=0.7, label=f"N{nid}")
+                ax_d.plot(t_series, n_series[nid], lw=2, color="red", alpha=0.7, label=f"N{nid}")
             ax_d.set_xlabel("t (ps)")
             ax_d.set_ylabel("N-O(defect) distance (Å)")
             ax_d.legend(frameon=False, fontsize=7, loc="best")

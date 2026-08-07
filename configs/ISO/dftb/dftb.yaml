@@ -1,11 +1,11 @@
-system: BV
+system: ISO
 buffer: 4.0
 prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 50
-append: yes
+replicas: 20
+append: no
 replica_dirname: equil
 
 dftb:
@@ -49,7 +49,7 @@ runtime:
 
 slurm:
   job:
-    name: BV
+    name: ISO
     partition: batch
     nodes: 1
     ntasks: 48
