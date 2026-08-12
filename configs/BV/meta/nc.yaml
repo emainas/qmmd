@@ -6,7 +6,7 @@ dftb_dirname: dftb
 replica_dirname: equil
 cv_dirname: meta-hic
 
-run_ids: "1-50"
+run_ids: [66,81,89,93,96]
 bench_tag: N1T48C1
 restart_name: restart
 
@@ -42,11 +42,11 @@ dftb:
   params_dir: "params"
 
 runtime:
-  module: "openmpi/5.0.6_intel-2024.2.1"
-  executable: "/nas/longleaf/home/emainas/software/dcdftbmd.2.0/dr_nishimura/20260126_Dcdftbmd/bin/dftb_mpiomp.00.x"
+  module: "openmpi_5.0.6/intel_2024.2.1"
+  executable: "/nas/sycamore/home/emainas/software/dcdftbmd.2.0/dr_nishimura/20260126_Dcdftbmd/bin/dftb_mpiomp.00.x"
   mpirun_np: 16
   env:
-    PATH: "/nas/longleaf/home/emainas/software/dcdftbmd.2.0/:$PATH"
+    PATH: "/nas/sycamore/home/emainas/software/dcdftbmd.2.0/:$PATH"
   strict_mode: true
 
 slurm:
@@ -57,6 +57,6 @@ slurm:
     ntasks: 48
     mem: "50G"
     cpus_per_task: 1
-    time: "3-00:00:00"
+    time: "4-00:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"

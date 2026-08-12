@@ -267,6 +267,7 @@ def main() -> None:
 
         ax.set_xlabel("coordination, s(t)")
         ax.set_ylabel(rf"N{nid}--O(defect$^+$) distance ($\AA$)")
+        #ax.set_ylim(-0.2,10.2)
         ax.set_xlim(0.0, 1.0)
         ax.set_title(f"N{nid}: coordination versus defect distance")
 
