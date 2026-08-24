@@ -51,6 +51,8 @@ class FrameResult:
     oxygen_edge_distances: tuple[float, ...]
     hbond: WireResult
     hbond_edges: tuple[HBondEdge, ...]
+    hbond_mean_consecutive_angle_deg: float
+    hbond_loopiness_lambda: float
 
 
 TIME_RE = re.compile(r"\*\*\* AT T=\s*([0-9.]+)\s*FSEC")
@@ -228,6 +230,46 @@ def _path_edge_distances(
     return tuple(values)
 
 
+def _hbond_shape_metrics(
+    coords: np.ndarray,
+    nitrogen_id: int,
+    oxygen_path: Sequence[int],
+    box: np.ndarray | None,
+) -> tuple[float, float]:
+    """Return mean consecutive-path angle and dimensionless loopiness.
+
+    Path vectors are consistently directed from the selected nitrogen toward
+    the Mulliken-assigned defect oxygen and use minimum-image displacements.
+    The loopiness is ``lambda = 1 - end_to_end / contour_length``.
+    """
+    atom_ids = [nitrogen_id, *oxygen_path]
+    vectors = np.asarray(
+        [
+            _minimum_image(coords[right - 1] - coords[left - 1], box)
+            for left, right in zip(atom_ids, atom_ids[1:])
+        ],
+        dtype=float,
+    )
+    if not len(vectors):
+        return float("nan"), float("nan")
+    lengths = np.linalg.norm(vectors, axis=1)
+    if np.any(lengths <= 0.0):
+        return float("nan"), float("nan")
+
+    contour_length = float(np.sum(lengths))
+    end_to_end = float(np.linalg.norm(np.sum(vectors, axis=0)))
+    loopiness = float(np.clip(1.0 - end_to_end / contour_length, 0.0, 1.0))
+
+    if len(vectors) < 2:
+        mean_angle = float("nan")
+    else:
+        tangents = vectors / lengths[:, None]
+        cosines = np.sum(tangents[:-1] * tangents[1:], axis=1)
+        angles = np.degrees(np.arccos(np.clip(cosines, -1.0, 1.0)))
+        mean_angle = float(np.mean(angles))
+    return mean_angle, loopiness
+
+
 def shortest_hbond_path(
     coords: np.ndarray,
     nitrogen_id: int,
@@ -376,7 +418,33 @@ def iter_wire_results(
         if symbol.upper() == "H"
     ]
 
-    frames = list(iter_xyz_frames(traj_path))
+    target_limit = None
+    target_read_tolerance = 0.0
+    if target_times is not None:
+        target_array_for_read = np.asarray(target_times, dtype=float)
+        finite_targets_for_read = target_array_for_read[
+            np.isfinite(target_array_for_read)
+        ]
+        if finite_targets_for_read.size:
+            target_limit = float(np.max(finite_targets_for_read))
+            target_diffs_for_read = np.diff(finite_targets_for_read)
+            positive_diffs_for_read = target_diffs_for_read[
+                target_diffs_for_read > 0
+            ]
+            if positive_diffs_for_read.size:
+                target_read_tolerance = 0.51 * float(
+                    np.median(positive_diffs_for_read)
+                )
+
+    frames: list[tuple[float | None, np.ndarray]] = []
+    for frame_time, coords in iter_xyz_frames(traj_path):
+        frames.append((frame_time, coords))
+        if (
+            target_limit is not None
+            and frame_time is not None
+            and frame_time > target_limit + target_read_tolerance
+        ):
+            break
     timed_frames = bool(frames) and all(time is not None for time, _coords in frames)
     trajectory_times = (
         np.asarray([time for time, _coords in frames], dtype=float)
@@ -411,11 +479,11 @@ def iter_wire_results(
 
         if coords is None:
             missing = WireResult(False, False, -1, ())
-            yield FrameResult(missing, (), missing, ())
+            yield FrameResult(missing, (), missing, (), float("nan"), float("nan"))
             continue
         if not np.isfinite(raw_defect_id):
             missing = WireResult(False, False, -1, ())
-            yield FrameResult(missing, (), missing, ())
+            yield FrameResult(missing, (), missing, (), float("nan"), float("nan"))
             continue
         oxygen = shortest_oxygen_path(
             coords=coords,
@@ -438,6 +506,12 @@ def iter_wire_results(
             max_bridging_waters=max_bridging_waters,
             box=box,
         )
+        if hbond.connected:
+            mean_angle, loopiness = _hbond_shape_metrics(
+                coords, nitrogen_id, hbond.oxygen_path, box
+            )
+        else:
+            mean_angle, loopiness = float("nan"), float("nan")
         yield FrameResult(
             oxygen=oxygen,
             oxygen_edge_distances=_path_edge_distances(
@@ -445,6 +519,8 @@ def iter_wire_results(
             ),
             hbond=hbond,
             hbond_edges=hbond_edges,
+            hbond_mean_consecutive_angle_deg=mean_angle,
+            hbond_loopiness_lambda=loopiness,
         )
 
 
@@ -509,6 +585,8 @@ def augment_csv(
         "hbond_heavy_atom_distances_A",
         "hbond_H_acceptor_distances_A",
         "hbond_angles_deg",
+        "hbond_mean_consecutive_angle_deg",
+        "hbond_loopiness_lambda",
     ]
     fieldnames = list(rows[0]) + [x for x in extra_fields if x not in rows[0]]
     for frame_number, (row, result) in enumerate(zip(rows, results)):
@@ -544,6 +622,10 @@ def augment_csv(
         row["hbond_angles_deg"] = ";".join(
             f"{edge.angle_degrees:.3f}" for edge in result.hbond_edges
         )
+        row["hbond_mean_consecutive_angle_deg"] = (
+            f"{result.hbond_mean_consecutive_angle_deg:.8f}"
+        )
+        row["hbond_loopiness_lambda"] = f"{result.hbond_loopiness_lambda:.8f}"
 
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     with output_csv.open("w", encoding="utf-8", newline="") as handle:
@@ -621,6 +703,104 @@ def detect_diffusive_start(
     return float(times[returned_index])
 
 
+def load_pka_series(
+    fes_path: Path,
+    temperature: float = 313.15,
+    min1_x: float = 0.0,
+    min2_x: float = 1.0,
+    half_window: float = 0.1,
+    fes_xmin: float = 0.0,
+    fes_xmax: float = 1.25,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Load the pKa time series using the same logic as plot_pka_grid.py."""
+    from plot_pka_grid import (
+        PKA_FACTOR,
+        deltaf,
+        load_biaspot_with_restart,
+        load_fes_with_restart,
+    )
+
+    cv_path = fes_path.parent
+    run_dir = cv_path.parent
+    cv_dir = cv_path.name
+    biaspot = cv_path / "biaspot"
+    if not fes_path.exists():
+        raise FileNotFoundError(f"FES file not found: {fes_path}")
+    if not biaspot.exists():
+        raise FileNotFoundError(f"Biaspot file not found: {biaspot}")
+
+    times = load_biaspot_with_restart(run_dir, cv_dir)
+    blocks = load_fes_with_restart(run_dir, cv_dir)
+    nblocks = min(len(times), len(blocks))
+    if nblocks == 0:
+        return np.array([], dtype=float), np.array([], dtype=float)
+    times = np.asarray(times[:nblocks], dtype=float)
+    delta_f = np.asarray(
+        [
+            deltaf(block, min1_x, min2_x, half_window, fes_xmin, fes_xmax)
+            for block in blocks[:nblocks]
+        ],
+        dtype=float,
+    )
+    return times, delta_f / (PKA_FACTOR * temperature)
+
+
+def save_pka_csv(path: Path, times: np.ndarray, pka: np.ndarray) -> None:
+    """Save the aligned numerical data used for the pKa panel."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savetxt(
+        path,
+        np.column_stack([times, pka]),
+        delimiter=",",
+        header="time_ps,pka",
+        comments="",
+    )
+
+
+def sample_pka_window(
+    times: np.ndarray,
+    pka: np.ndarray,
+    start_ps: float,
+    end_ps: float,
+    sample_count: int = 10,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Interpolate equally spaced pKa samples inside a time window."""
+    if sample_count < 2:
+        raise ValueError("pKa window sample count must be at least 2")
+    finite = np.isfinite(times) & np.isfinite(pka)
+    if np.count_nonzero(finite) < 2:
+        return np.array([], dtype=float), np.array([], dtype=float)
+    finite_times = times[finite]
+    finite_pka = pka[finite]
+    order = np.argsort(finite_times)
+    finite_times = finite_times[order]
+    finite_pka = finite_pka[order]
+    if start_ps < finite_times[0] or end_ps > finite_times[-1]:
+        raise ValueError(
+            "The blue-to-red sampling window extends outside the pKa time series"
+        )
+    sample_times = np.linspace(start_ps, end_ps, sample_count)
+    return sample_times, np.interp(sample_times, finite_times, finite_pka)
+
+
+def save_pka_window_csv(
+    path: Path,
+    times: np.ndarray,
+    pka: np.ndarray,
+) -> None:
+    """Save the equally spaced samples summarized in the pKa panel."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    mean = float(np.mean(pka))
+    std = float(np.std(pka))
+    np.savetxt(
+        path,
+        np.column_stack([times, pka]),
+        delimiter=",",
+        header=f"mean_pka={mean:.10g},std_pka={std:.10g}\ntime_ps,pka",
+        comments="# ",
+    )
+
+
 def plot_wire_csv(
     path: Path,
     out: Path,
@@ -635,9 +815,30 @@ def plot_wire_csv(
     deprotonated_s_max: float = 0.05,
     returned_s_min: float = 0.20,
     persistence_ps: float = 0.05,
+    fes_path: Path | None = None,
+    pka_data_out: Path | None = None,
+    temperature: float = 313.15,
+    min1_x: float = 0.0,
+    min2_x: float = 1.0,
+    half_window: float = 0.1,
+    fes_xmin: float = 0.0,
+    fes_xmax: float = 1.25,
+    exp_pkas: Sequence[float] = (),
+    pka_window_sample_count: int = 10,
+    solvation_layer_boundaries: Sequence[float] = (2.0, 3.5, 5.5, 7.5, 9.5),
+    figure_width_inches: float = 14.5,
+    figure_height_inches: float | None = None,
 ) -> None:
     """Plot wire connectivity and the aligned N--defect distance against time."""
     import matplotlib.pyplot as plt
+    from matplotlib.cm import ScalarMappable
+    from matplotlib.colors import BoundaryNorm, ListedColormap
+
+    layer_boundaries = np.asarray(solvation_layer_boundaries, dtype=float)
+    if layer_boundaries.shape != (5,) or np.any(np.diff(layer_boundaries) <= 0.0):
+        raise ValueError(
+            "Solvation-layer boundaries must be five strictly increasing distances"
+        )
 
     with path.open("r", encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -652,6 +853,14 @@ def plot_wire_csv(
     )
     hbond_bridges = np.asarray(
         [int(row["hbond_bridging_water_count"]) for row in rows], dtype=int
+    )
+    hbond_mean_angle = np.asarray(
+        [float(row.get("hbond_mean_consecutive_angle_deg", "nan")) for row in rows],
+        dtype=float,
+    )
+    hbond_loopiness = np.asarray(
+        [float(row.get("hbond_loopiness_lambda", "nan")) for row in rows],
+        dtype=float,
     )
     if "time_ps" in rows[0]:
         x = np.asarray([float(row["time_ps"]) for row in rows], dtype=float)
@@ -705,48 +914,79 @@ def plot_wire_csv(
         evaluated & (hbond_connected == 1)
     ]
 
-    fig, (ax_hbond, ax_distance, ax_coordination) = plt.subplots(
-        3,
-        1,
-        figsize=(9.0, 7.8),
+    pka_times = np.array([], dtype=float)
+    pka_values = np.array([], dtype=float)
+    if fes_path is not None:
+        pka_times, pka_values = load_pka_series(
+            fes_path,
+            temperature=temperature,
+            min1_x=min1_x,
+            min2_x=min2_x,
+            half_window=half_window,
+            fes_xmin=fes_xmin,
+            fes_xmax=fes_xmax,
+        )
+        if pka_data_out is not None:
+            save_pka_csv(pka_data_out, pka_times, pka_values)
+
+    panel_count = 4 if fes_path is not None else 3
+    if figure_height_inches is None:
+        figure_height_inches = 12.0 if panel_count == 4 else 9.0
+    if figure_width_inches <= 0.0 or figure_height_inches <= 0.0:
+        raise ValueError("Figure width and height must be positive")
+    fig, axes = plt.subplots(
+        panel_count,
+        2,
+        figsize=(figure_width_inches, figure_height_inches),
         dpi=220,
         sharex=True,
         layout="constrained",
-        gridspec_kw={"height_ratios": [1.1, 1.15, 1.0], "hspace": 0.08},
+        gridspec_kw={
+            "height_ratios": [1.1, 1.15, 1.0, 1.0][:panel_count],
+            "hspace": 0.08,
+            "wspace": 0.14,
+        },
     )
+    left_axes = axes[:, 0]
+    ax_hbond, ax_distance, ax_coordination = left_axes[:3]
+    ax_pka = left_axes[3] if panel_count == 4 else None
+    ax_angle = axes[0, 1]
+    ax_loopiness = axes[1, 1]
+    for unused_axis in axes[2:, 1]:
+        unused_axis.set_visible(False)
+    active_axes = [*left_axes, ax_angle, ax_loopiness]
 
     finite_wire = np.isfinite(wire_value)
-    ax_hbond.scatter(
+    wire_cmap = ListedColormap(
+        ["#7F7F7F", "#0072B2", "#009E73", "#E69F00", "#CC79A7", "#D55E00"]
+    )
+    wire_norm = BoundaryNorm(np.arange(-1.5, 5.5, 1.0), wire_cmap.N)
+    wire_points = ax_hbond.scatter(
         x[finite_wire],
         wire_value[finite_wire],
-        color="black",
+        c=wire_value[finite_wire],
+        cmap=wire_cmap,
+        norm=wire_norm,
         s=16,
         alpha=0.8,
         edgecolors="none",
         rasterized=True,
     )
+    wire_colorbar = fig.colorbar(
+        wire_points,
+        ax=ax_hbond,
+        ticks=[-1, 0, 1, 2, 3, 4],
+        pad=0.02,
+    )
+    wire_colorbar.ax.set_yticklabels(["-1", "0", "1", "2", "3", "4"])
 
     ax_hbond.set_ylabel("H-bond wire state")
     ax_hbond.set_yticks(
         [-1, 0, 1, 2, 3, 4],
-        labels=["disconnected", "0", "1", "2", "3", "4"],
+        labels=["-1", "0", "1", "2", "3", "4"],
     )
     ax_hbond.set_ylim(-1.4, 4.4)
     ax_hbond.grid(axis="y", alpha=0.25)
-    ax_hbond.text(
-        0.02,
-        0.50,
-        (
-            rf"short H $\leq$ {covalent_cutoff:g} $\AA$; "
-            rf"H--acceptor $\leq$ {hydrogen_acceptor_cutoff:g} $\AA$; "
-            rf"angle $\geq$ {angle_cutoff:g}$^\circ$"
-        ),
-        transform=ax_hbond.transAxes,
-        ha="left",
-        va="center",
-        fontsize=8,
-        bbox={"facecolor": "white", "edgecolor": "0.75", "alpha": 0.9},
-    )
     probability_window = evaluated & np.isfinite(x) & (x > diffusive_start)
     if probability_tmax is not None:
         probability_window &= x <= probability_tmax
@@ -756,60 +996,275 @@ def plot_wire_csv(
             np.count_nonzero(hbond_connected[probability_window] == 1) / post_count
         )
         disconnected_probability = 1.0 - connected_probability
-        window_label = (
-            rf"${diffusive_start:g}<t\leq{probability_tmax:g}$ ps"
-            if probability_tmax is not None
-            else rf"$t>{diffusive_start:g}$ ps"
-        )
         ax_hbond.text(
-            0.98,
-            0.50,
+            0.02,
+            0.95,
             (
-                window_label + ": "
                 rf"$P_{{\rm connected}}={connected_probability:.3f}$; "
                 rf"$P_{{\rm disconnected}}={disconnected_probability:.3f}$"
             ),
             transform=ax_hbond.transAxes,
-            ha="right",
-            va="center",
-            fontsize=8,
-            bbox={"facecolor": "white", "edgecolor": "0.75", "alpha": 0.9},
+            ha="left",
+            va="top",
+            fontsize=10,
+            bbox={"facecolor": "none", "edgecolor": "0.75"},
         )
 
-    finite_distance = np.isfinite(distance)
-    ax_distance.scatter(
-        x[finite_distance],
-        distance[finite_distance],
-        color="black",
-        s=14,
-        alpha=0.75,
+    finite_angle = np.isfinite(hbond_mean_angle)
+    ax_angle.plot(
+        x,
+        hbond_mean_angle,
+        color="#6A3D9A",
+        linewidth=1.8,
+        alpha=0.9,
+    )
+    ax_angle.scatter(
+        x[finite_angle],
+        hbond_mean_angle[finite_angle],
+        color="#6A3D9A",
+        s=20,
         edgecolors="none",
         rasterized=True,
+        zorder=3,
     )
+    ax_angle.set_ylabel(r"mean consecutive angle, $\theta$ (deg)")
+    ax_angle.set_ylim(0.0, 180.0)
+    ax_angle.grid(axis="y", alpha=0.25)
+
+    finite_loopiness = np.isfinite(hbond_loopiness)
+    ax_loopiness.plot(
+        x,
+        hbond_loopiness,
+        color="#1B7837",
+        linewidth=1.8,
+        alpha=0.9,
+    )
+    ax_loopiness.scatter(
+        x[finite_loopiness],
+        hbond_loopiness[finite_loopiness],
+        color="#1B7837",
+        s=20,
+        edgecolors="none",
+        rasterized=True,
+        zorder=3,
+    )
+    ax_loopiness.set_ylabel(r"wire loopiness, $\lambda$")
+    ax_loopiness.set_ylim(0.0, 1.0)
+    ax_loopiness.grid(axis="y", alpha=0.25)
+
+    finite_distance = np.isfinite(distance)
+    layer_colors = ["#DCEEFF", "#E2F3E5", "#FFF0D6", "#E6E6E6"]
+    for lower, upper, color in zip(
+        layer_boundaries[:-1], layer_boundaries[1:], layer_colors
+    ):
+        ax_distance.axhspan(
+            lower,
+            upper,
+            color=color,
+            alpha=0.75,
+            linewidth=0,
+            zorder=0,
+        )
+    layer_point_colors = ["#2F6FA5", "#4F8A62", "#B57621", "#000000"]
+    in_any_layer = np.zeros(distance.shape, dtype=bool)
+    for layer_index, (lower, upper, point_color) in enumerate(
+        zip(layer_boundaries[:-1], layer_boundaries[1:], layer_point_colors)
+    ):
+        upper_comparison = (
+            distance <= upper
+            if layer_index == len(layer_point_colors) - 1
+            else distance < upper
+        )
+        in_layer = finite_distance & (distance >= lower) & upper_comparison
+        in_any_layer |= in_layer
+        ax_distance.scatter(
+            x[in_layer],
+            distance[in_layer],
+            color=point_color,
+            s=30,
+            alpha=0.95,
+            edgecolors=point_color,
+            linewidths=0.6,
+            rasterized=True,
+            zorder=2,
+        )
+    outside_layers = finite_distance & ~in_any_layer
+    ax_distance.scatter(
+        x[outside_layers],
+        distance[outside_layers],
+        color="#3F3F3F",
+        s=30,
+        alpha=0.95,
+        edgecolors="#3F3F3F",
+        linewidths=0.6,
+        rasterized=True,
+        zorder=2,
+    )
+    layer_cmap = ListedColormap(layer_colors)
+    layer_norm = BoundaryNorm(layer_boundaries, layer_cmap.N)
+    layer_colorbar = fig.colorbar(
+        ScalarMappable(norm=layer_norm, cmap=layer_cmap),
+        ax=ax_distance,
+        boundaries=layer_boundaries,
+        ticks=0.5 * (layer_boundaries[:-1] + layer_boundaries[1:]),
+        spacing="proportional",
+        pad=0.02,
+    )
+    layer_colorbar.ax.set_yticklabels(["1", "2", "3", "4"])
+    layer_colorbar.set_label("solvation layer")
     ax_distance.set_ylabel(
         rf"{nitrogen_label}--O(defect$^+$) distance ($\AA$)"
     )
+    ax_distance.set_ylim(
+        bottom=float(layer_boundaries[0]),
+        top=float(layer_boundaries[-1]),
+    )
     ax_distance.grid(axis="y", alpha=0.25)
 
-    finite_coordination = np.isfinite(coordination)
-    ax_coordination.scatter(
-        x[finite_coordination],
-        coordination[finite_coordination],
-        color="black",
-        s=14,
-        alpha=0.75,
-        edgecolors="none",
-        rasterized=True,
+    finite_x = x[np.isfinite(x)]
+    if finite_x.size:
+        reaction_start = float(np.min(finite_x))
+        diffusion_end = probability_tmax if probability_tmax is not None else float(np.max(finite_x))
+        ax_coordination.axvspan(
+            reaction_start,
+            diffusive_start,
+            color="#D9EEF9",
+            alpha=0.65,
+            linewidth=0,
+            zorder=0,
+        )
+        ax_coordination.axvspan(
+            diffusive_start,
+            diffusion_end,
+            color="#F8DADA",
+            alpha=0.65,
+            linewidth=0,
+            zorder=0,
+        )
+        ax_coordination.text(
+            reaction_start + 0.03 * (diffusive_start - reaction_start),
+            0.10,
+            "reaction",
+            transform=ax_coordination.get_xaxis_transform(),
+            ha="left",
+            va="bottom",
+            fontsize=10,
+            fontweight="bold",
+            color="#356A8A",
+        )
+        ax_coordination.text(
+            0.5 * (diffusive_start + diffusion_end),
+            0.86,
+            "diffusion",
+            transform=ax_coordination.get_xaxis_transform(),
+            ha="center",
+            va="top",
+            fontsize=10,
+            fontweight="bold",
+            color="#9B4A4A",
+        )
+    reaction_coordination = np.where(x <= diffusive_start, coordination, np.nan)
+    diffusion_coordination = np.where(x >= diffusive_start, coordination, np.nan)
+    ax_coordination.plot(
+        x,
+        reaction_coordination,
+        color="#356A8A",
+        linewidth=2.2,
+        alpha=0.95,
+        zorder=2,
     )
-    ax_coordination.set_xlabel(xlabel)
+    ax_coordination.plot(
+        x,
+        diffusion_coordination,
+        color="#9B4A4A",
+        linewidth=2.2,
+        alpha=0.95,
+        zorder=2,
+    )
     ax_coordination.set_ylabel(r"coordination, $s(t)$")
     ax_coordination.set_ylim(0.0, 1.0)
     ax_coordination.grid(axis="y", alpha=0.25)
-    for panel in (ax_hbond, ax_distance, ax_coordination):
+    if ax_pka is not None:
+        finite_pka = np.isfinite(pka_times) & np.isfinite(pka_values)
+        ax_pka.plot(
+            pka_times[finite_pka],
+            pka_values[finite_pka],
+            color="black",
+            linewidth=1.6,
+        )
+        ax_pka.scatter(
+            pka_times[finite_pka],
+            pka_values[finite_pka],
+            color="#FFA500",
+            edgecolor=(0.0, 0.0, 0.0, 0.35),
+            s=18,
+            rasterized=True,
+        )
+        for index, exp_pka in enumerate(exp_pkas):
+            ax_pka.axhline(
+                exp_pka,
+                color=f"C{index % 10}",
+                linewidth=1.2,
+                linestyle="--",
+                alpha=0.85,
+            )
+        if probability_tmax is not None:
+            sample_times, sample_values = sample_pka_window(
+                pka_times,
+                pka_values,
+                diffusive_start,
+                probability_tmax,
+                sample_count=pka_window_sample_count,
+            )
+            if sample_values.size:
+                sample_mean = float(np.mean(sample_values))
+                sample_std = float(np.std(sample_values))
+                ax_pka.scatter(
+                    sample_times,
+                    sample_values,
+                    marker="*",
+                    color="#D62728",
+                    edgecolor="black",
+                    linewidth=0.4,
+                    s=65,
+                    zorder=6,
+                )
+                exp_pka_summary = ""
+                if exp_pkas:
+                    exp_values = ", ".join(f"{value:g}" for value in exp_pkas)
+                    exp_pka_summary = rf"; p$K_{{a,\mathrm{{exp}}}}$ = {exp_values}"
+                ax_pka.text(
+                    0.02,
+                    0.06,
+                    rf"p$K_a$ = {sample_mean:.3f} $\pm$ {sample_std:.3f}"
+                    + exp_pka_summary,
+                    transform=ax_pka.transAxes,
+                    ha="left",
+                    va="bottom",
+                    fontsize=10,
+                    bbox={"facecolor": "none", "edgecolor": "0.75"},
+                )
+                if pka_data_out is not None:
+                    sample_path = pka_data_out.with_name(
+                        f"{pka_data_out.stem}_window_samples.csv"
+                    )
+                    save_pka_window_csv(sample_path, sample_times, sample_values)
+        ax_pka.set_ylabel(r"p$K_a$")
+        ax_pka.set_ylim(-20.0, 30.0)
+        ax_pka.grid(axis="y", alpha=0.25)
+
+    left_axes[-1].set_xlabel(xlabel)
+    ax_loopiness.set_xlabel(xlabel)
+    ax_loopiness.tick_params(axis="x", which="both", labelbottom=True)
+    if probability_tmax is not None:
+        finite_x = x[np.isfinite(x)]
+        if finite_x.size:
+            left_axes[-1].set_xlim(float(np.min(finite_x)), probability_tmax)
+    for panel in active_axes:
         panel.axvline(
             diffusive_start,
-            color="#0072B2",
-            linestyle="--",
+            color="black",
+            linestyle="-",
             linewidth=3.0,
             zorder=5,
         )
@@ -821,6 +1276,14 @@ def plot_wire_csv(
                 linewidth=3.0,
                 zorder=5,
             )
+    for figure_axis in fig.axes:
+        figure_axis.tick_params(axis="both", which="major", labelsize=12)
+        figure_axis.xaxis.label.set_fontsize(13)
+        figure_axis.yaxis.label.set_fontsize(13)
+        figure_axis.xaxis.get_offset_text().set_fontsize(12)
+        figure_axis.yaxis.get_offset_text().set_fontsize(12)
+        for annotation in figure_axis.texts:
+            annotation.set_fontsize(12)
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, bbox_inches="tight")
     plt.close(fig)
@@ -844,11 +1307,62 @@ def main() -> None:
         default="auto",
         help="Diffusive onset in ps, or 'auto' (default)",
     )
+    parser.add_argument(
+        "--t-force-diffusion",
+        "--t_force_diffusion",
+        type=float,
+        default=None,
+        help=(
+            "Force the diffusion onset to this time in ps, overriding automatic "
+            "detection (alias: --t_force_diffusion)"
+        ),
+    )
     parser.add_argument("--probability-tmax", type=float, default=None)
     parser.add_argument("--probability-window-ps", type=float, default=1.75)
     parser.add_argument("--deprotonated-s-max", type=float, default=0.05)
     parser.add_argument("--returned-s-min", type=float, default=0.20)
     parser.add_argument("--persistence-ps", type=float, default=0.05)
+    parser.add_argument(
+        "--fes",
+        type=Path,
+        default=None,
+        help="fes.dat for the fourth-row pKa series (default: beside --traj)",
+    )
+    parser.add_argument("--temp", type=float, default=313.15)
+    parser.add_argument("--min1-x", type=float, default=0.0)
+    parser.add_argument("--min2-x", type=float, default=1.0)
+    parser.add_argument("--half-window", type=float, default=0.1)
+    parser.add_argument("--fes-xmin", type=float, default=0.0)
+    parser.add_argument("--fes-xmax", type=float, default=1.25)
+    parser.add_argument("--pka-window-samples", type=int, default=10)
+    parser.add_argument(
+        "--figure-width-inches",
+        type=float,
+        default=14.5,
+        help="Saved two-column figure width in inches (default: 14.5)",
+    )
+    parser.add_argument(
+        "--figure-height-inches",
+        type=float,
+        default=None,
+        help="Saved figure height in inches (default: 12 for four rows, 9 for three)",
+    )
+    parser.add_argument(
+        "--solvation-layer-boundaries",
+        type=float,
+        nargs=5,
+        default=(2.0, 3.5, 5.5, 7.5, 9.5),
+        metavar=("D0", "D1", "D2", "D3", "D4"),
+        help=(
+            "Five increasing distance boundaries in angstrom defining the "
+            "four shaded solvation layers (default: 2 3.5 5.5 7.5 9.5)"
+        ),
+    )
+    parser.add_argument(
+        "--exp-pka",
+        default=None,
+        help="Experimental pKa(s), comma or space separated",
+    )
     parser.add_argument(
         "--split-regime-cutoff",
         type=float,
@@ -862,6 +1376,12 @@ def main() -> None:
         type=Path,
         default=None,
         help="Connectivity plot path (default: --out with a .png suffix)",
+    )
+    parser.add_argument(
+        "--pka-data-out",
+        type=Path,
+        default=None,
+        help="Aligned pKa CSV path (default: derived from --out)",
     )
     args = parser.parse_args()
 
@@ -882,10 +1402,26 @@ def main() -> None:
         angle_cutoff=args.angle_cutoff,
     )
     plot_out = args.plot_out or args.out.with_suffix(".png")
-    if str(args.diffusive_start).strip().lower() == "auto":
+    if args.t_force_diffusion is not None:
+        if str(args.diffusive_start).strip().lower() != "auto":
+            parser.error(
+                "--t-force-diffusion cannot be combined with a numeric "
+                "--diffusive-start"
+            )
+        diffusive_start = args.t_force_diffusion
+        print(f"Forced t_diffuse = {diffusive_start:.6f} ps")
+    elif str(args.diffusive_start).strip().lower() == "auto":
         diffusive_start = None
     else:
         diffusive_start = float(args.diffusive_start)
+    from plot_pka_grid import parse_exp_pkas
+
+    fes_path = args.fes or args.traj.parent / "fes.dat"
+    if not fes_path.exists():
+        fes_path = None
+    pka_data_out = args.pka_data_out or args.out.with_name(
+        f"{args.out.stem}_pka.csv"
+    )
     plot_wire_csv(
         args.out,
         plot_out,
@@ -900,9 +1436,32 @@ def main() -> None:
         deprotonated_s_max=args.deprotonated_s_max,
         returned_s_min=args.returned_s_min,
         persistence_ps=args.persistence_ps,
+        fes_path=fes_path,
+        pka_data_out=pka_data_out if fes_path is not None else None,
+        temperature=args.temp,
+        min1_x=args.min1_x,
+        min2_x=args.min2_x,
+        half_window=args.half_window,
+        fes_xmin=args.fes_xmin,
+        fes_xmax=args.fes_xmax,
+        exp_pkas=parse_exp_pkas(args.exp_pka),
+        pka_window_sample_count=args.pka_window_samples,
+        solvation_layer_boundaries=args.solvation_layer_boundaries,
+        figure_width_inches=args.figure_width_inches,
+        figure_height_inches=args.figure_height_inches,
     )
     print(f"Wrote {args.out}")
     print(f"Wrote {plot_out}")
+    if fes_path is not None:
+        print(f"Wrote {pka_data_out}")
+        print(
+            "Wrote "
+            + str(
+                pka_data_out.with_name(
+                    f"{pka_data_out.stem}_window_samples.csv"
+                )
+            )
+        )
 
 
 if __name__ == "__main__":

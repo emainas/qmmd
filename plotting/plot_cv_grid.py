@@ -19,6 +19,42 @@ STEP_RE = re.compile(r"STEP NO\.\s*=\s*([0-9]+)")
 COORD_RE = re.compile(r"Coordinate\s*=\s*([+-]?[0-9.]+)")
 
 
+def parse_run_ids(value: str) -> set[int]:
+    """Parse comma-separated run IDs and inclusive ranges."""
+    run_ids: set[int] = set()
+    for item in value.split(","):
+        item = item.strip()
+        if not item:
+            raise argparse.ArgumentTypeError("run IDs must not contain empty entries")
+
+        if "-" in item:
+            parts = item.split("-")
+            if len(parts) != 2:
+                raise argparse.ArgumentTypeError(f"invalid run ID range: {item!r}")
+            try:
+                start, end = (int(part.strip()) for part in parts)
+            except ValueError as exc:
+                raise argparse.ArgumentTypeError(f"invalid run ID range: {item!r}") from exc
+            if start < 1 or end < 1:
+                raise argparse.ArgumentTypeError("run IDs must be positive integers")
+            if start > end:
+                raise argparse.ArgumentTypeError(
+                    f"run ID range must be ascending: {item!r}"
+                )
+            run_ids.update(range(start, end + 1))
+            continue
+
+        try:
+            run_id = int(item)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(f"invalid run ID: {item!r}") from exc
+        if run_id < 1:
+            raise argparse.ArgumentTypeError("run IDs must be positive integers")
+        run_ids.add(run_id)
+
+    return run_ids
+
+
 def parse_biaspot(path: Path) -> Tuple[np.ndarray, np.ndarray]:
     times: List[float] = []
     coords: List[float] = []
@@ -218,7 +254,11 @@ def load_biaspot_with_restart(run_dir: Path, cv_dir: str) -> Tuple[np.ndarray, n
     return t, y
 
 
-def discover_runs(runs_path: Path, cv_dirs: List[str]) -> List[Tuple[int, Path, List[str]]]:
+def discover_runs(
+    runs_path: Path,
+    cv_dirs: List[str],
+    run_ids: Optional[set[int]] = None,
+) -> List[Tuple[int, Path, List[str]]]:
     out: List[Tuple[int, Path, List[str]]] = []
     for p in sorted(runs_path.iterdir()):
         if not (p.is_dir() and p.name.startswith("run-")):
@@ -226,6 +266,8 @@ def discover_runs(runs_path: Path, cv_dirs: List[str]) -> List[Tuple[int, Path, 
         try:
             run_id = int(p.name.split("-", 1)[1])
         except ValueError:
+            continue
+        if run_ids is not None and run_id not in run_ids:
             continue
         present = []
         for cv_dir in cv_dirs:
@@ -235,7 +277,7 @@ def discover_runs(runs_path: Path, cv_dirs: List[str]) -> List[Tuple[int, Path, 
         if not present:
             continue
         out.append((run_id, p, present))
-    return out
+    return sorted(out, key=lambda run: run[0])
 
 
 def grid_shape(n: int) -> Tuple[int, int]:
@@ -260,13 +302,20 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Plot CV grids from biaspot files.")
     p.add_argument("--runs-path", required=True, type=Path, help="Path containing run-* directories")
     p.add_argument("--cv-dir", required=True, help="CV directory under each run (comma-separated supported)")
+    p.add_argument(
+        "--run-ids",
+        type=parse_run_ids,
+        default=None,
+        metavar="IDS",
+        help="Run IDs to plot, as comma-separated IDs or inclusive ranges (for example, 51-100)",
+    )
     p.add_argument("--style", type=Path, default=Path("src/prl.mplstyle"))
     p.add_argument("--debug", action="store_true", help="Print timing/offset diagnostics")
     p.add_argument("--out", type=Path, default=None)
     args = p.parse_args()
 
     cv_dirs = [s.strip() for s in args.cv_dir.split(",") if s.strip()]
-    runs = discover_runs(args.runs_path, cv_dirs)
+    runs = discover_runs(args.runs_path, cv_dirs, args.run_ids)
     if not runs:
         raise SystemExit("No biaspot files found.")
 

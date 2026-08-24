@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,6 +17,42 @@ TIME_RE = re.compile(r"\*\*\* AT T=\s*([0-9.]+)\s*FSEC")
 RUN_RE = re.compile(r"^run-(\d+)$")
 EH_TO_KCALMOL = 627.509474
 PKA_FACTOR = 0.004576
+
+
+def parse_run_ids(value: str) -> set[int]:
+    """Parse comma-separated run IDs and inclusive ranges."""
+    run_ids: set[int] = set()
+    for item in value.split(","):
+        item = item.strip()
+        if not item:
+            raise argparse.ArgumentTypeError("run IDs must not contain empty entries")
+
+        if "-" in item:
+            parts = item.split("-")
+            if len(parts) != 2:
+                raise argparse.ArgumentTypeError(f"invalid run ID range: {item!r}")
+            try:
+                start, end = (int(part.strip()) for part in parts)
+            except ValueError as exc:
+                raise argparse.ArgumentTypeError(f"invalid run ID range: {item!r}") from exc
+            if start < 1 or end < 1:
+                raise argparse.ArgumentTypeError("run IDs must be positive integers")
+            if start > end:
+                raise argparse.ArgumentTypeError(
+                    f"run ID range must be ascending: {item!r}"
+                )
+            run_ids.update(range(start, end + 1))
+            continue
+
+        try:
+            run_id = int(item)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(f"invalid run ID: {item!r}") from exc
+        if run_id < 1:
+            raise argparse.ArgumentTypeError("run IDs must be positive integers")
+        run_ids.add(run_id)
+
+    return run_ids
 
 
 def parse_biaspot_times(path: Path) -> np.ndarray:
@@ -102,7 +138,11 @@ def load_fes_with_restart(run_dir: Path, cv_dir: str) -> List[np.ndarray]:
     return blocks + restart_blocks
 
 
-def discover_runs(runs_path: Path, cv_dir: str) -> List[Tuple[int, Path, Path]]:
+def discover_runs(
+    runs_path: Path,
+    cv_dir: str,
+    run_ids: Optional[set[int]] = None,
+) -> List[Tuple[int, Path, Path]]:
     out: List[Tuple[int, Path, Path]] = []
     for p in sorted(runs_path.iterdir()):
         if not p.is_dir():
@@ -111,11 +151,13 @@ def discover_runs(runs_path: Path, cv_dir: str) -> List[Tuple[int, Path, Path]]:
         if not m:
             continue
         run_id = int(m.group(1))
+        if run_ids is not None and run_id not in run_ids:
+            continue
         biaspot = p / cv_dir / "biaspot"
         fes = p / cv_dir / "fes.dat"
         if biaspot.exists() and fes.exists():
             out.append((run_id, biaspot, fes))
-    return out
+    return sorted(out, key=lambda run: run[0])
 
 
 def grid_shape(n: int) -> Tuple[int, int]:
@@ -196,6 +238,13 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Plot pKa grids from biaspot + fes.dat.")
     p.add_argument("--runs-path", required=True, type=Path, help="Path containing run-* directories")
     p.add_argument("--cv-dir", required=True, help="CV directory under each run (e.g., all-meta-hid)")
+    p.add_argument(
+        "--run-ids",
+        type=parse_run_ids,
+        default=None,
+        metavar="IDS",
+        help="Run IDs to plot, as comma-separated IDs or inclusive ranges (for example, 51-100)",
+    )
     p.add_argument("--style", type=Path, default=Path("src/prl.mplstyle"))
     p.add_argument("--out", type=Path, default=None)
     p.add_argument("--temp", type=float, default=313.15)
@@ -213,7 +262,7 @@ def main() -> None:
     args = p.parse_args()
     exp_pkas = parse_exp_pkas(args.exp_pka)
 
-    runs = discover_runs(args.runs_path, args.cv_dir)
+    runs = discover_runs(args.runs_path, args.cv_dir, args.run_ids)
     if not runs:
         raise SystemExit("No biaspot/fes.dat pairs found.")
 
