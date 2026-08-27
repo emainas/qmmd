@@ -4,7 +4,7 @@ prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 50
+replicas: 100
 append: yes
 replica_dirname: equil
 

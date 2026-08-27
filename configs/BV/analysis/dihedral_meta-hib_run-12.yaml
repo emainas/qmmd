@@ -1,0 +1,26 @@
+system: BV
+buffer: 4.0
+prefix: solv
+
+method_dir: dftb
+bench_tag: N1T64C1
+run_ids: [12]
+cv_dir: meta-hib
+traj_name: traject
+dftb_inp_name: dftb.inp
+parm_path: systems/BV/solv_4.0/salt/ready.parm7
+
+dihedrals:
+ - name: double5
+   atoms: [":1@NA", ":1@C4A", ":1@C5", ":1@C1B"]
+ - name: single5
+   atoms: [":1@NB", ":1@C1B", ":1@C5", ":1@C4A"]
+ - name: single10
+   atoms: [":1@NB", ":1@C4B", ":1@C10", ":1@C1C"]
+ - name: double10
+   atoms: [":1@C4B", ":1@C10", ":1@C1C", ":1@NC"]
+ - name: single15
+   atoms: [":1@NC", ":1@C4C", ":1@C15", ":1@C1D"]
+ - name: double15
+   atoms: [":1@C4C", ":1@C15", ":1@C1D", ":1@ND"]
+range360: true
