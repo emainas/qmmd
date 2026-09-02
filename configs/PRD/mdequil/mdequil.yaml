@@ -1,4 +1,4 @@
-system: HPD
+system: PRD
 buffer: 5.5
 prefix: solv          # matches prep output solv.parm7 / solv.rst7
 job_name: mdequil     # output folder name next to prep

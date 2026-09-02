@@ -1,12 +1,12 @@
-system: BV
-buffer: 4.0
+system: HPD
+buffer: 5.5
 prefix: solv
 
 dftb_dirname: dftb
 replica_dirname: equil
-cv_dirname: meta-hib
+cv_dirname: meta-h
 
-run_ids: "101-200"
+run_ids: "1-20"
 bench_tag: N1T48C1
 
 cv_title: RATIONALCOORDINATIONNUMBER
@@ -22,8 +22,8 @@ grid_step: 0.01
 
 group1:
   mode: indices
-  indices: [19]
+  indices: [1]
 
 group2:
   mode: indices
-  indices: [20]
+  indices: [8]

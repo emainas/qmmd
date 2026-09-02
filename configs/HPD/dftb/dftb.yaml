@@ -1,14 +1,12 @@
-system: BV
-buffer: 4.0
+system: HPD
+buffer: 5.5
 prefix: solv
+job_name: dftb
+salt_dirname: salt
 
-dftb_dirname: dftb
+replicas: 20
+append: no
 replica_dirname: equil
-cv_dirname: meta-hib
-
-run_ids: "101-200"
-bench_tag: N1T48C1
-restart_name: restart
 
 dftb:
   title: "DC-DFTB3/3ob, PBC (NVT)"
@@ -16,21 +14,20 @@ dftb:
   header_lines:
     - "SCC=(THIRDFULL=TRUE DAMPXH=TRUE ALMIX=0.3)"
     - "SCC=(READCHARGE=NONE)"
-    - "SCC=(MAXITER=1000)" 
+    - "SCC=(MAXITER=1000)"
     - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
-    - "MD=(NSTEP=80000 DELTAT=0.5D-15)"
-    - "MD=(RESTART=TRUE READVELOCITY=FALSE)"
-    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0)"
+    - "MD=(NSTEP=40000 DELTAT=1.0D-15)"
+    - "MD=(RESTART=FALSE READVELOCITY=FALSE)"
+    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0 CALCPRESSURE=TRUE)"
     - "MD=(COLLISIONFREQ=0.01)"
     - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
     - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
     - "MD=(PRINT=10 SEEDTYPE=3 RANDOMSEED=0)"
-    - "MD=(METADYNAMICS=TRUE METAPRINTFES=TRUE METARESTART=FALSE)"
-    - "MD=(METAFREQ=80 METAHEIGHT=5e-4)"
     - "MISC=(PRINTLAPTIME=TRUE)"
     - "MISC=(WRITECHRGFILE=FALSE)"
     - "PBC=TRUE"
-
+    - "PBC=(STRESS=TRUE)"
+  
   charge: 0
   multiplicity: 1
 
@@ -52,12 +49,13 @@ runtime:
 
 slurm:
   job:
-    name: BVB
-    partition: batch
+    name: HPD
+    partition: small
     nodes: 1
     ntasks: 48
     mem: "50G"
     cpus_per_task: 1
-    time: "4-00:00:00"
+    time: "1-00:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
+
