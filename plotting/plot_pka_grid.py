@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import re
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import FuncFormatter
+from plot_cv_grid import infer_offset_ps
 
 
 TIME_RE = re.compile(r"\*\*\* AT T=\s*([0-9.]+)\s*FSEC")
@@ -247,6 +248,10 @@ def main() -> None:
     )
     p.add_argument("--style", type=Path, default=Path("src/prl.mplstyle"))
     p.add_argument("--out", type=Path, default=None)
+    p.add_argument("--time-axis", choices=("restart-aligned", "raw"), default="restart-aligned",
+                   help="Same clock as plot_cv_grid.py: parent-trajectory aligned (default) or raw DFTB time")
+    p.add_argument("--data-out", type=Path, default=None, help="Aligned CSV (default: PNG stem + .csv)")
+    p.add_argument("--debug", action="store_true", help="Print raw and plotted timing diagnostics")
     p.add_argument("--temp", type=float, default=313.15)
     p.add_argument("--min1-x", type=float, default=0.0)
     p.add_argument("--min2-x", type=float, default=1.0)
@@ -271,10 +276,11 @@ def main() -> None:
 
     n = len(runs)
     rows, cols = grid_shape(n)
-    fig, axes = plt.subplots(rows, cols, figsize=(3.6 * cols, 2.8 * rows), dpi=220, sharex=False, sharey=True)
-    axes_flat = axes.flatten() if isinstance(axes, np.ndarray) else [axes]
+    fig, axes = plt.subplots(rows, cols, figsize=(3.6 * cols, 2.8 * rows), dpi=220,
+                             sharex=False, sharey=True, squeeze=False)
+    axes_flat = axes.flatten()
 
-    all_y = []
+    numerical_rows = []
     for i, (run_id, biaspot, fes_path) in enumerate(runs):
         ax = axes_flat[i]
         run_dir = biaspot.parent.parent
@@ -287,8 +293,11 @@ def main() -> None:
         nblocks = min(len(blocks), len(times))
         times = times[:nblocks]
         blocks = blocks[:nblocks]
-        t0 = float(times[0])
-        times_rel = times - t0
+        offset_ps = infer_offset_ps(run_dir, args.cv_dir, float(times[0])) if args.time_axis == "restart-aligned" else 0.
+        plotted_times = times + offset_ps
+        if args.debug:
+            print(f"[debug] run-{run_id} cv={args.cv_dir} raw=({times[0]:.6f}, {times[-1]:.6f}) "
+                  f"offset={offset_ps:.6f} plotted=({plotted_times[0]:.6f}, {plotted_times[-1]:.6f}) ps")
 
         df_vals = np.array(
             [
@@ -298,22 +307,25 @@ def main() -> None:
             dtype=float,
         )
         pka_vals = df_vals / (PKA_FACTOR * args.temp)
-        ax.plot(times_rel, pka_vals, color="black", lw=1.6)
-        ax.scatter(times_rel, pka_vals, color="#FFA500", edgecolor=(0.0, 0.0, 0.0, 0.35), s=18)
+        ax.plot(plotted_times, pka_vals, color="black", lw=1.6)
+        ax.scatter(plotted_times, pka_vals, color="#FFA500", edgecolor=(0.0, 0.0, 0.0, 0.35), s=18)
+        numerical_rows.extend(
+            (run_id, args.cv_dir, float(raw), float(shown), float(df), float(pka),
+             offset_ps, args.time_axis, args.temp)
+            for raw, shown, df, pka in zip(times, plotted_times, df_vals, pka_vals)
+        )
         if exp_pkas:
             for j, pka in enumerate(exp_pkas):
                 color = f"C{j % 10}"
                 ax.axhline(pka, color=color, lw=1.2, ls="--", alpha=0.85)
         ax.set_title(f"run-{run_id}", fontsize=10)
-        ax.set_xlim(0.0, float(times_rel[-1]))
-        ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x + t0:.1f}"))
+        ax.set_xlim(float(plotted_times[0]), float(plotted_times[-1]))
         ylo, yhi = np.min(pka_vals), np.max(pka_vals)
         pad = 0.05 * (yhi - ylo) if yhi > ylo else 0.5
         ax.set_ylim(ylo - pad, yhi + pad)
         ax.set_ylim(-20,20)
         ax.grid(alpha=0.25)
         ax.tick_params(labelsize=8)
-        all_y.append(pka_vals)
 
     for ax in axes_flat[len(runs):]:
         ax.set_axis_off()
@@ -321,15 +333,10 @@ def main() -> None:
     # per-run scaling already applied via each panel's data range
 
     for r in range(rows):
-        if cols > 1:
-            axes[r, 0].set_ylabel("pKa", fontsize=10)
-        else:
-            axes.set_ylabel("pKa", fontsize=10)
+        axes[r, 0].set_ylabel("pKa", fontsize=10)
     for c in range(cols):
-        if rows > 1:
-            axes[rows - 1, c].set_xlabel("t (ps)", fontsize=10)
-        else:
-            axes.set_xlabel("t (ps)", fontsize=10)
+        label = "Restart-aligned time (ps)" if args.time_axis == "restart-aligned" else "DFTB reported time (ps)"
+        axes[rows - 1, c].set_xlabel(label, fontsize=10)
 
     system = infer_system(args.runs_path)
     out = args.out
@@ -339,7 +346,15 @@ def main() -> None:
     fig.tight_layout()
     fig.savefig(out)
     plt.close(fig)
+    data_out = args.data_out or out.with_suffix(".csv")
+    data_out.parent.mkdir(parents=True, exist_ok=True)
+    with data_out.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["run_id", "cv_dir", "raw_time_ps", "plotted_time_ps", "delta_f_kcal_mol",
+                         "pka", "offset_ps", "time_axis", "temperature_K"])
+        writer.writerows(numerical_rows)
     print(f"Wrote {out}")
+    print(f"Wrote {data_out}")
 
 
 if __name__ == "__main__":

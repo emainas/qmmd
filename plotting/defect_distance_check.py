@@ -10,7 +10,7 @@ from typing import Sequence
 
 import numpy as np
 
-from oxygen_wire import (
+from acid_base_BV import (
     _minimum_image,
     detect_diffusive_start,
     iter_xyz_frames,
@@ -208,7 +208,7 @@ def add_layer_plot(
     distances: np.ndarray,
     boundaries: np.ndarray,
 ):
-    """Draw the same solvation-layer encoding used by oxygen_wire.py."""
+    """Draw the same solvation-layer encoding used by acid_base_BV.py."""
     from matplotlib.cm import ScalarMappable
     from matplotlib.colors import BoundaryNorm, ListedColormap
 

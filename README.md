@@ -51,6 +51,22 @@ NVT and NPT equilibration with classical force field using Amber's sander module
 qmmd mdequil configs/<molecule>/mdequil/mdequil.yaml
 ```
 
+Optional top-level `dihedral_restraints` applies Amber NMR torsion restraints
+throughout minimization, heating, NVT and NPT:
+
+```yaml
+dihedral_restraints:
+  - atoms: [5, 3, 4, 11]  # one-based topology IDs; verify for your system
+    target_deg: 180.0
+    force_constant: 50.0  # kcal/mol/rad^2; E = k * displacement^2
+```
+
+The writer generates `dihedral.rst`, enables `nmropt=1`, and appends `DISANG`
+to each stage, preserving heating weight schedules. Targets are in degrees;
+equal r2/r3 give no flat-bottom region. Omit this option for unrestrained MD.
+Restraints suppress conformer transitions but also alter intrabasin sampling.
+`qmmd mdequil` launches/submits after writing inputs; it is not preparation-only.
+
 ---
 
 ## salt - Post-equilibration System Adjustment
@@ -114,6 +130,11 @@ Reads the xyz file from previous step and writes one or many DFTB runs (no submi
 
 **Notes**
 - `replicas` + `append` control how many runs are created and whether to start after existing runs
+- Optional `source_xyz` selects a repository-relative or absolute XYZ instead of
+  `salt/ready.xyz`; optional `source_sha256` verifies its contents before preparation.
+  Both `Box X: ... Y: ... Z: ...` and extended-XYZ `Lattice="..."` boxes are supported.
+  With 20 existing runs, `replicas: 30` and `append: true` creates runs 21–50.
+  Repeating preparation appends another 30; this is an additional count, not a target total.
 - `MD=(... SEEDTYPE=3 RANDOMSEED=0 ...)` will replace `0` with a unique seed per run
 
 **Run**
@@ -134,6 +155,13 @@ Submits Slurm jobs for run directories that match the provided config (by spec.y
 qmmd dftb-submit configs/<molecule>/dftb/dftb.yaml
 ```
 
+For existing runs outside the buffer-based layout, set `system_dir` to a
+repository-relative or absolute directory, for example
+`systems/PRN-anti/solv_100`. In that case `buffer` can be omitted.
+`slurm.job.qos` optionally specifies a Slurm QoS such as `highpri`.
+Submission selects runs whose `equil/spec.yaml` exactly matches the supplied
+configuration; it submits their existing `slurm.sh` files without rewriting them.
+
 ---
 
 ## ncoord - Write metacv.dat from dftb.inp
@@ -151,6 +179,9 @@ Generates `metacv.dat` for selected runs by reading atom indices from the `dftb.
 **Notes**
 - `group` can be `indices`, `range`, or `all_water_H`
 - `all_water_H` selects all H atoms after `solute_end` and can include extra `indices` (listed first)
+- `system_dir` optionally sets a repository-relative or absolute system directory
+  (e.g. `systems/PRN-anti/solv_100`); when set, `buffer` can be omitted.
+  Otherwise the existing `systems/<system>/<prefix>_<buffer:.1f>` layout is used.
 - `run_ids` supports a list or a range string like `"1-2"`
 
 **Run**
@@ -160,6 +191,39 @@ qmmd ncoord configs/<molecule>/ncoord/ncoord.yaml
 ```
 
 ---
+
+## lcod - Bond-distance-difference CV
+
+```bash
+qmmd lcod configs/HPD/lcod/lcod.yaml
+```
+
+Reads `lcod.type: BONDDISTANCEDIFFERENCE`, `lcod.gaussian_width` (Å), and
+four one-based `lcod.atoms`. Writes `metacv.dat` and a YAML snapshot into each
+selected run's `cv_dirname`, without submitting jobs. Existing target directories
+are skipped unchanged; all new targets are validated before writing.
+Supports either `system_dir` or the usual `system`/`buffer`/`prefix` layout.
+
+The HPD example selects runs 1–20 and creates `meta-lcod` with:
+
+```text
+BONDDISTANCEDIFFERENCE 0.1 1 8 7 8 -3 3 0.01
+```
+
+The `lcod` mapping accepts `grid_min`, `grid_max`, and `grid_step` (all Å).
+Supply all three together; bounds must increase and spacing must be positive.
+They are appended after the four atom IDs in that order. The HPD example uses
+−3 to +3 Å with spacing 0.01 Å. These are FES output settings, not walls or
+sampling limits; coverage should be checked against the sampled CV values.
+The grid is required by DCDFTBMD when `METAPRINTFES=TRUE`. Omitting all three
+remains supported for workflows without FES output. Existing CV directories
+are still skipped, so changing YAML does not update already generated files.
+
+This is r(N1,H8) − r(O7,H8), tracking the fixed original H8, not whichever
+proton O7 acquires from water. No coordination-number exponents or normalization
+apply. This command prepares only the CV; subsequent `meta-prep` requires a
+separate meta YAML with `cv_dirname: meta-lcod`. Do not use `meta-h` for that step.
+This does not establish the suitability of the CV for bulk pKa estimation.
 
 ## 2dncoord - Write 2D metacv.dat from dftb.inp
 
@@ -203,6 +267,9 @@ Writes metadynamics inputs/scripts in a CV directory (created by `ncoord`)
 
 **Notes**
 - `cv_dirname` must already exist (created by `ncoord`)
+- `meta-prep` and `meta-submit` accept a repository-relative or absolute
+  `system_dir`; when set, `buffer` can be omitted. Existing buffer-based paths
+  remain supported.
 - `run_ids` supports a list or a range string like `"1-2"`
 - `MD=(... SEEDTYPE=3 RANDOMSEED=0 ...)` will replace `0` with a unique seed per run
 

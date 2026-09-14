@@ -1,0 +1,15 @@
+name: PRN-anti
+leaprc_mol: leaprc.gaff2
+leaprc_sol: leaprc.water.tip3p
+frcmod_ion: null
+frcmod: systems/PRN-anti/init/anti_min.frcmod
+
+mol2: systems/PRN-anti/init/anti_min.mol2
+
+water_model: TIP3PBOX
+buffer: 6.5
+counterion: null
+counterion_num: 0
+
+input_dir: systems/PRN-anti/init/
+prefix: solv

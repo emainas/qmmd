@@ -1,5 +1,5 @@
-system: ISO
-buffer: 4.0
+system: PRD
+buffer: 5.5
 prefix: solv
 job_name: mdequil
 

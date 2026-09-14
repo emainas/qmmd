@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Extract H-bond-connected frames and generate a dynamic VMD wire movie.
 
-The input CSV must be an augmented output from ``oxygen_wire.py``.  Frame
+The input CSV must be an augmented output from ``acid_base_BV.py``.  Frame
 selection and path membership are taken directly from that CSV, while XYZ
 frames are matched by timestamp.  Atom IDs remain one-based in all outputs;
 the generated VMD script performs the conversion to zero-based indices.
@@ -17,7 +17,7 @@ from typing import Iterator
 
 import numpy as np
 
-from oxygen_wire import (
+from acid_base_BV import (
     iter_xyz_frames,
     read_box_lengths_from_dftb_inp,
     read_xyz_symbols,

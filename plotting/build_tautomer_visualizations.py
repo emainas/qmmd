@@ -11,7 +11,7 @@ import numpy as np
 
 from extract_hbond_wire_movie import match_xyz_frames, write_outputs
 from extract_tautomer_wire_movie import read_tautomer_frames, relabel_outputs
-from oxygen_wire import read_box_lengths_from_dftb_inp, read_xyz_symbols
+from acid_base_BV import read_box_lengths_from_dftb_inp, read_xyz_symbols
 from tautomers import SYSTEM_SPECS, detect_diffusive_regime
 
 

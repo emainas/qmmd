@@ -1,0 +1,16 @@
+system: HPD
+buffer: 5.5
+prefix: solv
+dftb_dirname: dftb
+replica_dirname: equil
+cv_dirname: meta-lcod
+run_ids: "1-20"
+bench_tag: N1T48C1
+
+lcod:
+  type: BONDDISTANCEDIFFERENCE
+  gaussian_width: 0.1 
+  atoms: [1, 8, 7, 8]
+  grid_min: -3.0  # Å; FES output range, not a sampling restraint
+  grid_max: 3.0
+  grid_step: 0.01

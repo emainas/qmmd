@@ -10,7 +10,7 @@ from typing import Iterator, Sequence
 
 import numpy as np
 
-from oxygen_wire import (
+from acid_base_BV import (
     _minimum_image,
     iter_xyz_frames,
     read_box_lengths_from_dftb_inp,

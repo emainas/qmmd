@@ -1,11 +1,11 @@
-system: ISO
-buffer: 4.0
+system: PRD
+buffer: 5.5
 prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 20
-append: no
+replicas: 30
+append: yes
 replica_dirname: equil
 
 dftb:
@@ -49,13 +49,12 @@ runtime:
 
 slurm:
   job:
-    name: ISO
+    name: PRD
     partition: batch
     nodes: 1
     ntasks: 48
     mem: "50G"
     cpus_per_task: 1
-    time: "4-00:00:00"
+    time: "1-00:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
-

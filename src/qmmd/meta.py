@@ -46,7 +46,7 @@ class RuntimeConfig:
 @dataclass(frozen=True, slots=True)
 class MetaConfig:
     system: str
-    buffer: float
+    buffer: Optional[float]
     prefix: str
     dftb_dirname: str
     replica_dirname: str
@@ -57,6 +57,7 @@ class MetaConfig:
     runtime: RuntimeConfig
     slurm: Optional[SlurmConfig] = None
     bench_tag: Optional[str] = None
+    system_dir: Optional[str] = None
 
 
 def find_repo_root(start: Path) -> Path:
@@ -73,6 +74,11 @@ def bench_tag_from_slurm(slurm_cfg: SlurmConfig) -> str:
 
 
 def system_base_dir(cfg: MetaConfig, repo_root: Path) -> Path:
+    if cfg.system_dir is not None:
+        path = Path(cfg.system_dir)
+        return path if path.is_absolute() else repo_root / path
+    if cfg.buffer is None:
+        raise ValueError("Either system_dir or buffer is required")
     return repo_root / "systems" / cfg.system / f"{cfg.prefix}_{cfg.buffer:.1f}"
 
 
@@ -114,6 +120,8 @@ def stage_skf_files(repo_params: Path, out_dir_path: Path, elements: List[str]) 
 
 def load_config(yaml_path: Path) -> MetaConfig:
     data = yaml.safe_load(yaml_path.read_text())
+    if data.get("system_dir") is None and data.get("buffer") is None:
+        raise ValueError("Either system_dir or buffer is required")
 
     dftb_data = data["dftb"]
     elems = [ElementConfig(**e) for e in dftb_data["elements"]]
@@ -139,7 +147,7 @@ def load_config(yaml_path: Path) -> MetaConfig:
 
     return MetaConfig(
         system=data["system"],
-        buffer=float(data["buffer"]),
+        buffer=float(data["buffer"]) if data.get("buffer") is not None else None,
         prefix=data.get("prefix", "solv"),
         dftb_dirname=data.get("dftb_dirname", "dftb"),
         replica_dirname=data.get("replica_dirname", "equil"),
@@ -150,6 +158,7 @@ def load_config(yaml_path: Path) -> MetaConfig:
         runtime=runtime_cfg,
         slurm=slurm_cfg,
         bench_tag=data.get("bench_tag"),
+        system_dir=data.get("system_dir"),
     )
 
 

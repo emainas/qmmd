@@ -63,6 +63,163 @@ class FrameResult:
 
 TIME_RE = re.compile(r"\*\*\* AT T=\s*([0-9.]+)\s*FSEC")
 
+BV_DIHEDRAL_ATOM_NAMES = {
+    "single5": ("NB", "C1B", "C5", "C4A"),
+    "single10": ("NB", "C4B", "C10", "C1C"),
+    "single15": ("NC", "C4C", "C15", "C1D"),
+    "double5": ("NA", "C4A", "C5", "C1B"),
+    "double10": ("C4B", "C10", "C1C", "NC"),
+    "double15": ("C4C", "C15", "C1D", "ND"),
+}
+
+
+def _signed_dihedral_deg(
+    points: np.ndarray, box: np.ndarray | None
+) -> float:
+    """Return the signed dihedral of four sequentially unwrapped points."""
+    b0 = _minimum_image(points[1] - points[0], box)
+    b1 = _minimum_image(points[2] - points[1], box)
+    b2 = _minimum_image(points[3] - points[2], box)
+    b1_norm = float(np.linalg.norm(b1))
+    if b1_norm == 0.0:
+        return float("nan")
+    n0 = np.cross(b0, b1)
+    n1 = np.cross(b1, b2)
+    n0_norm = float(np.linalg.norm(n0))
+    n1_norm = float(np.linalg.norm(n1))
+    if n0_norm == 0.0 or n1_norm == 0.0:
+        return float("nan")
+    n0 /= n0_norm
+    n1 /= n1_norm
+    x_value = float(np.dot(n0, n1))
+    y_value = float(np.dot(np.cross(n0, n1), b1 / b1_norm))
+    return float(np.degrees(np.arctan2(y_value, x_value)))
+
+
+def _bv_atom_name_ids(parm7: Path, solute_atoms: int) -> dict[str, int]:
+    """Resolve unique one-based BV atom IDs from the Amber atom-name section."""
+    names: list[str] = []
+    in_atom_names = False
+    for line in parm7.read_text(encoding="utf-8", errors="ignore").splitlines():
+        if line.startswith("%FLAG "):
+            if in_atom_names:
+                break
+            in_atom_names = line.strip() == "%FLAG ATOM_NAME"
+            continue
+        if not in_atom_names or line.startswith("%FORMAT"):
+            continue
+        names.extend(
+            line[index : index + 4].strip()
+            for index in range(0, len(line), 4)
+            if line[index : index + 4].strip()
+        )
+    names = names[:solute_atoms]
+    if len(names) != solute_atoms:
+        raise ValueError(f"Could not read {solute_atoms} BV atom names from {parm7}")
+    required = {name for quartet in BV_DIHEDRAL_ATOM_NAMES.values() for name in quartet}
+    resolved: dict[str, int] = {}
+    for name in required:
+        matches = [index + 1 for index, value in enumerate(names) if value == name]
+        if len(matches) != 1:
+            raise ValueError(f"Expected one BV atom named {name}; found {matches}")
+        resolved[name] = matches[0]
+    return resolved
+
+
+def calculate_bv_torsions(
+    traj_path: Path,
+    target_times: np.ndarray,
+    parm7: Path,
+    solute_atoms: int,
+    box: np.ndarray | None,
+) -> tuple[dict[str, np.ndarray], np.ndarray]:
+    """Calculate six bridge torsions and the A--B--C--D center helicity."""
+    from bv_ring_defect_distances import identify_bv_rings, ring_center
+
+    atom_ids = _bv_atom_name_ids(parm7, solute_atoms)
+    quartets = {
+        label: np.asarray([atom_ids[name] for name in names], dtype=int)
+        for label, names in BV_DIHEDRAL_ATOM_NAMES.items()
+    }
+    rings = identify_bv_rings(parm7, solute_atoms)
+    series = {
+        label: np.full(target_times.shape, np.nan, dtype=float) for label in quartets
+    }
+    helicity = np.full(target_times.shape, np.nan, dtype=float)
+    finite_times = target_times[np.isfinite(target_times)]
+    steps = np.diff(finite_times)
+    positive_steps = steps[steps > 0.0]
+    tolerance = 0.51 * float(np.median(positive_steps)) if positive_steps.size else 1.0e-6
+    target_index = 0
+    for frame_time, coords in iter_xyz_frames(traj_path):
+        if frame_time is None:
+            raise ValueError(f"Trajectory frame in {traj_path} has no timestamp")
+        while (
+            target_index < len(target_times)
+            and target_times[target_index] < frame_time - tolerance
+        ):
+            target_index += 1
+        if target_index >= len(target_times):
+            break
+        if abs(target_times[target_index] - frame_time) > tolerance:
+            continue
+        for label, quartet in quartets.items():
+            series[label][target_index] = _signed_dihedral_deg(
+                coords[quartet - 1], box
+            )
+        centers = np.asarray(
+            [ring_center(coords, rings[label], box) for label in ("A", "B", "C", "D")]
+        )
+        helicity[target_index] = _signed_dihedral_deg(centers, box)
+        target_index += 1
+    return series, helicity
+
+
+def save_bv_torsion_csv(
+    path: Path,
+    times: np.ndarray,
+    series: dict[str, np.ndarray],
+    helicity: np.ndarray,
+) -> None:
+    """Save the frame-aligned BV observables used in the fourth column."""
+    labels = list(BV_DIHEDRAL_ATOM_NAMES)
+    data = np.column_stack([times, *[series[label] for label in labels], helicity])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savetxt(
+        path,
+        data,
+        delimiter=",",
+        header=",".join(["time_ps", *[f"{x}_deg" for x in labels], "helicity_deg"]),
+        comments="",
+    )
+
+
+def _circular_running_average_deg(
+    times: np.ndarray, values: np.ndarray, window_ps: float
+) -> np.ndarray:
+    """Return a centered, time-windowed circular mean of angular data."""
+    result = np.full(values.shape, np.nan, dtype=float)
+    finite = np.isfinite(times) & np.isfinite(values)
+    if not np.any(finite):
+        return result
+    finite_indices = np.flatnonzero(finite)
+    finite_times = times[finite]
+    radians = np.radians(values[finite])
+    half_window = 0.5 * window_ps
+    left = 0
+    right = 0
+    for local_index, time_ps in enumerate(finite_times):
+        while left < len(finite_times) and finite_times[left] < time_ps - half_window:
+            left += 1
+        while right < len(finite_times) and finite_times[right] <= time_ps + half_window:
+            right += 1
+        mean_sine = float(np.mean(np.sin(radians[left:right])))
+        mean_cosine = float(np.mean(np.cos(radians[left:right])))
+        result[finite_indices[local_index]] = np.degrees(
+            np.arctan2(mean_sine, mean_cosine)
+        )
+    return result
+
 
 def iter_xyz_frames(path: Path) -> Iterator[tuple[float | None, np.ndarray]]:
     """Yield optional times in ps and coordinates from an XYZ trajectory."""
@@ -1137,6 +1294,7 @@ def plot_wire_csv(
     path: Path,
     out: Path,
     cutoff: float = 3.5,
+    max_bridging_waters: int = 4,
     split_regime_cutoff: float | None = None,
     covalent_cutoff: float = 1.3,
     hydrogen_acceptor_cutoff: float = 2.5,
@@ -1165,6 +1323,20 @@ def plot_wire_csv(
     oxygen_charges: np.ndarray | None = None,
     oxygen_ids: Sequence[int] = (),
     fes_snapshot_out: Path | None = None,
+    bv_torsion_times: np.ndarray | None = None,
+    bv_dihedrals: dict[str, np.ndarray] | None = None,
+    bv_helicity: np.ndarray | None = None,
+    bv_ring_distances: dict[str, np.ndarray] | None = None,
+    bv_ring_oxygen_distances: dict[str, np.ndarray] | None = None,
+    bv_ring_oxygen_ids: dict[str, int] | None = None,
+    bv_competitor_charge_times: np.ndarray | None = None,
+    bv_competitor_charges: dict[str, np.ndarray] | None = None,
+    bv_competitor_wires: dict[str, np.ndarray] | None = None,
+    bv_competitor_coordination: dict[str, np.ndarray] | None = None,
+    bv_competitor_endpoint_ids: dict[str, int] | None = None,
+    bv_competitor_max_bridging_waters: int = 3,
+    bv_smoothing_window_ps: float = 0.10,
+    deprotonation_start: float | None = None,
 ) -> None:
     """Plot wire connectivity and the aligned N--defect distance against time."""
     import matplotlib.pyplot as plt
@@ -1291,10 +1463,24 @@ def plot_wire_csv(
         figure_height_inches = 10.0
     if figure_width_inches <= 0.0 or figure_height_inches <= 0.0:
         raise ValueError("Figure width and height must be positive")
+    has_bv_column = (
+        bv_torsion_times is not None
+        and bv_dihedrals is not None
+        and bv_helicity is not None
+    )
+    has_bv_competitor_column = (
+        has_bv_column
+        and bv_competitor_charge_times is not None
+        and bv_competitor_charges is not None
+        and bv_competitor_wires is not None
+        and bv_competitor_coordination is not None
+        and bv_competitor_endpoint_ids is not None
+    )
+    column_count = 5 if has_bv_competitor_column else (4 if has_bv_column else 3)
     fig, axes = plt.subplots(
         3,
-        3,
-        figsize=(figure_width_inches, figure_height_inches),
+        column_count,
+        figsize=(figure_width_inches * column_count / 3.0, figure_height_inches),
         dpi=220,
         sharex=False,
         layout="constrained",
@@ -1304,19 +1490,30 @@ def plot_wire_csv(
             "wspace": 0.16,
         },
     )
-    ax_fes_snapshot, ax_hbond, ax_distance = axes[0]
-    ax_coordination, ax_ksi, ax_oxygen_charges = axes[1]
-    ax_pka, ax_loopiness, ax_m = axes[2]
+    ax_fes_snapshot, ax_hbond, ax_distance = axes[0, :3]
+    ax_coordination, ax_ksi, ax_oxygen_charges = axes[1, :3]
+    ax_pka, ax_loopiness, ax_m = axes[2, :3]
+    if has_bv_column:
+        ax_single, ax_double, ax_helicity = axes[:, 3]
+    if has_bv_competitor_column:
+        ax_competitor_charge, ax_competitor_wire, ax_competitor_coord = axes[:, 4]
     time_axes = [
         ax_distance,
         ax_hbond,
         ax_coordination,
+        ax_ksi,
         ax_loopiness,
         ax_oxygen_charges,
         ax_m,
     ]
     if fes_path is not None:
         time_axes.append(ax_pka)
+    if has_bv_column:
+        time_axes.extend([ax_single, ax_double, ax_helicity])
+    if has_bv_competitor_column:
+        time_axes.extend(
+            [ax_competitor_charge, ax_competitor_wire, ax_competitor_coord]
+        )
     for time_axis in time_axes[1:]:
         time_axis.sharex(ax_distance)
     if fes_path is None:
@@ -1333,6 +1530,233 @@ def plot_wire_csv(
         ]
     else:
         active_axes = list(axes.flat)
+
+    if has_bv_column:
+        torsion_colors = ("#0072B2", "#D55E00", "#009E73")
+        for label, color in zip(("single5", "single10", "single15"), torsion_colors):
+            values = np.asarray(bv_dihedrals[label], dtype=float)
+            smoothed = _circular_running_average_deg(
+                bv_torsion_times, values, bv_smoothing_window_ps
+            )
+            finite = np.isfinite(bv_torsion_times) & np.isfinite(smoothed)
+            ax_single.plot(
+                bv_torsion_times[finite], smoothed[finite], linewidth=1.6,
+                color=color, label=label,
+            )
+        for label, color in zip(("double5", "double10", "double15"), torsion_colors):
+            values = np.asarray(bv_dihedrals[label], dtype=float)
+            smoothed = _circular_running_average_deg(
+                bv_torsion_times, values, bv_smoothing_window_ps
+            )
+            finite = np.isfinite(bv_torsion_times) & np.isfinite(smoothed)
+            ax_double.plot(
+                bv_torsion_times[finite], smoothed[finite], linewidth=1.6,
+                color=color, label=label,
+            )
+        smoothed_helicity = _circular_running_average_deg(
+            bv_torsion_times, np.asarray(bv_helicity), bv_smoothing_window_ps
+        )
+        finite_helicity = np.isfinite(bv_torsion_times) & np.isfinite(smoothed_helicity)
+        ax_helicity.plot(
+            bv_torsion_times[finite_helicity], smoothed_helicity[finite_helicity],
+            linewidth=1.8, color="#6A3D9A",
+        )
+        for panel in (ax_single, ax_double, ax_helicity):
+            panel.set_ylim(-90.0, 90.0)
+            panel.set_yticks([-90, -45, 0, 45, 90])
+            panel.grid(axis="y", alpha=0.25)
+        ax_single.set_ylabel("single-bond dihedral (deg)")
+        ax_double.set_ylabel("double-bond dihedral (deg)")
+        ax_helicity.set_ylabel("ring-center helicity (deg)")
+        ax_single.legend(loc="upper left", frameon=False, fontsize=9)
+        ax_double.legend(loc="upper left", frameon=False, fontsize=9)
+        ax_helicity.set_xlabel(xlabel)
+
+    if has_bv_competitor_column:
+        competitor_labels = (
+            "NA", "NB", "NC", "ND", "OA", "OD",
+            "T1-O1", "T1-O2", "T2-O1", "T2-O2",
+        )
+        oxygen_labels = competitor_labels[4:]
+        charge_labels = (
+            "ring A", "ring B", "ring C", "ring D", *oxygen_labels
+        )
+        competitor_colors = {
+            "ring A": "#0072B2",
+            "ring B": "#E69F00",
+            "ring C": "#009E73",
+            "ring D": "#CC79A7",
+            "NA": "#0072B2",
+            "NB": "#E69F00",
+            "NC": "#009E73",
+            "ND": "#CC79A7",
+            "OA": "#003B73",
+            "OD": "#9A2458",
+            "T1-O1": "#56B4E9",
+            "T1-O2": "#D55E00",
+            "T2-O1": "#6A3D9A",
+            "T2-O2": "#000000",
+        }
+        charge_band_height = 1.05
+        for band_index, label in enumerate(charge_labels):
+            charge_values = np.asarray(bv_competitor_charges[label], dtype=float)
+            finite = np.isfinite(bv_competitor_charge_times) & np.isfinite(
+                charge_values
+            )
+            offset = band_index * charge_band_height
+            ax_competitor_charge.plot(
+                bv_competitor_charge_times[finite],
+                offset + charge_values[finite],
+                color=competitor_colors[label],
+                linewidth=1.3,
+                alpha=0.9,
+            )
+            if band_index:
+                ax_competitor_charge.axhline(
+                    offset - 0.85, color="0.82", linewidth=0.7, zorder=0
+                )
+        ax_competitor_charge.set_yticks(
+            [index * charge_band_height - 0.30 for index in range(len(charge_labels))],
+            labels=[
+                f"{label} mean" if label.startswith("ring")
+                else f"{label} (O{bv_competitor_endpoint_ids[label]})"
+                for label in charge_labels
+            ],
+        )
+        ax_competitor_charge.set_ylim(
+            -0.85, (len(charge_labels) - 1) * charge_band_height + 0.20
+        )
+        ax_competitor_charge.set_ylabel("BV charge tier")
+
+        competitor_wire_values = np.arange(
+            -1, bv_competitor_max_bridging_waters + 1
+        )
+        competitor_wire_cmap = ListedColormap(
+            plt.get_cmap("turbo")(
+                np.linspace(0.04, 0.96, len(competitor_wire_values))
+            )
+        )
+        competitor_wire_norm = BoundaryNorm(
+            np.arange(-1.5, bv_competitor_max_bridging_waters + 1.5),
+            competitor_wire_cmap.N,
+        )
+        band_height = bv_competitor_max_bridging_waters + 2.0
+        wire_mappable = None
+        for band_index, label in enumerate(competitor_labels):
+            values = np.asarray(bv_competitor_wires[label], dtype=float)
+            finite = np.isfinite(x) & np.isfinite(values)
+            offset = band_index * band_height
+            wire_mappable = ax_competitor_wire.scatter(
+                x[finite],
+                offset + values[finite],
+                c=values[finite],
+                cmap=competitor_wire_cmap,
+                norm=competitor_wire_norm,
+                s=15,
+                alpha=0.85,
+                edgecolors="none",
+                rasterized=True,
+            )
+            analysis_values = values[probability_window & finite]
+            connected_count = int(np.count_nonzero(analysis_values >= 0.0))
+            disconnected_count = int(np.count_nonzero(analysis_values == -1.0))
+            evaluated_count = connected_count + disconnected_count
+            connected_probability = (
+                connected_count / evaluated_count if evaluated_count else float("nan")
+            )
+            probability_text = (
+                f"{connected_probability:.2f}"
+                if np.isfinite(connected_probability)
+                else "n/a"
+            )
+            ax_competitor_wire.text(
+                0.01,
+                offset + bv_competitor_max_bridging_waters - 0.10,
+                f"$P_{{conn}}$={probability_text}",
+                transform=ax_competitor_wire.get_yaxis_transform(),
+                ha="left",
+                va="top",
+                fontsize=6,
+                fontweight="bold",
+                color="0.15",
+            )
+            if band_index:
+                ax_competitor_wire.axhline(
+                    offset - 1.5, color="0.82", linewidth=0.7, zorder=0
+                )
+        ax_competitor_wire.set_yticks(
+            [
+                index * band_height
+                + 0.5 * (bv_competitor_max_bridging_waters - 1)
+                for index in range(len(competitor_labels))
+            ],
+            labels=[
+                f"{label} ({'N' if label.startswith('N') else 'O'}"
+                f"{bv_competitor_endpoint_ids[label]})"
+                for label in competitor_labels
+            ],
+        )
+        ax_competitor_wire.set_ylim(
+            -1.5,
+            (len(competitor_labels) - 1) * band_height
+            + bv_competitor_max_bridging_waters
+            + 0.5,
+        )
+        ax_competitor_wire.set_ylabel("competitor site")
+        if wire_mappable is not None:
+            competitor_wire_colorbar = fig.colorbar(
+                wire_mappable,
+                ax=ax_competitor_wire,
+                ticks=competitor_wire_values,
+                pad=0.02,
+            )
+            competitor_wire_colorbar.set_label("bridging waters; -1 disconnected")
+
+        coordination_cmap = plt.get_cmap("viridis")
+        coordination_norm = plt.Normalize(0.0, 2.0)
+        coordination_band_height = 2.25
+        coordination_mappable = None
+        for band_index, label in enumerate(competitor_labels):
+            values = np.asarray(bv_competitor_coordination[label], dtype=float)
+            finite = np.isfinite(x) & np.isfinite(values)
+            offset = band_index * coordination_band_height
+            coordination_mappable = ax_competitor_coord.scatter(
+                x[finite],
+                offset + values[finite],
+                c=values[finite],
+                cmap=coordination_cmap,
+                norm=coordination_norm,
+                s=15,
+                alpha=0.85,
+                edgecolors="none",
+                rasterized=True,
+            )
+            if band_index:
+                ax_competitor_coord.axhline(
+                    offset - 0.15, color="0.82", linewidth=0.7, zorder=0
+                )
+        ax_competitor_coord.set_yticks(
+            [index * coordination_band_height + 1.0 for index in range(10)],
+            labels=[
+                f"{label} ({'N' if label.startswith('N') else 'O'}"
+                f"{bv_competitor_endpoint_ids[label]})"
+                for label in competitor_labels
+            ],
+        )
+        ax_competitor_coord.set_ylim(
+            0.0,
+            (len(competitor_labels) - 1) * coordination_band_height + 2.05,
+        )
+        ax_competitor_coord.set_ylabel("competitor site")
+        ax_competitor_coord.set_xlabel(xlabel)
+        if coordination_mappable is not None:
+            coordination_colorbar = fig.colorbar(
+                coordination_mappable,
+                ax=ax_competitor_coord,
+                ticks=(0.0, 0.5, 1.0, 1.5, 2.0),
+                pad=0.02,
+            )
+            coordination_colorbar.set_label("coordination with all H")
 
     if fes_path is not None:
         snapshot_target = diffusive_start + probability_window_ps
@@ -1405,87 +1829,154 @@ def plot_wire_csv(
             va="center",
         )
 
-    finite_m = np.isfinite(x) & np.isfinite(defect_coordination_m)
-    if np.any(finite_m):
-        m_min = int(np.nanmin(defect_coordination_m[finite_m]))
-        m_max = int(np.nanmax(defect_coordination_m[finite_m]))
-        m_values = np.arange(m_min, m_max + 1)
-        m_palette = plt.get_cmap("tab10")(np.arange(len(m_values)) % 10)
-        m_cmap = ListedColormap(m_palette)
-        m_norm = BoundaryNorm(
-            np.arange(m_min - 0.5, m_max + 1.5), m_cmap.N
-        )
-        m_points = ax_m.scatter(
-            x[finite_m],
-            defect_coordination_m[finite_m],
-            c=defect_coordination_m[finite_m],
-            cmap=m_cmap,
-            norm=m_norm,
-            s=20,
-            alpha=0.85,
-            edgecolors="none",
-            rasterized=True,
-        )
-        m_colorbar = fig.colorbar(
-            m_points, ax=ax_m, ticks=m_values, pad=0.02
-        )
-        m_colorbar.ax.set_yticklabels([str(value) for value in m_values])
-        ax_m.set_yticks(m_values)
-        ax_m.set_ylim(m_min - 0.45, m_max + 0.45)
-        m_window = probability_window & finite_m
-        if np.any(m_window):
-            window_values, window_counts = np.unique(
-                defect_coordination_m[m_window].astype(int),
-                return_counts=True,
+    if (
+        has_bv_column
+        and bv_ring_distances is not None
+        and bv_ring_oxygen_distances is not None
+        and bv_ring_oxygen_ids is not None
+    ):
+        ring_colors = {
+            "A": "#0072B2",
+            "B": "#E69F00",
+            "C": "#009E73",
+            "D": "#CC79A7",
+        }
+        for label in ("A", "B", "C", "D"):
+            values = np.asarray(bv_ring_distances[label], dtype=float)
+            finite = np.isfinite(x) & np.isfinite(values)
+            ax_m.scatter(
+                x[finite],
+                values[finite],
+                s=18,
+                color=ring_colors[label],
+                edgecolors="none",
+                alpha=0.85,
+                rasterized=True,
+                label=f"ring {label}",
             )
-            window_probabilities = window_counts / np.sum(window_counts)
-            color_by_m = {
-                int(value): m_palette[index]
-                for index, value in enumerate(m_values)
-            }
-            m_histogram = ax_m.inset_axes([0.07, 0.57, 0.40, 0.35])
-            m_histogram.bar(
-                window_values,
-                window_probabilities,
-                width=0.72,
-                color=[color_by_m[int(value)] for value in window_values],
-                edgecolor="black",
-                linewidth=0.6,
+        oxygen_colors = {"A": "#003B73", "D": "#9A2458"}
+        for label in ("A", "D"):
+            values = np.asarray(bv_ring_oxygen_distances[label], dtype=float)
+            finite = np.isfinite(x) & np.isfinite(values)
+            ax_m.scatter(
+                x[finite],
+                values[finite],
+                s=22,
+                marker="^",
+                color=oxygen_colors[label],
+                edgecolors="none",
+                alpha=0.9,
+                rasterized=True,
+                label=f"O{label} (O{bv_ring_oxygen_ids[label]})",
             )
-            m_histogram.set_xticks(window_values)
-            m_histogram.set_ylim(
-                0.0, max(1.0, 1.12 * float(np.max(window_probabilities)))
+        ax_m.set_ylabel(r"BV site--O(defect$^+$) distance ($\AA$)")
+        ax_m.set_ylim(bottom=0.0)
+        ax_m.legend(loc="upper left", frameon=False, ncols=2, fontsize=9)
+        ax_m.grid(axis="y", alpha=0.25)
+    else:
+        # The BV version of this panel previously showed defect H-bond
+        # coordination m.  Its calculation and plotting are deliberately kept
+        # here for non-BV summaries so it can be restored for BV if desired.
+        finite_m = np.isfinite(x) & np.isfinite(defect_coordination_m)
+        if np.any(finite_m):
+            m_min = int(np.nanmin(defect_coordination_m[finite_m]))
+            m_max = int(np.nanmax(defect_coordination_m[finite_m]))
+            m_values = np.arange(m_min, m_max + 1)
+            m_palette = plt.get_cmap("tab10")(np.arange(len(m_values)) % 10)
+            m_cmap = ListedColormap(m_palette)
+            m_norm = BoundaryNorm(
+                np.arange(m_min - 0.5, m_max + 1.5), m_cmap.N
             )
-            m_histogram.text(
-                0.96,
-                0.92,
-                r"$P(m)$",
-                transform=m_histogram.transAxes,
-                ha="right",
-                va="top",
-                fontsize=9,
-                fontweight="bold",
+            m_points = ax_m.scatter(
+                x[finite_m],
+                defect_coordination_m[finite_m],
+                c=defect_coordination_m[finite_m],
+                cmap=m_cmap,
+                norm=m_norm,
+                s=20,
+                alpha=0.85,
+                edgecolors="none",
+                rasterized=True,
             )
-            m_histogram.text(
-                0.50,
-                0.06,
-                r"$m$",
-                transform=m_histogram.transAxes,
-                ha="center",
-                va="bottom",
-                fontsize=9,
-                fontweight="bold",
+            m_colorbar = fig.colorbar(
+                m_points, ax=ax_m, ticks=m_values, pad=0.02
             )
-            m_histogram.tick_params(axis="both", which="major", labelsize=8)
-            m_histogram.set_facecolor((1.0, 1.0, 1.0, 0.92))
-    ax_m.set_ylabel(r"defect H-bond coordination, $m$")
-    ax_m.grid(axis="y", alpha=0.25)
+            m_colorbar.ax.set_yticklabels([str(value) for value in m_values])
+            ax_m.set_yticks(m_values)
+            ax_m.set_ylim(m_min - 0.45, m_max + 0.45)
+            m_window = probability_window & finite_m
+            if np.any(m_window):
+                window_values, window_counts = np.unique(
+                    defect_coordination_m[m_window].astype(int),
+                    return_counts=True,
+                )
+                window_probabilities = window_counts / np.sum(window_counts)
+                color_by_m = {
+                    int(value): m_palette[index]
+                    for index, value in enumerate(m_values)
+                }
+                m_histogram = ax_m.inset_axes([0.07, 0.57, 0.40, 0.35])
+                m_histogram.bar(
+                    window_values,
+                    window_probabilities,
+                    width=0.72,
+                    color=[color_by_m[int(value)] for value in window_values],
+                    edgecolor="black",
+                    linewidth=0.6,
+                )
+                m_histogram.set_xticks(window_values)
+                m_histogram.set_ylim(
+                    0.0, max(1.0, 1.12 * float(np.max(window_probabilities)))
+                )
+                m_histogram.text(
+                    0.96,
+                    0.92,
+                    r"$P(m)$",
+                    transform=m_histogram.transAxes,
+                    ha="right",
+                    va="top",
+                    fontsize=9,
+                    fontweight="bold",
+                )
+                m_histogram.text(
+                    0.50,
+                    0.06,
+                    r"$m$",
+                    transform=m_histogram.transAxes,
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                    fontweight="bold",
+                )
+                m_histogram.tick_params(axis="both", which="major", labelsize=8)
+                m_histogram.set_facecolor((1.0, 1.0, 1.0, 0.92))
+        ax_m.set_ylabel(r"defect H-bond coordination, $m$")
+        ax_m.grid(axis="y", alpha=0.25)
 
     finite_wire = np.isfinite(wire_value)
+    wire_states = np.arange(-1, max_bridging_waters + 1)
+    base_wire_colors = [
+        "#7F7F7F",
+        "#0072B2",
+        "#009E73",
+        "#E69F00",
+        "#CC79A7",
+        "#D55E00",
+    ]
+    if len(wire_states) > len(base_wire_colors):
+        extra_colors = list(
+            plt.get_cmap("tab20")(
+                np.linspace(0.05, 0.95, len(wire_states) - len(base_wire_colors))
+            )
+        )
+    else:
+        extra_colors = []
     wire_cmap = ListedColormap(
-        ["#7F7F7F", "#0072B2", "#009E73", "#E69F00", "#CC79A7", "#D55E00"]
+        base_wire_colors[: len(wire_states)] + extra_colors
     )
-    wire_norm = BoundaryNorm(np.arange(-1.5, 5.5, 1.0), wire_cmap.N)
+    wire_norm = BoundaryNorm(
+        np.arange(-1.5, max_bridging_waters + 1.5, 1.0), wire_cmap.N
+    )
     wire_points = ax_hbond.scatter(
         x[finite_wire],
         wire_value[finite_wire],
@@ -1500,89 +1991,78 @@ def plot_wire_csv(
     wire_colorbar = fig.colorbar(
         wire_points,
         ax=ax_hbond,
-        ticks=[-1, 0, 1, 2, 3, 4],
+        ticks=wire_states,
         pad=0.02,
     )
-    wire_colorbar.ax.set_yticklabels(["-1", "0", "1", "2", "3", "4"])
+    wire_colorbar.ax.set_yticklabels([str(value) for value in wire_states])
 
-    ax_hbond.set_ylabel("H-bond wire state")
+    wire_window_values = wire_value[probability_window & finite_wire].astype(int)
+    wire_state_counts = Counter(wire_window_values)
+    ax_hbond.set_ylabel("number of bridging waters")
     ax_hbond.set_yticks(
-        [-1, 0, 1, 2, 3, 4],
-        labels=["-1", "0", "1", "2", "3", "4"],
+        wire_states,
+        labels=[
+            f"{value} (N={wire_state_counts.get(int(value), 0)})"
+            for value in wire_states
+        ],
     )
-    ax_hbond.set_ylim(-1.4, 4.4)
+    ax_hbond.set_ylim(-1.4, max_bridging_waters + 0.4)
     ax_hbond.grid(axis="y", alpha=0.25)
-    post_count = int(np.count_nonzero(probability_window))
-    if post_count:
-        connected_probability = float(
-            np.count_nonzero(hbond_connected[probability_window] == 1) / post_count
-        )
-        disconnected_probability = 1.0 - connected_probability
-        ax_hbond.text(
-            0.02,
-            0.95,
-            (
-                rf"$P_{{\rm connected}}={connected_probability:.3f}$; "
-                rf"$P_{{\rm disconnected}}={disconnected_probability:.3f}$"
-            ),
-            transform=ax_hbond.transAxes,
-            ha="left",
-            va="top",
-            fontsize=10,
-            bbox={"facecolor": "none", "edgecolor": "0.75"},
-        )
 
     finite_ksi = np.isfinite(hbond_ksi)
     ksi_window = probability_window & finite_ksi
-    if np.any(ksi_window):
-        rounded_ksi = np.round(hbond_ksi[ksi_window], decimals=8)
-        ksi_values, ksi_counts = np.unique(rounded_ksi, return_counts=True)
-        ksi_probability = ksi_counts / np.sum(ksi_counts)
-        if ksi_values.size > 1:
-            minimum_spacing = float(np.min(np.diff(ksi_values)))
-            bar_width = min(0.16, 0.75 * minimum_spacing)
+    ksi_colorbar = None
+    if np.any(finite_ksi):
+        rounded_ksi_all = np.round(hbond_ksi[finite_ksi], decimals=8)
+        rounded_ksi_window = np.round(hbond_ksi[ksi_window], decimals=8)
+        ksi_values = np.unique(
+            rounded_ksi_window if rounded_ksi_window.size else rounded_ksi_all
+        )
+        ksi_state_counts = Counter(rounded_ksi_window)
+        if ksi_values.size == 1:
+            ksi_boundaries = np.array(
+                [ksi_values[0] - 0.1, ksi_values[0] + 0.1], dtype=float
+            )
         else:
-            bar_width = 0.12
-        ax_ksi.bar(
+            ksi_midpoints = 0.5 * (ksi_values[:-1] + ksi_values[1:])
+            ksi_boundaries = np.concatenate(
+                (
+                    [ksi_values[0] - (ksi_midpoints[0] - ksi_values[0])],
+                    ksi_midpoints,
+                    [ksi_values[-1] + (ksi_values[-1] - ksi_midpoints[-1])],
+                )
+            )
+        ksi_cmap = ListedColormap(
+            plt.get_cmap("viridis")(np.linspace(0.05, 0.95, len(ksi_values)))
+        )
+        ksi_norm = BoundaryNorm(ksi_boundaries, ksi_cmap.N)
+        ksi_points = ax_ksi.scatter(
+            x[finite_ksi],
+            hbond_ksi[finite_ksi],
+            c=hbond_ksi[finite_ksi],
+            cmap=ksi_cmap,
+            norm=ksi_norm,
+            s=18,
+            alpha=0.85,
+            edgecolors="none",
+            rasterized=True,
+        )
+        ksi_colorbar = fig.colorbar(
+            ksi_points, ax=ax_ksi, ticks=ksi_values, pad=0.02
+        )
+        ksi_colorbar.ax.set_yticklabels(
+            [f"{value:.2f}".rstrip("0").rstrip(".") for value in ksi_values]
+        )
+        ax_ksi.set_yticks(
             ksi_values,
-            ksi_probability,
-            width=bar_width,
-            color="#B39DDB",
-            edgecolor="#4A2A78",
-            linewidth=0.8,
+            labels=[
+                f"{value:.2f}".rstrip("0").rstrip(".")
+                + f" (N={ksi_state_counts.get(float(value), 0)})"
+                for value in ksi_values
+            ],
         )
-        for ksi_value, probability in zip(ksi_values, ksi_probability):
-            matching_topologies = hbond_topology[
-                ksi_window & np.isclose(hbond_ksi, ksi_value, atol=5.0e-8)
-            ]
-            topology_counts = Counter(
-                str(label) if str(label) else "direct"
-                for label in matching_topologies
-            )
-            topology_label = "/".join(
-                label for label, _count in topology_counts.most_common()
-            )
-            ax_ksi.text(
-                ksi_value,
-                probability + 0.025,
-                topology_label,
-                rotation=90,
-                ha="center",
-                va="bottom",
-                fontsize=9,
-                fontweight="bold",
-                color="#3B1F5E",
-            )
-        ax_ksi.set_xticks(ksi_values)
-        ax_ksi.set_xticklabels(
-            [f"{value:.2f}".rstrip("0").rstrip(".") for value in ksi_values],
-            rotation=35,
-            ha="right",
-        )
-        ax_ksi.set_ylim(0.0, max(1.0, 1.12 * float(np.max(ksi_probability))))
-    ax_ksi.set_xlim(-1.05, 1.05)
-    ax_ksi.set_xlabel(r"wire conductivity, $\xi$")
-    ax_ksi.set_ylabel(r"$P(\xi)$")
+    ax_ksi.set_ylim(-1.05, 1.05)
+    ax_ksi.set_ylabel(r"wire conductivity, $\xi$")
     ax_ksi.grid(axis="y", alpha=0.25)
 
     finite_loopiness = np.isfinite(hbond_loopiness)
@@ -1893,7 +2373,14 @@ def plot_wire_csv(
     ax_loopiness.tick_params(axis="x", which="both", labelbottom=True)
     ax_distance.tick_params(axis="x", which="both", labelbottom=False)
     ax_hbond.tick_params(axis="x", which="both", labelbottom=False)
+    ax_ksi.tick_params(axis="x", which="both", labelbottom=False)
     ax_oxygen_charges.tick_params(axis="x", which="both", labelbottom=False)
+    if has_bv_column:
+        ax_single.tick_params(axis="x", which="both", labelbottom=False)
+        ax_double.tick_params(axis="x", which="both", labelbottom=False)
+    if has_bv_competitor_column:
+        ax_competitor_charge.tick_params(axis="x", which="both", labelbottom=False)
+        ax_competitor_wire.tick_params(axis="x", which="both", labelbottom=False)
     if fes_path is not None:
         ax_coordination.tick_params(axis="x", which="both", labelbottom=False)
     if probability_tmax is not None:
@@ -1901,6 +2388,14 @@ def plot_wire_csv(
         if finite_x.size:
             ax_distance.set_xlim(float(np.min(finite_x)), probability_tmax)
     for panel in time_axes:
+        if deprotonation_start is not None:
+            panel.axvline(
+                deprotonation_start,
+                color="#7B3294",
+                linestyle="--",
+                linewidth=2.2,
+                zorder=5,
+            )
         panel.axvline(
             diffusive_start,
             color="black",
@@ -1926,6 +2421,9 @@ def plot_wire_csv(
         figure_axis.yaxis.get_offset_text().set_fontsize(12)
         for annotation in figure_axis.texts:
             annotation.set_fontsize(12)
+    ax_ksi.tick_params(axis="y", which="major", labelsize=8)
+    if ksi_colorbar is not None:
+        ksi_colorbar.ax.tick_params(axis="y", which="major", labelsize=8)
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, bbox_inches="tight")
     plt.close(fig)
@@ -1941,6 +2439,15 @@ def main() -> None:
     parser.add_argument("--solute-atoms", required=True, type=int)
     parser.add_argument("--cutoff", type=float, default=3.5)
     parser.add_argument("--max-bridging-waters", type=int, default=4)
+    parser.add_argument(
+        "--bv-competitor-max-bridging-waters",
+        type=int,
+        default=3,
+        help=(
+            "Maximum water bridges searched for BV competitor-site wires "
+            "(default: 3; independent of --max-bridging-waters)"
+        ),
+    )
     parser.add_argument("--covalent-cutoff", type=float, default=1.3)
     parser.add_argument("--hydrogen-acceptor-cutoff", type=float, default=2.5)
     parser.add_argument("--angle-cutoff", type=float, default=135.0)
@@ -1961,6 +2468,12 @@ def main() -> None:
     )
     parser.add_argument("--probability-tmax", type=float, default=None)
     parser.add_argument("--probability-window-ps", type=float, default=1.75)
+    parser.add_argument(
+        "--t-deprotonation",
+        type=float,
+        default=None,
+        help="Deprotonation onset in ps (purple dashed marker on time panels)",
+    )
     parser.add_argument("--deprotonated-s-max", type=float, default=0.05)
     parser.add_argument("--returned-s-min", type=float, default=0.20)
     parser.add_argument("--persistence-ps", type=float, default=0.05)
@@ -2022,6 +2535,45 @@ def main() -> None:
     )
     parser.add_argument("--dftb-inp", type=Path, default=None)
     parser.add_argument(
+        "--bv-parm",
+        type=Path,
+        default=None,
+        help="BV Amber topology; enables the fourth-column bridge/helicity analysis",
+    )
+    parser.add_argument(
+        "--bv-torsion-data-out",
+        type=Path,
+        default=None,
+        help="Aligned BV bridge-dihedral/helicity CSV (default: derived from --out)",
+    )
+    parser.add_argument(
+        "--bv-ring-distance-data-out",
+        type=Path,
+        default=None,
+        help=(
+            "Aligned BV ring-center and terminal-oxygen defect-distance CSV "
+            "(default: derived from --out)"
+        ),
+    )
+    parser.add_argument(
+        "--bv-competitor-data-out",
+        type=Path,
+        default=None,
+        help="Aligned BV competitor wire/coordination CSV (default: derived from --out)",
+    )
+    parser.add_argument(
+        "--bv-competitor-charge-data-out",
+        type=Path,
+        default=None,
+        help="BV competitor Mulliken-charge CSV (default: derived from --out)",
+    )
+    parser.add_argument(
+        "--bv-smoothing-window-ps",
+        type=float,
+        default=0.10,
+        help="Centered circular running-average window for BV angles in ps",
+    )
+    parser.add_argument(
         "--mulliken",
         type=Path,
         default=None,
@@ -2054,6 +2606,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.bv_smoothing_window_ps <= 0.0:
+        parser.error("--bv-smoothing-window-ps must be positive")
+    if args.bv_competitor_max_bridging_waters < 0:
+        parser.error("--bv-competitor-max-bridging-waters must be nonnegative")
+
     box = None
     if args.dftb_inp is not None:
         box = read_box_lengths_from_dftb_inp(args.dftb_inp)
@@ -2070,6 +2627,112 @@ def main() -> None:
         hydrogen_acceptor_cutoff=args.hydrogen_acceptor_cutoff,
         angle_cutoff=args.angle_cutoff,
     )
+    bv_torsion_times: np.ndarray | None = None
+    bv_dihedrals: dict[str, np.ndarray] | None = None
+    bv_helicity: np.ndarray | None = None
+    bv_torsion_out: Path | None = None
+    bv_ring_distances: dict[str, np.ndarray] | None = None
+    bv_ring_oxygen_distances: dict[str, np.ndarray] | None = None
+    bv_ring_oxygen_ids: dict[str, int] | None = None
+    bv_ring_distance_out: Path | None = None
+    bv_competitor_charge_times: np.ndarray | None = None
+    bv_competitor_charges: dict[str, np.ndarray] | None = None
+    bv_competitor_wires: dict[str, np.ndarray] | None = None
+    bv_competitor_coordination: dict[str, np.ndarray] | None = None
+    bv_competitor_out: Path | None = None
+    bv_competitor_charge_out: Path | None = None
+    bv_competitor_rings: dict[str, tuple[int, ...]] | None = None
+    bv_competitor_endpoints: dict[str, int] | None = None
+    if args.bv_parm is not None:
+        with args.out.open("r", encoding="utf-8", newline="") as handle:
+            aligned_rows = list(csv.DictReader(handle))
+        bv_torsion_times = np.asarray(
+            [float(row["time_ps"]) for row in aligned_rows], dtype=float
+        )
+        bv_dihedrals, bv_helicity = calculate_bv_torsions(
+            args.traj,
+            bv_torsion_times,
+            args.bv_parm,
+            args.solute_atoms,
+            box,
+        )
+        bv_torsion_out = args.bv_torsion_data_out or args.out.with_name(
+            f"{args.out.stem}_bv_torsions.csv"
+        )
+        save_bv_torsion_csv(
+            bv_torsion_out,
+            bv_torsion_times,
+            bv_dihedrals,
+            bv_helicity,
+        )
+        from bv_ring_defect_distances import (
+            calculate_ring_distances,
+            identify_bv_rings,
+            identify_terminal_ring_oxygens,
+            save_aligned_data as save_bv_ring_distance_csv,
+        )
+
+        bv_rings = identify_bv_rings(args.bv_parm, args.solute_atoms)
+        bv_ring_oxygen_ids = identify_terminal_ring_oxygens(
+            args.bv_parm, args.solute_atoms, bv_rings
+        )
+        aligned_defect_ids = np.asarray(
+            [float(row.get("defect_oxygen_id") or "nan") for row in aligned_rows],
+            dtype=float,
+        )
+        bv_ring_distances, bv_ring_oxygen_distances = calculate_ring_distances(
+            args.traj,
+            bv_torsion_times,
+            aligned_defect_ids,
+            bv_rings,
+            bv_ring_oxygen_ids,
+            box,
+        )
+        bv_ring_distance_out = (
+            args.bv_ring_distance_data_out
+            or args.out.with_name(f"{args.out.stem}_bv_ring_defect_distances.csv")
+        )
+        save_bv_ring_distance_csv(
+            bv_ring_distance_out,
+            bv_torsion_times,
+            aligned_defect_ids,
+            bv_ring_distances,
+            bv_ring_oxygen_distances,
+            bv_ring_oxygen_ids,
+        )
+        from bv_competitor_analysis import (
+            calculate_competitor_geometry,
+            competitor_definitions,
+            save_competitor_data,
+        )
+
+        bv_competitor_rings, bv_competitor_endpoints = competitor_definitions(
+            args.bv_parm, args.solute_atoms
+        )
+        bv_competitor_wires, bv_competitor_coordination = (
+            calculate_competitor_geometry(
+                args.traj,
+                bv_torsion_times,
+                aligned_defect_ids,
+                bv_competitor_endpoints,
+                args.solute_atoms,
+                box,
+                max_bridging_waters=args.bv_competitor_max_bridging_waters,
+                covalent_cutoff=args.covalent_cutoff,
+                hydrogen_acceptor_cutoff=args.hydrogen_acceptor_cutoff,
+                angle_cutoff=args.angle_cutoff,
+            )
+        )
+        bv_competitor_out = args.bv_competitor_data_out or args.out.with_name(
+            f"{args.out.stem}_bv_competitors.csv"
+        )
+        save_competitor_data(
+            bv_competitor_out,
+            bv_torsion_times,
+            aligned_defect_ids,
+            bv_competitor_wires,
+            bv_competitor_coordination,
+        )
     plot_out = args.plot_out or args.out.with_suffix(".png")
     if args.t_force_diffusion is not None:
         if str(args.diffusive_start).strip().lower() != "auto":
@@ -2124,10 +2787,40 @@ def main() -> None:
             oxygen_charges,
             oxygen_ids,
         )
+        if (
+            args.bv_parm is not None
+            and bv_competitor_rings is not None
+            and bv_competitor_endpoints is not None
+            and bv_torsion_times is not None
+        ):
+            from bv_competitor_analysis import (
+                calculate_competitor_charges,
+                save_competitor_charge_data,
+            )
+
+            bv_competitor_charge_times, bv_competitor_charges = (
+                calculate_competitor_charges(
+                    mulliken_path,
+                    bv_competitor_rings,
+                    bv_competitor_endpoints,
+                    args.solute_atoms,
+                    float(np.nanmax(bv_torsion_times)),
+                )
+            )
+            bv_competitor_charge_out = (
+                args.bv_competitor_charge_data_out
+                or args.out.with_name(f"{args.out.stem}_bv_competitor_charges.csv")
+            )
+            save_competitor_charge_data(
+                bv_competitor_charge_out,
+                bv_competitor_charge_times,
+                bv_competitor_charges,
+            )
     plot_wire_csv(
         args.out,
         plot_out,
         cutoff=args.cutoff,
+        max_bridging_waters=args.max_bridging_waters,
         split_regime_cutoff=args.split_regime_cutoff,
         covalent_cutoff=args.covalent_cutoff,
         hydrogen_acceptor_cutoff=args.hydrogen_acceptor_cutoff,
@@ -2156,6 +2849,22 @@ def main() -> None:
         oxygen_charges=oxygen_charges,
         oxygen_ids=oxygen_ids,
         fes_snapshot_out=fes_snapshot_out if fes_path is not None else None,
+        bv_torsion_times=bv_torsion_times,
+        bv_dihedrals=bv_dihedrals,
+        bv_helicity=bv_helicity,
+        bv_ring_distances=bv_ring_distances,
+        bv_ring_oxygen_distances=bv_ring_oxygen_distances,
+        bv_ring_oxygen_ids=bv_ring_oxygen_ids,
+        bv_competitor_charge_times=bv_competitor_charge_times,
+        bv_competitor_charges=bv_competitor_charges,
+        bv_competitor_wires=bv_competitor_wires,
+        bv_competitor_coordination=bv_competitor_coordination,
+        bv_competitor_endpoint_ids=bv_competitor_endpoints,
+        bv_competitor_max_bridging_waters=(
+            args.bv_competitor_max_bridging_waters
+        ),
+        bv_smoothing_window_ps=args.bv_smoothing_window_ps,
+        deprotonation_start=args.t_deprotonation,
     )
     print(f"Wrote {args.out}")
     print(f"Wrote {plot_out}")
@@ -2172,6 +2881,14 @@ def main() -> None:
         print(f"Wrote {fes_snapshot_out}")
     if oxygen_charge_times is not None:
         print(f"Wrote {charge_data_out}")
+    if bv_torsion_out is not None:
+        print(f"Wrote {bv_torsion_out}")
+    if bv_ring_distance_out is not None:
+        print(f"Wrote {bv_ring_distance_out}")
+    if bv_competitor_out is not None:
+        print(f"Wrote {bv_competitor_out}")
+    if bv_competitor_charge_out is not None:
+        print(f"Wrote {bv_competitor_charge_out}")
 
 
 if __name__ == "__main__":

@@ -5,6 +5,9 @@ import yaml
 import shutil
 import subprocess
 import secrets
+import hashlib
+import re
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
@@ -20,6 +23,7 @@ class SlurmJobConfig:
     time: str
     stdout: str
     stderr: str
+    qos: Optional[str] = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +60,7 @@ class DFTBConfig:
 @dataclass(frozen=True, slots=True)
 class SimulationConfig:
     system: str
-    buffer: float
+    buffer: Optional[float]
     prefix: str
 
     dftb_dirname: str
@@ -68,6 +72,9 @@ class SimulationConfig:
     replicas: int = 1
     append: bool = False
     replica_dirname: str = "equil"
+    system_dir: Optional[str] = None
+    source_xyz: Optional[str] = None
+    source_sha256: Optional[str] = None
 
 def find_repo_root(start: Path) -> Path:
     p = start.resolve()
@@ -78,11 +85,34 @@ def find_repo_root(start: Path) -> Path:
 
 
 def system_base_dir(cfg: SimulationConfig, repo_root: Path) -> Path:
+    if cfg.system_dir is not None:
+        path = Path(cfg.system_dir)
+        return path if path.is_absolute() else repo_root / path
+    if cfg.buffer is None:
+        raise ValueError("Either system_dir or buffer is required")
     return repo_root / "systems" / cfg.system / f"{cfg.prefix}_{cfg.buffer:.1f}"
 
 
 def salt_dir(cfg: SimulationConfig, repo_root: Path) -> Path:
     return system_base_dir(cfg, repo_root) / cfg.salt_dirname
+
+
+def input_xyz_path(cfg: SimulationConfig, repo_root: Path) -> Path:
+    if cfg.source_xyz is None:
+        return salt_dir(cfg, repo_root) / "ready.xyz"
+    path = Path(cfg.source_xyz)
+    return path if path.is_absolute() else repo_root / path
+
+
+def validate_xyz_source(cfg: SimulationConfig, repo_root: Path) -> Path:
+    path = input_xyz_path(cfg, repo_root)
+    if not path.is_file() or path.stat().st_size == 0:
+        raise RuntimeError(f"Missing/empty required XYZ input: {path}")
+    if cfg.source_sha256 is not None:
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != cfg.source_sha256.lower():
+            raise RuntimeError(f"source_sha256 mismatch for {path}: expected {cfg.source_sha256}, got {actual}")
+    return path
 
 
 def dftb_root_dir(cfg: SimulationConfig, repo_root: Path) -> Path:
@@ -143,7 +173,7 @@ def load_config(yaml_path: Path) -> SimulationConfig:
 
     return SimulationConfig(
         system=data["system"],
-        buffer=float(data["buffer"]),
+        buffer=float(data["buffer"]) if "buffer" in data else None,
         prefix=data.get("prefix", "solv"),
         dftb_dirname=data.get("dftb_dirname", "dftb"),
         salt_dirname=data.get("salt_dirname", "salt"),
@@ -153,6 +183,9 @@ def load_config(yaml_path: Path) -> SimulationConfig:
         dftb=dftb_cfg,
         runtime=runtime_cfg,
         slurm=slurm_cfg,
+        system_dir=data.get("system_dir"),
+        source_xyz=data.get("source_xyz"),
+        source_sha256=data.get("source_sha256"),
     )
 
 
@@ -162,6 +195,12 @@ def parse_box_vectors_from_comment(comment: str) -> List[Tuple[float, float, flo
       Conf 1. Box X: 15.612 0.000 0.000 Y: 0.000 13.439 0.000 Z: 0.000 0.000 12.950
     Returns [(x1,x2,x3),(y1,y2,y3),(z1,z2,z3)]
     """
+    lattice = re.search(r'\bLattice\s*=\s*"([^"]*)"', comment)
+    if lattice:
+        values = [float(value) for value in lattice.group(1).split()]
+        if len(values) != 9 or not all(math.isfinite(value) for value in values):
+            raise RuntimeError("XYZ Lattice must contain nine finite values")
+        return [tuple(values[i:i + 3]) for i in (0, 3, 6)]
     toks = comment.replace(":", ": ").split()
 
     def find_label(label: str) -> int:
@@ -284,10 +323,7 @@ def apply_seed_to_header_lines(header_lines: List[str], seed: Optional[int]) -> 
 
 
 def write_dftb_inp(cfg: SimulationConfig, repo_root: Path, out_dir_path: Path, seed: Optional[int] = None) -> Path:
-    sdir = salt_dir(cfg, repo_root)
-    ready_xyz = sdir / "ready.xyz"
-    if not ready_xyz.exists() or ready_xyz.stat().st_size == 0:
-        raise RuntimeError(f"Missing/empty ready.xyz: {ready_xyz}")
+    ready_xyz = validate_xyz_source(cfg, repo_root)
 
     natoms, tvs, coords = read_xyz_with_box(ready_xyz)
     xyz_syms = list(dict.fromkeys([c[0] for c in coords]).keys())  # unique symbols in appearance order
@@ -359,10 +395,11 @@ def write_slurm_sh(cfg: SimulationConfig, out_dir_path: Path) -> Optional[Path]:
     job = cfg.slurm.job
     tag = bench_tag(job)
     sh_path = out_dir_path / "slurm.sh"
+    qos_line = f"#SBATCH --qos={job.qos}\n" if job.qos else ""
 
     text = f"""\
 #!/usr/bin/env bash
-#SBATCH --job-name={job.name}-{tag}
+{qos_line}#SBATCH --job-name={job.name}-{tag}
 #SBATCH --partition={job.partition}
 #SBATCH --time={job.time}
 #SBATCH --nodes={job.nodes}
@@ -405,10 +442,8 @@ def run_equil_dir(bench_dir: Path, run_index: int, replica_dirname: str) -> Path
 
 
 def validate_inputs(cfg: SimulationConfig, repo_root: Path) -> None:
-    sdir = salt_dir(cfg, repo_root)
-    ready_xyz = sdir / "ready.xyz"
-    if not ready_xyz.exists() or ready_xyz.stat().st_size == 0:
-        raise RuntimeError(f"Missing/empty required input (from salt): {ready_xyz}")
+    ready_xyz = validate_xyz_source(cfg, repo_root)
+    read_xyz_with_box(ready_xyz)
 
     repo_params = repo_params_dir(cfg, repo_root)
     if not repo_params.exists():

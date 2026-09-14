@@ -3,6 +3,7 @@
 import sys
 import yaml
 import subprocess
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -55,6 +56,7 @@ class MDEquilConfig:
     md: MDConfig
     runtime: RuntimeConfig
     slurm: Optional[SlurmConfig] = None
+    dihedral_restraints: Optional[List[Dict[str, Any]]] = None
 
 
 def find_repo_root(start: Path) -> Path:
@@ -79,6 +81,9 @@ def run_dir(cfg: MDEquilConfig, repo_root: Path) -> Path:
 
 def load_config(yaml_path: Path) -> MDEquilConfig:
     data = yaml.safe_load(yaml_path.read_text())
+    restraints = data.get("dihedral_restraints")
+    if restraints is not None:
+        render_dihedral_restraints(restraints)
 
     md = data["md"]
     md_cfg = MDConfig(
@@ -102,14 +107,40 @@ def load_config(yaml_path: Path) -> MDEquilConfig:
         md=md_cfg,
         runtime=runtime_cfg,
         slurm=slurm_cfg,
+        dihedral_restraints=restraints,
     )
 
 
-def render_mdin(stage: MDStage) -> str:
+def render_dihedral_restraints(restraints: List[Dict[str, Any]]) -> str:
+    """Amber torsions: degrees for bounds, kcal/mol/rad^2 for rk (no 1/2)."""
+    if not isinstance(restraints, list) or not restraints:
+        raise ValueError("dihedral_restraints must be a nonempty list")
+    lines = []
+    for restraint in restraints:
+        atoms = restraint["atoms"]
+        if (not isinstance(atoms, list) or len(atoms) != 4 or
+                any(type(a) is not int or a < 1 for a in atoms) or len(set(atoms)) != 4):
+            raise ValueError("Dihedral atoms must be four distinct positive one-based IDs")
+        target = float(restraint["target_deg"])
+        strength = float(restraint["force_constant"])
+        if not math.isfinite(target) or not -180 <= target <= 180:
+            raise ValueError("target_deg must be finite and between -180 and 180")
+        if not math.isfinite(strength) or strength <= 0:
+            raise ValueError("force_constant must be positive and finite")
+        lines.extend(["&rst", " iat=" + ",".join(map(str, atoms)) + ",",
+                      f" r1={target-180}, r2={target}, r3={target}, r4={target+180},",
+                      f" rk2={strength}, rk3={strength},", "/"])
+    return "\n".join(lines) + "\n"
+
+
+def render_mdin(stage: MDStage, restraint_file: Optional[str] = None) -> str:
     lines: List[str] = []
     lines.append(stage.description)
     lines.append("&cntrl")
-    for k, v in stage.cntrl.items():
+    cntrl = dict(stage.cntrl)
+    if restraint_file:
+        cntrl["nmropt"] = 1
+    for k, v in cntrl.items():
         lines.append(f"  {k}={v},")
     lines.append("/")
 
@@ -125,16 +156,24 @@ def render_mdin(stage: MDStage) -> str:
                         parts.append(f"{key}={card[key]}")
                 lines.append("&wt " + ", ".join(parts) + " /")
 
+    if restraint_file:
+        if not stage.wt or str(stage.wt[-1]["type"]).upper() != "END":
+            lines.append("&wt type='END' /")
+        lines.append(f"DISANG={restraint_file}")
     return "\n".join(lines) + "\n"
 
 
 def write_mdin_files(cfg: MDEquilConfig, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    (out_dir / "min.in").write_text(render_mdin(cfg.md.minimize))
-    (out_dir / "heat.in").write_text(render_mdin(cfg.md.heat))
-    (out_dir / "equil-nvt.in").write_text(render_mdin(cfg.md.equilibrate_nvt))
-    (out_dir / "equil-npt.in").write_text(render_mdin(cfg.md.equilibrate_npt))
+    restraint_file = None
+    if cfg.dihedral_restraints:
+        restraint_file = "dihedral.rst"
+        (out_dir / restraint_file).write_text(render_dihedral_restraints(cfg.dihedral_restraints))
+    (out_dir / "min.in").write_text(render_mdin(cfg.md.minimize, restraint_file))
+    (out_dir / "heat.in").write_text(render_mdin(cfg.md.heat, restraint_file))
+    (out_dir / "equil-nvt.in").write_text(render_mdin(cfg.md.equilibrate_nvt, restraint_file))
+    (out_dir / "equil-npt.in").write_text(render_mdin(cfg.md.equilibrate_npt, restraint_file))
 
 
 
@@ -312,4 +351,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
