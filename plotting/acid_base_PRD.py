@@ -1226,6 +1226,7 @@ def plot_wire_csv(
     fes_xmax: float = 1.25,
     exp_pkas: Sequence[float] = (),
     pka_window_sample_count: int = 10,
+    energy_panel: bool = False,
     solvation_layer_boundaries: Sequence[float] = (2.0, 3.5, 5.5, 7.5, 9.5),
     loopiness_kde_bandwidth: float | None = None,
     figure_width_inches: float = 20.0,
@@ -2284,15 +2285,21 @@ def plot_wire_csv(
     ax_coordination.grid(axis="y", alpha=0.25)
     if fes_path is not None:
         finite_pka = np.isfinite(pka_times) & np.isfinite(pka_values)
+        from plot_pka_grid import PKA_FACTOR
+        panel_scale = PKA_FACTOR * temperature if energy_panel else 1.0
+        if energy_panel and pka_data_out is not None:
+            np.savetxt(pka_data_out.with_name('summary_delta_f.csv'),
+                       np.column_stack([pka_times, pka_values * panel_scale]),
+                       delimiter=',', header='time_ps,delta_F_kcal_mol', comments='')
         ax_pka.plot(
             pka_times[finite_pka],
-            pka_values[finite_pka],
+            pka_values[finite_pka] * panel_scale,
             color="black",
             linewidth=1.6,
         )
         ax_pka.scatter(
             pka_times[finite_pka],
-            pka_values[finite_pka],
+            pka_values[finite_pka] * panel_scale,
             color="#FFA500",
             edgecolor=(0.0, 0.0, 0.0, 0.35),
             s=18,
@@ -2300,7 +2307,7 @@ def plot_wire_csv(
         )
         for index, exp_pka in enumerate(exp_pkas):
             ax_pka.axhline(
-                exp_pka,
+                exp_pka * panel_scale,
                 color=f"C{index % 10}",
                 linewidth=1.2,
                 linestyle="--",
@@ -2319,7 +2326,7 @@ def plot_wire_csv(
                 sample_std = float(np.std(sample_values))
                 ax_pka.scatter(
                     sample_times,
-                    sample_values,
+                    sample_values * panel_scale,
                     marker="*",
                     color="#D62728",
                     edgecolor="black",
@@ -2331,11 +2338,15 @@ def plot_wire_csv(
                 if exp_pkas:
                     exp_values = ", ".join(f"{value:g}" for value in exp_pkas)
                     exp_pka_summary = rf"; p$K_{{a,\mathrm{{exp}}}}$ = {exp_values}"
+                annotation = rf"p$K_a$ = {sample_mean:.3f} $\pm$ {sample_std:.3f}" + exp_pka_summary
+                if energy_panel:
+                    refs = ', '.join(f'{v * panel_scale:.3f}' for v in exp_pkas)
+                    annotation = (rf"$\Delta F$ = {sample_mean * panel_scale:.3f} $\pm$ {sample_std * panel_scale:.3f} kcal/mol"
+                                  + f"\nT = {temperature:g} K; dashed reference = {refs} kcal/mol")
                 ax_pka.text(
                     0.02,
                     0.06,
-                    rf"p$K_a$ = {sample_mean:.3f} $\pm$ {sample_std:.3f}"
-                    + exp_pka_summary,
+                    annotation,
                     transform=ax_pka.transAxes,
                     ha="left",
                     va="bottom",
@@ -2347,8 +2358,12 @@ def plot_wire_csv(
                         f"{pka_data_out.stem}_window_samples.csv"
                     )
                     save_pka_window_csv(sample_path, sample_times, sample_values)
-        ax_pka.set_ylabel(r"p$K_a$")
-        ax_pka.set_ylim(-20.0, 30.0)
+                    if energy_panel:
+                        np.savetxt(pka_data_out.with_name('summary_delta_f_window_samples.csv'),
+                                   np.column_stack([sample_times, sample_values * panel_scale]), delimiter=',',
+                                   header=f'mean_delta_F_kcal_mol={sample_mean * panel_scale:.10g},std_delta_F_kcal_mol={sample_std * panel_scale:.10g}\ntime_ps,delta_F_kcal_mol')
+        ax_pka.set_ylabel(r"$\Delta F$ (kcal mol$^{-1}$)" if energy_panel else r"p$K_a$")
+        ax_pka.set_ylim(-20.0 * panel_scale, 30.0 * panel_scale)
         ax_pka.grid(axis="y", alpha=0.25)
 
     left_bottom_axis = ax_pka if fes_path is not None else ax_coordination
@@ -2477,6 +2492,8 @@ def main() -> None:
     parser.add_argument("--fes-xmin", type=float, default=0.0)
     parser.add_argument("--fes-xmax", type=float, default=1.25)
     parser.add_argument("--pka-window-samples", type=int, default=10)
+    parser.add_argument('--energy-panel', action='store_true',
+                        help='Plot F(s≈0)-F(s≈1) in kcal/mol instead of pKa; convert --exp-pka references at --temp (K)')
     parser.add_argument(
         "--loopiness-kde-bandwidth",
         type=float,
@@ -2760,6 +2777,7 @@ def main() -> None:
         fes_xmax=args.fes_xmax,
         exp_pkas=parse_exp_pkas(args.exp_pka),
         pka_window_sample_count=args.pka_window_samples,
+        energy_panel=args.energy_panel,
         solvation_layer_boundaries=args.solvation_layer_boundaries,
         loopiness_kde_bandwidth=args.loopiness_kde_bandwidth,
         figure_width_inches=args.figure_width_inches,

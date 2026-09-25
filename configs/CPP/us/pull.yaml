@@ -1,0 +1,18 @@
+system: CPP
+buffer: 4.0
+prefix: solv
+output_dirname: us-lcod
+
+source:
+  trajectory: systems/CPP/solv_4.0/dftb/N1T64C1/run-5/meta-hib/traject
+  dftb_input: systems/CPP/solv_4.0/dftb/N1T64C1/run-5/meta-hib/dftb.inp
+
+windows:
+  start_angstrom: -2.0
+  stop_angstrom: 2.3
+  spacing_angstrom: 0.1
+
+cv:
+  type: BONDDISTANCEDIFFERENCE
+  gaussian_width_angstrom: 0.1
+  atoms: [19, 20, 31, 20]  # r(NB19,H20) - r(NC31,H20)

@@ -21,6 +21,22 @@ from qmmd.radgyr import run_radgyr
 from qmmd.hbond import run_hbond
 from qmmd.gif import run_gif_submit, run_gif_run
 from qmmd.station import run_station
+from qmmd.us_pull import run_us_pull_prep, run_us_pull_submit
+from qmmd.us_pull_report import run_us_pull_report
+from qmmd.us_equil import run_us_equil_prep, run_us_equil_submit
+from qmmd.us_equil_report import run_us_equil_report
+from qmmd.us_prod import run_us_prod_prep, run_us_prod_submit
+from qmmd.us_prod_report import run_us_prod_report
+from qmmd.us_wham import run_us_wham
+from qmmd.us_wham_report import run_us_wham_report
+from qmmd.us_lcod import (
+    run_pull_prep as run_us_lcod_pull_prep,
+    run_pull_report as run_us_lcod_pull_report,
+    run_equil_prep as run_us_lcod_equil_prep,
+    run_equil_submit as run_us_lcod_equil_submit,
+)
+from qmmd.us_lcod_equil_report import run_us_lcod_equil_report
+from qmmd.us_lcod_wham import run_us_lcod_wham
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -107,6 +123,83 @@ def main():
     station = sub.add_parser("station", help="Plot station FES curves grid from config")
     station.add_argument("yaml", type=Path)
 
+    us_pull_prep = sub.add_parser(
+        "us-pull-prep",
+        help="Prepare one serial Amber restrained-MD pulling job (no submission)",
+    )
+    us_pull_prep.add_argument("yaml", type=Path)
+
+    us_pull_submit = sub.add_parser(
+        "us-pull-submit",
+        help="Submit a prepared serial Amber pulling job matching its config",
+    )
+    us_pull_submit.add_argument("yaml", type=Path)
+
+    us_pull_report = sub.add_parser(
+        "us-pull-report",
+        help="Plot the stitched dihedral time series from a completed Amber pull",
+    )
+    us_pull_report.add_argument("yaml", type=Path)
+
+    us_equil_prep = sub.add_parser(
+        "us-equil-prep",
+        help="Prepare restrained DCDFTBMD equilibration inputs for pull windows",
+    )
+    us_equil_prep.add_argument("yaml", type=Path)
+
+    us_equil_submit = sub.add_parser(
+        "us-equil-submit",
+        help="Submit all prepared restrained DCDFTBMD equilibration windows",
+    )
+    us_equil_submit.add_argument("yaml", type=Path)
+
+    us_equil_report = sub.add_parser(
+        "us-equil-report",
+        help="Plot currently available restrained DCDFTBMD dihedral traces",
+    )
+    us_equil_report.add_argument("yaml", type=Path)
+
+    us_prod_prep = sub.add_parser(
+        "us-prod-prep",
+        help="Prepare restrained DCDFTBMD production inputs from equilibration restarts",
+    )
+    us_prod_prep.add_argument("yaml", type=Path)
+
+    us_prod_submit = sub.add_parser(
+        "us-prod-submit",
+        help="Submit all prepared restrained DCDFTBMD production windows",
+    )
+    us_prod_submit.add_argument("yaml", type=Path)
+
+    us_prod_report = sub.add_parser(
+        "us-prod-report",
+        help="Plot restrained DCDFTBMD production dihedral traces",
+    )
+    us_prod_report.add_argument("yaml", type=Path)
+
+    us_wham = sub.add_parser(
+        "us-wham",
+        help="Construct and bootstrap a WHAM PMF from umbrella production windows",
+    )
+    us_wham.add_argument("yaml", type=Path)
+
+    us_wham_report = sub.add_parser(
+        "us-wham-report",
+        help="Combine pull, production densities, and smooth PMF in one figure",
+    )
+    us_wham_report.add_argument("yaml", type=Path)
+
+    for name, help_text in (
+        ("us-lcod-pull-prep", "Select nearest LCOD frames for handmade umbrella windows"),
+        ("us-lcod-pull-report", "Plot targets and selected LCOD seed frames"),
+        ("us-lcod-equil-prep", "Prepare restrained DFTB LCOD equilibration windows"),
+        ("us-lcod-equil-submit", "Submit all prepared DFTB LCOD equilibration windows"),
+        ("us-lcod-equil-report", "Plot live restrained DFTB LCOD equilibration traces"),
+        ("us-lcod-wham", "Construct LCOD WHAM PMF and report from equilibration trajectories"),
+    ):
+        command = sub.add_parser(name, help=help_text)
+        command.add_argument("yaml", type=Path)
+
     args = p.parse_args()
 
     if args.cmd == "prep":
@@ -163,6 +256,40 @@ def main():
         run_gif_run(args.yaml)
     elif args.cmd == "station":
         run_station(args.yaml)
+    elif args.cmd == "us-pull-prep":
+        run_us_pull_prep(args.yaml)
+    elif args.cmd == "us-pull-submit":
+        run_us_pull_submit(args.yaml)
+    elif args.cmd == "us-pull-report":
+        run_us_pull_report(args.yaml)
+    elif args.cmd == "us-equil-prep":
+        run_us_equil_prep(args.yaml)
+    elif args.cmd == "us-equil-submit":
+        run_us_equil_submit(args.yaml)
+    elif args.cmd == "us-equil-report":
+        run_us_equil_report(args.yaml)
+    elif args.cmd == "us-prod-prep":
+        run_us_prod_prep(args.yaml)
+    elif args.cmd == "us-prod-submit":
+        run_us_prod_submit(args.yaml)
+    elif args.cmd == "us-prod-report":
+        run_us_prod_report(args.yaml)
+    elif args.cmd == "us-wham":
+        run_us_wham(args.yaml)
+    elif args.cmd == "us-wham-report":
+        run_us_wham_report(args.yaml)
+    elif args.cmd == "us-lcod-pull-prep":
+        run_us_lcod_pull_prep(args.yaml)
+    elif args.cmd == "us-lcod-pull-report":
+        run_us_lcod_pull_report(args.yaml)
+    elif args.cmd == "us-lcod-equil-prep":
+        run_us_lcod_equil_prep(args.yaml)
+    elif args.cmd == "us-lcod-equil-submit":
+        run_us_lcod_equil_submit(args.yaml)
+    elif args.cmd == "us-lcod-equil-report":
+        run_us_lcod_equil_report(args.yaml)
+    elif args.cmd == "us-lcod-wham":
+        run_us_lcod_wham(args.yaml)
 
 
 if __name__ == "__main__":

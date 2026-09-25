@@ -1,0 +1,9 @@
+system: MAH
+buffer: 5.5
+prefix: solv
+job_name: mdequil
+
+counterion: 
+solute_mask: ":1"
+nclosest: 999999
+delete_h: "H1,H2,O"   # or H2

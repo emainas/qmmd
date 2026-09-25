@@ -77,9 +77,10 @@ matched to bias timestamps by Gaussian count. Incomplete trailing frames are ign
 The original three summary columns retain water wires, defect distances,
 coordination, Mulliken charges, FES, and apparent pKa. Statistics use 1.75 ps
 after diffusion; a full window is required before plotting. Conversion temperature
-is 300 K. PRN uses `[F(min near s=1) - F(min near s=0)] / (0.004576*T)`,
-with F in kcal/mol and T in K: the opposite sign to the shared amine-oriented
-`deltaf` function. Minima windows and statistical sampling are unchanged.
+is 300 K. PRN uses `[F(min near s=0) - F(min near s=1)] / (0.004576*T)`,
+with F in kcal/mol and T in K: the shared `deltaf` convention, without the former
+PRN-specific sign reversal. Minima windows and statistical sampling are unchanged.
+Older reports retain their recorded convention until explicitly regenerated.
 The FES-derived pKa is an apparent estimator, not a validated equilibrium
 prediction. H bonds use short heavy–H <=1.3 Å, H–acceptor <=2.5 Å, D–H–A >=135°.
 Minimum-image geometry uses the orthorhombic simulation box.

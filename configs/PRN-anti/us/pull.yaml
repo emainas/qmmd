@@ -1,0 +1,66 @@
+system: PRN-anti
+buffer: 5.5
+prefix: solv
+output_dirname: us-pull
+
+# Begin from the final coordinates and velocities of the completed Amber NPT run.
+source:
+  topology_dirname: prep
+  topology_name: solv.parm7
+  restart_dirname: mdequil
+  restart_name: equil-npt.rst7
+  output_name: equil-npt.out
+
+# Inclusive centers: 180, 170, ..., 10, 0 degrees.
+windows:
+  start_deg: 180.0
+  stop_deg: 0.0
+  spacing_deg: 10.0
+
+# O2-CG-O1-H11; atom IDs are one-based Amber topology IDs.
+# Amber uses E = force_constant * angular_displacement_in_radians^2.
+restraint:
+  atoms: [5, 3, 4, 11]
+  force_constant: 50.0  # kcal/mol/rad^2
+
+# Each window is a 1 ps continuation of the preceding NPT restart.
+md:
+  description: "PRN anti-to-syn pulling window"
+  cntrl:
+    iwrap: 1
+    imin: 0
+    irest: 1
+    ntx: 5
+    nstlim: 1000
+    dt: 0.001
+    temp0: 300.0
+    ntt: 3
+    gamma_ln: 2.0
+    ntb: 2
+    ntp: 1
+    taup: 2.0
+    pres0: 1.0
+    ntc: 2
+    ntf: 2
+    cut: 5.0
+    ntpr: 100
+    ntwx: 100
+    ntwe: 0
+
+runtime:
+  module: amber/26
+  executable: sander
+  env:
+    TEMP: 300
+    PRESS: 1.0
+  strict_mode: true
+
+# All windows run serially inside this one Slurm allocation.
+slurm:
+  job:
+    name: PRN-anti-us-pull
+    partition: small
+    nodes: 2
+    time: "01:00:00"
+    stdout: slurm.%j.out
+    stderr: slurm.%j.err

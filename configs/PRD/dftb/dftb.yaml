@@ -4,7 +4,7 @@ prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 30
+replicas: 50
 append: yes
 replica_dirname: equil
 
@@ -58,3 +58,4 @@ slurm:
     time: "1-00:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"
+    qos: highpri

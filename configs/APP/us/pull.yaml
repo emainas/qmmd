@@ -1,0 +1,21 @@
+system: APP
+buffer: 4.0
+prefix: solv
+output_dirname: us-lcod
+
+# Use only APP meta-hib run 5. The source is biased and supplies starting
+# structures, not unbiased samples for a later PMF.
+source:
+  trajectory: systems/APP/solv_4.0/dftb/N1T64C1/run-5/meta-hib/traject
+  dftb_input: systems/APP/solv_4.0/dftb/N1T64C1/run-5/meta-hib/dftb.inp
+
+windows:
+  start_angstrom: -2.0
+  stop_angstrom: 2.0
+  spacing_angstrom: 0.1
+
+cv:
+  type: BONDDISTANCEDIFFERENCE
+  gaussian_width_angstrom: 0.1
+  atoms: [18, 19, 1, 19]  # r(NB18,HB19) - r(NA1,HB19)
+  label: "r(NB18,HB19) − r(NA1,HB19)"

@@ -27,6 +27,7 @@ class SlurmJobConfig:
     time: str
     stdout: str
     stderr: str
+    qos: Optional[str] = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -314,10 +315,11 @@ def write_slurm_sh(cfg: MetaConfig, out_dir_path: Path) -> Optional[Path]:
     job = cfg.slurm.job
     tag = bench_tag_from_slurm(cfg.slurm)
     sh_path = out_dir_path / "slurm.sh"
+    qos_line = f"#SBATCH --qos={job.qos}\n" if job.qos else ""
 
     text = f"""\
 #!/usr/bin/env bash
-#SBATCH --job-name={job.name}-{tag}
+{qos_line}#SBATCH --job-name={job.name}-{tag}
 #SBATCH --partition={job.partition}
 #SBATCH --time={job.time}
 #SBATCH --nodes={job.nodes}

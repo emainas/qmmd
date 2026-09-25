@@ -7,7 +7,7 @@ frcmod: systems/PRN-syn/init/syn_min.frcmod
 mol2: systems/PRN-syn/init/syn_min.mol2
 
 water_model: TIP3PBOX
-buffer: 6.5
+buffer: 5.5
 counterion: null
 counterion_num: 0
 

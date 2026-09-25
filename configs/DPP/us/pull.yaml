@@ -1,0 +1,21 @@
+system: DPP
+buffer: 4.0
+prefix: solv
+output_dirname: us-lcod
+
+# Use only DPP meta-hic run 5. This biased trajectory supplies starting
+# structures; its frames are not samples for the eventual unbiased PMF.
+source:
+  trajectory: systems/DPP/solv_4.0/dftb/N1T64C1/run-5/meta-hic/traject
+  dftb_input: systems/DPP/solv_4.0/dftb/N1T64C1/run-5/meta-hic/dftb.inp
+
+windows:
+  start_angstrom: -2.0
+  stop_angstrom: 2.0
+  spacing_angstrom: 0.1
+
+cv:
+  type: BONDDISTANCEDIFFERENCE
+  gaussian_width_angstrom: 0.1
+  atoms: [43, 32, 31, 32]  # r(ND43,HC32) - r(NC31,HC32)
+  label: "r(ND43,HC32) − r(NC31,HC32)"

@@ -11,6 +11,20 @@ CONFIG = ROOT / "configs/PRN-anti/meta/meta.yaml"
 
 
 class MetaConfigTests(unittest.TestCase):
+    def test_optional_qos_matches_dftb_prep(self):
+        cfg = meta.load_config(ROOT / "configs/PRD/meta/meta.yaml")
+        self.assertEqual(cfg.slurm.job.qos, "highpri")
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            script = meta.write_slurm_sh(cfg, Path(tmp)).read_text()
+        self.assertIn("#SBATCH --qos=highpri\n", script)
+        self.assertIn("#SBATCH --job-name=PRD-N1T48C1\n", script)
+
+        legacy = meta.load_config(ROOT / "configs/PRN-anti/meta/meta.yaml")
+        self.assertIsNone(legacy.slurm.job.qos)
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            legacy_script = meta.write_slurm_sh(legacy, Path(tmp)).read_text()
+        self.assertNotIn("#SBATCH --qos=", legacy_script)
+
     def test_paths_and_template(self):
         cfg = meta.load_config(CONFIG)
         template = meta.load_config(ROOT / "configs/BV/meta/na.yaml")

@@ -7,7 +7,7 @@ frcmod: systems/PRN-anti/init/anti_min.frcmod
 mol2: systems/PRN-anti/init/anti_min.mol2
 
 water_model: TIP3PBOX
-buffer: 6.5
+buffer: 5.5
 counterion: null
 counterion_num: 0
 

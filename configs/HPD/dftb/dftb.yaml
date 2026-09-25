@@ -4,8 +4,8 @@ prefix: solv
 job_name: dftb
 salt_dirname: salt
 
-replicas: 20
-append: no
+replicas: 30
+append: yes
 replica_dirname: equil
 
 dftb:
@@ -50,7 +50,7 @@ runtime:
 slurm:
   job:
     name: HPD
-    partition: small
+    partition: batch
     nodes: 1
     ntasks: 48
     mem: "50G"

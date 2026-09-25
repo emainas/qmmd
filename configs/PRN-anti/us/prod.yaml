@@ -1,0 +1,65 @@
+equil_yaml: equil.yaml
+pull_yaml: pull.yaml
+stage_dirname: prod
+restart_name: restart
+
+# Width is inert because Gaussian height is zero. Centers and atom IDs come
+# from pull.yaml.
+cv:
+  gaussian_width_deg: 0.1
+
+# DCDFTBMD wall coefficient in kcal/mol/degree^2. This is intentionally
+# tighter than the equilibration coefficient (0.015230870989).
+wall:
+  coefficient_kcal_mol_deg2: 0.05
+  exponent: 2
+
+dftb:
+  title: "DC-DFTB3/3ob, PBC (NVT), restrained US production"
+  header_lines:
+    - "SCC=(THIRDFULL=TRUE DAMPXH=TRUE ALMIX=0.3)"
+    - "SCC=(READCHARGE=NONE)"
+    - "SCC=(MAXITER=1000)"
+    - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
+    - "MD=(NSTEP=80000 DELTAT=1.0D-15)"
+    - "MD=(RESTART=TRUE READVELOCITY=FALSE)"
+    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0 CALCPRESSURE=TRUE)"
+    - "MD=(COLLISIONFREQ=0.01)"
+    - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
+    - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
+    - "MD=(PRINT=10 SEEDTYPE=3 RANDOMSEED=0)"
+    - "MD=(METADYNAMICS=TRUE METAPRINTFES=FALSE METARESTART=FALSE)"
+    - "MD=(METAFREQ=100 METAHEIGHT=0.0 METAMAXGAUSS=800)"
+    - "MD=(METAWALL=TRUE)"
+    - "MISC=(PRINTLAPTIME=TRUE)"
+    - "MISC=(WRITECHRGFILE=FALSE)"
+    - "PBC=TRUE"
+    - "PBC=(STRESS=TRUE)"
+  charge: 0
+  multiplicity: 1
+  elements:
+    - {symbol: H, lmax: 1, hubbard: -0.1857}
+    - {symbol: O, lmax: 2, hubbard: -0.1575}
+    - {symbol: C, lmax: 2, hubbard: -0.1492}
+  params_dir: params
+
+runtime:
+  module: openmpi_5.0.6/intel_2024.2.1
+  executable: /nas/sycamore/home/emainas/software/dcdftbmd.2.0/dr_nishimura/20260126_Dcdftbmd/bin/dftb_mpiomp.00.x
+  mpirun_np: 16
+  env:
+    PATH: /nas/sycamore/home/emainas/software/dcdftbmd.2.0/:$PATH
+  strict_mode: true
+
+slurm:
+  job:
+    name: PRN-anti-us-prod
+    partition: batch
+    nodes: 1
+    ntasks: 48
+    mem: 50G
+    cpus_per_task: 1
+    time: "2-00:00:00"
+    stdout: slurm.%j.out
+    stderr: slurm.%j.err
+    qos: highpri

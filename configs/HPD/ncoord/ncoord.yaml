@@ -6,7 +6,7 @@ dftb_dirname: dftb
 replica_dirname: equil
 cv_dirname: meta-h
 
-run_ids: "1-20"
+run_ids: "21-50"
 bench_tag: N1T48C1
 
 cv_title: RATIONALCOORDINATIONNUMBER

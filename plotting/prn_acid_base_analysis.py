@@ -369,7 +369,7 @@ def main() -> None:
                         figure_title=f"{args.runs_path.parts[-4]} run-{run} | metadynamics")
                     metadata = {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()}
                     metadata.update(source=str(source.resolve()), reported_time_origin_ps=data["origin"],
-                                    pka_convention="[F(min near s=1) - F(min near s=0)] / (0.004576 * T); F in kcal/mol, T in K",
+                                    pka_convention="[F(min near s=0) - F(min near s=1)] / (0.004576 * T); F in kcal/mol, T in K",
                                     deprotonation_reported_ps=dep if np.isfinite(dep) else None, diffusion_reported_ps=diffuse,
                                     dihedral_display="Dynamic geometry-based ownership: old labeled O4-H11 and newly bonded O5-H; persistent same-H intervals only. No diffusion/deprotonation-time truncation.",
                                     diffusion_source="manual override" if manual else "automatic HIST criterion",

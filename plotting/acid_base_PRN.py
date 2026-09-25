@@ -1025,9 +1025,9 @@ def load_pka_series(
     fes_xmin: float = 0.0,
     fes_xmax: float = 1.25,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """PRN convention: [F(min near s=1) - F(min near s=0)] / (RT ln 10).
+    """Shared convention: [F(min near s=0) - F(min near s=1)] / (RT ln 10).
 
-    This reverses the shared amine-oriented deltaf convention. Minima selection,
+    No PRN-specific sign reversal is applied. Minima selection,
     temperature, and sampling are unchanged.
     """
     from plot_pka_grid import PKA_FACTOR, deltaf
@@ -1039,7 +1039,7 @@ def load_pka_series(
     times = np.asarray(times[:nblocks], dtype=float)
     delta_f = np.asarray(
         [
-            -deltaf(block, min1_x, min2_x, half_window, fes_xmin, fes_xmax)
+            deltaf(block, min1_x, min2_x, half_window, fes_xmin, fes_xmax)
             for block in blocks[:nblocks]
         ],
         dtype=float,

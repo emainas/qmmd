@@ -1,5 +1,14 @@
 # PRD acid-base summary
 
+Optional `--energy-panel` plots the FES minima difference in kcal/mol rather
+than pKa, including the 10-window-sample mean and standard deviation.
+The unchanged cation convention is F(s≈0)-F(s≈1). References supplied with
+`--exp-pka` are converted using `PKA_FACTOR * T` (the existing rounded
+RT ln(10) factor, 0.004576 kcal/mol/K). At 300 K, `--exp-pka 5` gives a
+dashed line at 6.864 kcal/mol. Numerical energy traces and window samples
+are saved as `summary_delta_f.csv` and `summary_delta_f_window_samples.csv`;
+legacy pKa CSVs remain available. Default plotting behavior is unchanged.
+
 `acid_base_PRD.py` is a copied/adapted HIST summary, with a dedicated copied
 `prd_competitor_analysis.py` helper. Existing HIST files are unchanged.
 PRD here is pyridinium (N1, C2–C6; labeled proton H7), not pyrimidinium.
