@@ -1,0 +1,83 @@
+system: MEA
+buffer: 5.5
+prefix: solv
+job_name: titr
+input_parm7: solv.parm7
+input_rst7: equil-npt.rst7
+dgref_job_name: dgref
+
+cpin:
+  charge_sets: configs/MEA/cphmd/charge_sets.csv
+  pka_corr: [9.0, 0.0]
+  cph_igb: 2
+
+# Explicit pH ladder for the replicas. Keep this strictly increasing.
+ph_ladder:
+  values: [7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0, 11.5]
+
+# In Amber REMD, nstlim is the number of MD steps between exchanges and
+# numexchg is the number of exchange attempts. This setup is 100 ps/replica.
+remd_mdin:
+  production:
+    description: Explicit-solvent replica-exchange constant-pH MD
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 1000
+      numexchg: 50
+      dt: 0.002
+      tempi: 300.0
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 1.0
+      ig: -1
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 5.0
+      ntpr: 500
+      ntwx: 500
+      ntwr: 1000
+      ioutfm: 1
+      icnstph: 2
+      ntcnstph: 100
+      ntrelax: 100
+      saltcon: 0.1
+
+runtime:
+  module: amber/26
+  executable: pmemd.MPI
+  mpi_launcher: mpirun
+  processes_per_replica: 2
+  env:
+    TEMP: 300
+  strict_mode: true
+
+slurm:
+  job:
+    name: mea-titr
+    partition: small
+    nodes: 2
+    ntasks: 20
+    time: "5:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"
+
+postprocess:
+  output_dir: post
+  cpptraj_executable: cpptraj
+  fraction: protonated
+
+titration_report:
+  output_dir: report
+  residue_id: 1
+  reference_pka: 9.0
+  fit_hill: true
+  discard_time_ps: 0.0
+  block_count: 5
+  rolling_window_records: 25
+  slope_window_exchanges: 10
+  style: plotting/lefteris.mplstyle

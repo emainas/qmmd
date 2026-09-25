@@ -69,6 +69,92 @@ Restraints suppress conformer transitions but also alter intrabasin sampling.
 
 ---
 
+## cphmd-prep — CpHMD charge mapping preview
+
+Reads protonated and deprotonated MOL2 files, orders both charge sets by the
+configured master MOL2, and prints the mapping. The single proton missing from
+the deprotonated state is shown with zero deprotonated charge. The same mapping,
+charge totals, and proton counts are written as CSV to the configured
+`output_file`.
+
+```bash
+qmmd cphmd-prep configs/<molecule>/cphmd/prep.yaml
+```
+
+`cphmd-dgref-prep` validates those charge sets against an existing solvated
+Amber topology, copies the topology and equilibrated restart, and writes the
+calibration CPIN, MD input, run script, Slurm script, and YAML snapshot under
+`systems/<system>/<prefix>_<buffer>/cphmd/<job_name>/`. It enforces the NVT
+ensemble required by Amber CpHMD and prepares files only.
+
+```bash
+qmmd cphmd-dgref-prep configs/<molecule>/cphmd/dgref.yaml
+```
+
+After inspecting the prepared files, submit the single job with the same YAML.
+Submission requires an exact configuration and generated-input match and asks
+for confirmation before calling `sbatch`.
+
+```bash
+qmmd cphmd-dgref-submit configs/<molecule>/cphmd/dgref.yaml
+```
+
+Generate or refresh live ΔGref-versus-protonated-fraction and
+ΔGref-versus-iteration plots while the job is running or after it finishes.
+The iteration plot contains both a line and scatter points, plus a dashed red
+line at the mean after dropping the number of initial evaluations configured as
+`report.discard_first`. Its legend reports that mean and its sample standard
+deviation. Completed evaluations are written to an aligned CSV; a partially
+written final evaluation is ignored until its fraction appears in `dgref.log`.
+
+```bash
+qmmd cphmd-dgref-report configs/<molecule>/cphmd/dgref.yaml
+```
+
+After `finddgref.py` has completed successfully, prepare explicit-solvent
+replica-exchange CpHMD titration inputs. The command reads the converged ΔGref
+from the calibration log, builds the two-state CPINs, writes one MDIN per pH,
+and creates the Amber groupfile and MPI/Slurm launch scripts under the sibling
+`systems/<system>/<prefix>_<buffer>/cphmd/<job_name>/` directory. The pH ladder,
+MD controls, and resources are defined in YAML. This command prepares files
+only and never launches or submits them.
+
+```bash
+qmmd cphmd-titr-prep configs/<molecule>/cphmd/cphmd.yaml
+```
+
+After inspecting the prepared replica inputs, submit the single MPI
+replica-exchange job with the same YAML. Submission requires an exact match to
+the configuration, source topology/restart, calibrated ΔGref, pH ladder, and all
+generated inputs. It asks for confirmation and refuses to overwrite existing
+simulation outputs.
+
+```bash
+qmmd cphmd-titr-submit configs/<molecule>/cphmd/cphmd.yaml
+```
+
+After a completed replica-exchange run, disentangle both the coordinate and
+protonation-state walkers into fixed-pH ensembles with `cpptraj`. The command
+uses the replica indices embedded in the NetCDF trajectories for `ensemble`
+sorting, and independently applies `readensembledata` plus `sortensembledata`
+to the CPOUT records. It writes one NetCDF trajectory per pH, sorted state data,
+`cphstats` fractions, tidy CSV tables, and an explicit coordinate/state
+alignment table under the configured `postprocess.output_dir`. Raw titration
+outputs are read only.
+
+```bash
+qmmd cphmd-titr-post configs/<molecule>/cphmd/cphmd.yaml
+```
+
+Generate titration, protonation-sampling, and replica-exchange diagnostics from
+the fixed-pH postprocessing outputs:
+
+```bash
+qmmd cphmd-titr-report configs/<molecule>/cphmd/cphmd.yaml
+```
+
+---
+
 ## us-pull-prep - Prepare sequential Amber pulling windows
 
 Prepares a single Slurm job containing a serial chain of short, harmonically

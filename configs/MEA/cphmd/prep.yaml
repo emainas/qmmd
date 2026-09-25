@@ -1,0 +1,8 @@
+system: MEA
+input_dir: systems/MEA/init/
+prot_mol2: mea.mol2
+proton_count_prot: 3
+deprot_mol2: mea_deprot.mol2
+proton_count_deprot: 2
+master: mea.mol2
+output_file: configs/MEA/cphmd/charge_sets.csv

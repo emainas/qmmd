@@ -37,6 +37,12 @@ from qmmd.us_lcod import (
 )
 from qmmd.us_lcod_equil_report import run_us_lcod_equil_report
 from qmmd.us_lcod_wham import run_us_lcod_wham
+from qmmd.cphmd_prep import run_cphmd_prep
+from qmmd.cphmd_dgref import run_cphmd_dgref_prep, run_cphmd_dgref_submit
+from qmmd.cphmd_dgref_report import run_cphmd_dgref_report
+from qmmd.cphmd_titr import run_cphmd_titr_prep, run_cphmd_titr_submit
+from qmmd.cphmd_titr_post import run_cphmd_titr_post
+from qmmd.cphmd_titr_report import run_cphmd_titr_report
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -47,6 +53,54 @@ def main():
 
     mdequil = sub.add_parser("mdequil", help="Write MD equil inputs and run (slurm if provided, else local)")
     mdequil.add_argument("yaml", type=Path)
+
+    cphmd_prep = sub.add_parser(
+        "cphmd-prep",
+        help="Print master/deprotonated MOL2 atom and charge mapping",
+    )
+    cphmd_prep.add_argument("yaml", type=Path)
+
+    cphmd_dgref_prep = sub.add_parser(
+        "cphmd-dgref-prep",
+        help="Prepare Amber finddgref inputs without running or submitting",
+    )
+    cphmd_dgref_prep.add_argument("yaml", type=Path)
+
+    cphmd_dgref_submit = sub.add_parser(
+        "cphmd-dgref-submit",
+        help="Validate and submit a prepared Amber finddgref job",
+    )
+    cphmd_dgref_submit.add_argument("yaml", type=Path)
+
+    cphmd_dgref_report = sub.add_parser(
+        "cphmd-dgref-report",
+        help="Plot completed finddgref evaluations from a live or finished log",
+    )
+    cphmd_dgref_report.add_argument("yaml", type=Path)
+
+    cphmd_titr_prep = sub.add_parser(
+        "cphmd-titr-prep",
+        help="Prepare explicit-solvent replica-exchange CpHMD inputs",
+    )
+    cphmd_titr_prep.add_argument("yaml", type=Path)
+
+    cphmd_titr_submit = sub.add_parser(
+        "cphmd-titr-submit",
+        help="Validate and submit a prepared RECpHMD titration job",
+    )
+    cphmd_titr_submit.add_argument("yaml", type=Path)
+
+    cphmd_titr_post = sub.add_parser(
+        "cphmd-titr-post",
+        help="Sort RECpHMD coordinates and protonation records into fixed-pH ensembles",
+    )
+    cphmd_titr_post.add_argument("yaml", type=Path)
+
+    cphmd_titr_report = sub.add_parser(
+        "cphmd-titr-report",
+        help="Plot RECpHMD exchange health, titration, and protonation diagnostics",
+    )
+    cphmd_titr_report.add_argument("yaml", type=Path)
 
     salt = sub.add_parser("salt", help="Delete the counterion (sodium or chlorind) and turn the furthest water into a hydroxide")
     salt.add_argument("yaml", type=Path)
@@ -206,6 +260,22 @@ def main():
         run_prep(args.yaml)
     elif args.cmd == "mdequil":
         run_mdequil(args.yaml)
+    elif args.cmd == "cphmd-prep":
+        run_cphmd_prep(args.yaml)
+    elif args.cmd == "cphmd-dgref-prep":
+        run_cphmd_dgref_prep(args.yaml)
+    elif args.cmd == "cphmd-dgref-submit":
+        run_cphmd_dgref_submit(args.yaml)
+    elif args.cmd == "cphmd-dgref-report":
+        run_cphmd_dgref_report(args.yaml)
+    elif args.cmd == "cphmd-titr-prep":
+        run_cphmd_titr_prep(args.yaml)
+    elif args.cmd == "cphmd-titr-submit":
+        run_cphmd_titr_submit(args.yaml)
+    elif args.cmd == "cphmd-titr-post":
+        run_cphmd_titr_post(args.yaml)
+    elif args.cmd == "cphmd-titr-report":
+        run_cphmd_titr_report(args.yaml)
     elif args.cmd == "salt":
         run_salt(args.yaml)
     elif args.cmd == "dftb-prep":
