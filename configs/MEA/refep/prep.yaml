@@ -1,0 +1,30 @@
+system: MEA
+buffer: 5.5
+prefix: solv
+
+# The equilibrated restart is in mdequil; its matching topology remains in prep.
+input_parm7: systems/MEA/solv_5.5/prep/solv.parm7
+input_rst7: systems/MEA/solv_5.5/mdequil/equil-npt.rst7
+deprot_mol2: systems/MEA/init/mea_deprot.mol2
+
+ligand:
+  residue_id: 1
+  residue_name: MEA
+  dummy_atoms: [HN1]
+  expected_charge_lambda0: 1
+  expected_charge_lambda1: 0
+  charge_tolerance: 0.01
+
+interpolation:
+  windows: 16
+  lambda0_label: protonated
+  lambda1_label: deprotonated
+
+output:
+  directory: systems/MEA/solv_5.5/refep/topology
+  plot: charge-interpolation.png
+  style: plotting/prl.mplstyle
+
+runtime:
+  module: amber/26
+  parmed_executable: parmed

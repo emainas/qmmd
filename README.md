@@ -153,6 +153,30 @@ the fixed-pH postprocessing outputs:
 qmmd cphmd-titr-report configs/<molecule>/cphmd/cphmd.yaml
 ```
 
+Build a charge-only, single-topology REFEP lambda ladder from an existing
+solvated topology and an alternate-state MOL2 charge set. The command retains
+one common equilibrated restart, writes all interpolated parameter files, and
+plots every ligand charge against lambda:
+
+```bash
+qmmd refep-prep configs/<molecule>/refep/prep.yaml
+```
+
+Prepare one independent constant-volume equilibration for every REFEP lambda
+topology. All windows start from the common density-equilibrated restart made
+available by `refep-prep`; no minimization, heating, replica exchange, Amber
+execution, or Slurm submission occurs during preparation.
+
+```bash
+qmmd refep-equil-prep configs/<molecule>/refep/equil.yaml
+qmmd refep-equil-submit configs/<molecule>/refep/equil.yaml
+```
+
+The submit command performs an exact preflight against the YAML, topology
+checksums, common starting restart, and generated scripts. It refuses to submit
+if any equilibration or Slurm outputs already exist and asks for confirmation
+before calling `sbatch`.
+
 ---
 
 ## us-pull-prep - Prepare sequential Amber pulling windows

@@ -43,6 +43,8 @@ from qmmd.cphmd_dgref_report import run_cphmd_dgref_report
 from qmmd.cphmd_titr import run_cphmd_titr_prep, run_cphmd_titr_submit
 from qmmd.cphmd_titr_post import run_cphmd_titr_post
 from qmmd.cphmd_titr_report import run_cphmd_titr_report
+from qmmd.refep_prep import run_refep_prep
+from qmmd.refep_equil import run_refep_equil_prep, run_refep_equil_submit
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -101,6 +103,24 @@ def main():
         help="Plot RECpHMD exchange health, titration, and protonation diagnostics",
     )
     cphmd_titr_report.add_argument("yaml", type=Path)
+
+    refep_prep = sub.add_parser(
+        "refep-prep",
+        help="Build and validate single-topology electrostatic REFEP parameter files",
+    )
+    refep_prep.add_argument("yaml", type=Path)
+
+    refep_equil_prep = sub.add_parser(
+        "refep-equil-prep",
+        help="Prepare independent per-lambda REFEP NVT equilibration inputs",
+    )
+    refep_equil_prep.add_argument("yaml", type=Path)
+
+    refep_equil_submit = sub.add_parser(
+        "refep-equil-submit",
+        help="Validate and submit prepared REFEP lambda equilibrations",
+    )
+    refep_equil_submit.add_argument("yaml", type=Path)
 
     salt = sub.add_parser("salt", help="Delete the counterion (sodium or chlorind) and turn the furthest water into a hydroxide")
     salt.add_argument("yaml", type=Path)
@@ -276,6 +296,12 @@ def main():
         run_cphmd_titr_post(args.yaml)
     elif args.cmd == "cphmd-titr-report":
         run_cphmd_titr_report(args.yaml)
+    elif args.cmd == "refep-prep":
+        run_refep_prep(args.yaml)
+    elif args.cmd == "refep-equil-prep":
+        run_refep_equil_prep(args.yaml)
+    elif args.cmd == "refep-equil-submit":
+        run_refep_equil_submit(args.yaml)
     elif args.cmd == "salt":
         run_salt(args.yaml)
     elif args.cmd == "dftb-prep":
