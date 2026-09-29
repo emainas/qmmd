@@ -153,6 +153,29 @@ the fixed-pH postprocessing outputs:
 qmmd cphmd-titr-report configs/<molecule>/cphmd/cphmd.yaml
 ```
 
+Build a VMD viewer for one postprocessed fixed-pH trajectory. The generated
+script uses the frame-aligned protonation table to hide zero-charge dummy
+hydrogens, update the titratable residue color, and display the current state,
+time, and proton count during playback. It runs CPPTRAJ `autoimage` with the
+titratable residue as the anchor, placing the solute at the periodic box center
+and reimaging the surrounding water in every frame. It then RMS-aligns each
+frame to the first-frame `view.orientation_atoms` and translates the configured
+`view.focus_atoms` to the box center, giving VMD a fixed local-site reference frame.
+Three ordered `view.orientation_atoms` define a site atom, its bonded neighbor,
+and a third atom in the local plane; VMD sets this side view once and does not
+chase the molecule during playback. `view.zoom` controls magnification. Water
+uses transparent VDW spheres, with size and resolution controlled by the
+corresponding `view.water_*` settings. `view.hydrogen_bonds` defines geometric
+N–H···O(water) cutoffs and the thick dashed light-green overlay. Set
+`view.copy_inputs: true` to make a self-contained directory that can be
+downloaded and opened elsewhere.
+
+```bash
+qmmd cphmd-view configs/<molecule>/cphmd/cphmd.yaml --ph 9.0
+cd systems/<system>/<prefix>_<buffer>/cphmd/<job_name>/post/view/ph-9.0
+vmd -e view.vmd
+```
+
 Build a charge-only, single-topology REFEP lambda ladder from an existing
 solvated topology and an alternate-state MOL2 charge set. The command retains
 one common equilibrated restart, writes all interpolated parameter files, and

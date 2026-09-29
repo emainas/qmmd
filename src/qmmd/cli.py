@@ -43,6 +43,7 @@ from qmmd.cphmd_dgref_report import run_cphmd_dgref_report
 from qmmd.cphmd_titr import run_cphmd_titr_prep, run_cphmd_titr_submit
 from qmmd.cphmd_titr_post import run_cphmd_titr_post
 from qmmd.cphmd_titr_report import run_cphmd_titr_report
+from qmmd.cphmd_view import run_cphmd_view
 from qmmd.refep_prep import run_refep_prep
 from qmmd.refep_equil import run_refep_equil_prep, run_refep_equil_submit
 from qmmd.refep_prod import run_refep_prod_prep, run_refep_prod_submit
@@ -109,6 +110,13 @@ def main():
         help="Plot RECpHMD exchange health, titration, and protonation diagnostics",
     )
     cphmd_titr_report.add_argument("yaml", type=Path)
+
+    cphmd_view = sub.add_parser(
+        "cphmd-view",
+        help="Build a frame-aligned VMD viewer for one fixed-pH CpHMD trajectory",
+    )
+    cphmd_view.add_argument("yaml", type=Path)
+    cphmd_view.add_argument("--ph", type=float, required=True)
 
     refep_prep = sub.add_parser(
         "refep-prep",
@@ -332,6 +340,8 @@ def main():
         run_cphmd_titr_post(args.yaml)
     elif args.cmd == "cphmd-titr-report":
         run_cphmd_titr_report(args.yaml)
+    elif args.cmd == "cphmd-view":
+        run_cphmd_view(args.yaml, args.ph)
     elif args.cmd == "refep-prep":
         run_refep_prep(args.yaml)
     elif args.cmd == "refep-equil-prep":

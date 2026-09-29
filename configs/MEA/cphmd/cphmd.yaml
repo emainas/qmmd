@@ -71,6 +71,27 @@ postprocess:
   cpptraj_executable: cpptraj
   fraction: protonated
 
+view:
+  output_dir: view
+  residue_name: MEA
+  residue_id: 1
+  copy_inputs: true
+  zero_charge_tolerance: 1.0e-8
+  focus_atoms: [N]
+  orientation_atoms: [N, C1, C2]
+  zoom: 4.0
+  water_sphere_scale: 0.35
+  water_sphere_resolution: 24
+  hydrogen_bonds:
+    donor_atom: N
+    hydrogen_atoms: [HN1, HN2, HN3]
+    water_oxygen_selection: "water and name O"
+    distance_cutoff_angstrom: 2.5
+    angle_cutoff_degrees: 135.0
+    line_radius_angstrom: 0.08
+    dash_count: 6
+    color_rgb: [0.45, 1.0, 0.45]
+
 titration_report:
   output_dir: report
   residue_id: 1

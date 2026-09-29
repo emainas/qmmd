@@ -179,6 +179,7 @@ def _without_postprocess(text: str) -> object:
         data = dict(data)
         data.pop("postprocess", None)
         data.pop("titration_report", None)
+        data.pop("view", None)
     return data
 
 
@@ -195,7 +196,7 @@ def validate_completed_titration(cfg: TitrPostConfig, repo_root: Path) -> Path:
     ):
         raise ValueError(
             "Prepared titration configuration differs from the supplied YAML "
-            "(excluding postprocess settings)"
+            "(excluding postprocess/report/view settings)"
         )
 
     required = [source / cfg.titr.input_parm7, source / "rem.log"]
