@@ -9,7 +9,13 @@ from pathlib import Path
 
 import numpy as np
 
-from qmmd.us_lcod_wham import plot_pmf_zero, pmf_features, read_samples, write_wham_inputs
+from qmmd.us_lcod_wham import (
+    equivalent_delta_pka,
+    plot_pmf_zero,
+    pmf_features,
+    read_samples,
+    write_wham_inputs,
+)
 from qmmd.us_wham import dcdftb_wall_to_wham_force
 
 
@@ -62,3 +68,8 @@ class TestLCODWham(unittest.TestCase):
         smooth_x = np.array([-2.1, -1.2, 0.0, 1.2, 2.1])
         smooth_y = np.array([-0.5, 0.0, 3.6, -0.01, -1.0])
         self.assertAlmostEqual(plot_pmf_zero(raw_x, raw_y, smooth_x, smooth_y, (-2.0, 2.0)), -0.05)
+
+    def test_equivalent_delta_pka_uses_explicit_basin_order_and_temperature(self):
+        factor = 0.00198720425864083 * 300.0 * np.log(10.0)
+        self.assertAlmostEqual(equivalent_delta_pka(factor, 300.0), -1.0)
+        self.assertAlmostEqual(equivalent_delta_pka(-factor, 300.0), 1.0)

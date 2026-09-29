@@ -95,9 +95,9 @@ class USLCODTests(unittest.TestCase):
         )
         self.assertIn("trajin /tmp/traject 1 2", script)
         self.assertIn("box x 17.8690000000 y 21.7430000000 z 22.4740000000", script)
-        self.assertIn("distance NBH @19 @20", script)
-        self.assertIn("distance NCH @31 @20", script)
-        self.assertIn("calc LCOD = NBH - NCH", script)
+        self.assertIn("distance DISTANCE1 @19 @20", script)
+        self.assertIn("distance DISTANCE2 @31 @20", script)
+        self.assertIn("calc LCOD = DISTANCE1 - DISTANCE2", script)
         self.assertIn("writedata lcod.dat LCOD prec 18.10", script)
 
     def test_cpptraj_lcod_frame_count_is_checked(self):

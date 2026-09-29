@@ -1,0 +1,35 @@
+equil_yaml: equil.yaml
+output_dirname: wham-equil
+
+# Exploratory PMF from the available equilibration trajectories, not
+# independent production. The jobs reached unequal endpoints before timeout.
+discard_ps: 0.0
+
+coordinate:
+  # The 0.05 Å grid spans the continuously restrained -2.0...+2.0 windows.
+  minimum_angstrom: -2.05
+  maximum_angstrom: 2.05
+  bins: 82
+  report_minimum_angstrom: -2.04
+  report_maximum_angstrom: 2.04
+
+wham:
+  executable: /nas/sycamore/home/emainas/software/wham/wham/wham
+  tolerance: 1.0e-6
+  temperature_k: 300.0
+  padding: 0
+
+# Additive zero around the negative-LCOD, NB-HB-bound basin.
+zero_reference_angstrom: [-1.3, -1.1]
+
+plot:
+  smoothing_penalty: 20.0  # plot-only; pmf.csv remains raw WHAM
+  xlim_angstrom: [-2.0, 2.0]
+
+basins:
+  negative_lcod_angstrom: [-1.8, -0.5]
+  positive_lcod_angstrom: [0.5, 1.8]
+  negative_state: APP
+  negative_site: "proton on NB"
+  positive_state: BPP
+  positive_site: "proton on NA"

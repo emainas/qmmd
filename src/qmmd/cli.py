@@ -45,6 +45,12 @@ from qmmd.cphmd_titr_post import run_cphmd_titr_post
 from qmmd.cphmd_titr_report import run_cphmd_titr_report
 from qmmd.refep_prep import run_refep_prep
 from qmmd.refep_equil import run_refep_equil_prep, run_refep_equil_submit
+from qmmd.refep_prod import run_refep_prod_prep, run_refep_prod_submit
+from qmmd.refep_prod_post import (
+    run_refep_prod_post_prep,
+    run_refep_prod_post_submit,
+)
+from qmmd.refep_prod_report import run_refep_prod_report
 
 def main():
     p = argparse.ArgumentParser(prog="qmmd")
@@ -121,6 +127,36 @@ def main():
         help="Validate and submit prepared REFEP lambda equilibrations",
     )
     refep_equil_submit.add_argument("yaml", type=Path)
+
+    refep_prod_prep = sub.add_parser(
+        "refep-prod-prep",
+        help="Prepare Hamiltonian replica-exchange REFEP production inputs",
+    )
+    refep_prod_prep.add_argument("yaml", type=Path)
+
+    refep_prod_submit = sub.add_parser(
+        "refep-prod-submit",
+        help="Validate and submit a prepared REFEP H-REMD production job",
+    )
+    refep_prod_submit.add_argument("yaml", type=Path)
+
+    refep_prod_post_prep = sub.add_parser(
+        "refep-prod-post-prep",
+        help="Prepare the REFEP cross-Hamiltonian single-point energy grid",
+    )
+    refep_prod_post_prep.add_argument("yaml", type=Path)
+
+    refep_prod_post_submit = sub.add_parser(
+        "refep-prod-post-submit",
+        help="Validate and submit the REFEP single-point energy grid",
+    )
+    refep_prod_post_submit.add_argument("yaml", type=Path)
+
+    refep_prod_report = sub.add_parser(
+        "refep-prod-report",
+        help="Analyze REFEP free energies and replica-exchange health",
+    )
+    refep_prod_report.add_argument("yaml", type=Path)
 
     salt = sub.add_parser("salt", help="Delete the counterion (sodium or chlorind) and turn the furthest water into a hydroxide")
     salt.add_argument("yaml", type=Path)
@@ -302,6 +338,16 @@ def main():
         run_refep_equil_prep(args.yaml)
     elif args.cmd == "refep-equil-submit":
         run_refep_equil_submit(args.yaml)
+    elif args.cmd == "refep-prod-prep":
+        run_refep_prod_prep(args.yaml)
+    elif args.cmd == "refep-prod-submit":
+        run_refep_prod_submit(args.yaml)
+    elif args.cmd == "refep-prod-post-prep":
+        run_refep_prod_post_prep(args.yaml)
+    elif args.cmd == "refep-prod-post-submit":
+        run_refep_prod_post_submit(args.yaml)
+    elif args.cmd == "refep-prod-report":
+        run_refep_prod_report(args.yaml)
     elif args.cmd == "salt":
         run_salt(args.yaml)
     elif args.cmd == "dftb-prep":

@@ -177,6 +177,77 @@ checksums, common starting restart, and generated scripts. It refuses to submit
 if any equilibration or Slurm outputs already exist and asks for confirmation
 before calling `sbatch`.
 
+After all lambda equilibrations complete, prepare the Hamiltonian
+replica-exchange production calculation. This verifies every equilibration,
+copies each lambda-specific topology and final restart, and writes the common
+MDIN, Amber groupfile, MPI launch script, Slurm script, manifest, and exact YAML
+snapshot under the sibling `refep/prod/` directory. Preparation does not run or
+submit Amber.
+
+```bash
+qmmd refep-prod-prep configs/<molecule>/refep/prod.yaml
+qmmd refep-prod-submit configs/<molecule>/refep/prod.yaml
+```
+
+Submission requires an exact match to the production YAML, all equilibrated
+source files, copied topology/restart checksums, groupfile, MDIN, manifests,
+and launch scripts. It refuses to submit over any existing H-REMD output and
+asks for confirmation before calling `sbatch`.
+
+Prepare and submit the full cross-Hamiltonian single-point energy grid after a
+completed REFEP H-REMD calculation. For every sampled trajectory `q_j`, all
+lambda Hamiltonians `k` are evaluated with Amber `sander`, `imin=5`, and
+`maxcyc=1`, producing the complete `U_k(q_j)` matrix required by subsequent
+FEP, BAR, TI, and MBAR analysis. Preparation validates the production run and
+writes inputs only; submission performs an exact preflight and asks for
+confirmation.
+
+```bash
+qmmd refep-prod-post-prep configs/<molecule>/refep/prod.yaml
+qmmd refep-prod-post-submit configs/<molecule>/refep/prod.yaml
+```
+
+For diagnostic implicit-solvent rescoring of an existing explicit-solvent
+production run, use a second production YAML with a unique
+`single_point.stage_dirname`, an Amber `single_point.keep_mask`, and the desired
+implicit-solvent MDIN controls. Post-prep uses `cpptraj` to write matching
+stripped topology, trajectory, and restart files without box information. It
+also writes `run-local.sh`, which assumes Amber is already loaded and runs a
+bounded number of concurrent calculations controlled by
+`single_point.runtime.local_workers` (or `REFEP_LOCAL_WORKERS`). For example:
+
+```bash
+qmmd refep-prod-post-prep configs/MEA/refep/prod-igb2-rescore.yaml
+cd systems/MEA/solv_5.5/refep/prod-10ns/post-igb2-rescore
+module load amber/26
+bash run-local.sh
+```
+
+This is a rescore of conformations sampled under the explicit-solvent
+Hamiltonians, not a rigorously sampled implicit-solvent free energy.
+
+After the cross-energy grid completes, generate the free-energy and
+replica-exchange report. The report includes forward/reverse FEP, neighbor BAR,
+full-matrix MBAR, a charge-path TI calculation, convergence, work overlap, and
+walker-mixing diagnostics. It writes every figure together with its aligned
+CSV data under the configured sibling `refep/prod/report/` directory.
+Set `report.reference_state` to an endpoint label when the reported free energy
+must follow a state-reference convention. The reported direction is then the
+other endpoint to the reference endpoint, i.e. `G(reference) - G(other)`. For a
+base with `reference_state: protonated`, this reports
+`G(protonated) - G(deprotonated)`, matching the CpHMD DGref convention.
+
+```bash
+qmmd refep-prod-report configs/<molecule>/refep/prod.yaml
+```
+
+For linearly interpolated charges, the primary TI estimator obtains
+`dU/dlambda` from a quadratic fit to the complete cross-Hamiltonian energy
+grid. The legacy endpoint-energy-gap TI estimate is retained as a clearly
+labelled comparison. Reported values are raw periodic charge-mutation free
+energies: no net-charge finite-size correction or proton thermodynamic-cycle
+term is applied, so the reported `delta_g_over_RTln10` is not an absolute pKa.
+
 ---
 
 ## us-pull-prep - Prepare sequential Amber pulling windows

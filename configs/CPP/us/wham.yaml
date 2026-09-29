@@ -29,3 +29,7 @@ plot:
 basins:
   negative_lcod_angstrom: [-1.8, -0.6]
   positive_lcod_angstrom: [0.6, 2.0]
+  negative_state: CPP
+  negative_site: "proton on NB"
+  positive_state: BPP
+  positive_site: "proton on NC"

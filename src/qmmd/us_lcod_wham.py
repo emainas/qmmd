@@ -1,4 +1,4 @@
-"""WHAM analysis of trajectory-derived CPP LCOD equilibration windows."""
+"""WHAM analysis of trajectory-derived LCOD equilibration windows."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import numpy as np
 import yaml
 
 from qmmd.us_lcod import LCODEquilConfig, lcod_centers, load_equil_config, pull_root
-from qmmd.us_lcod_equil_report import read_pull_seeds
+from qmmd.us_lcod_equil_report import equilibration_duration_ps, read_pull_seeds
 from qmmd.us_pull import find_repo_root
 from qmmd.us_wham import (
     dcdftb_wall_to_wham_force,
@@ -42,6 +42,10 @@ class LCODWhamConfig:
     plot_xlim_angstrom: tuple[float, float]
     negative_basin_angstrom: tuple[float, float]
     positive_basin_angstrom: tuple[float, float]
+    negative_basin_state: str
+    positive_basin_state: str
+    negative_basin_site: str
+    positive_basin_site: str
 
 
 def load_config(path: Path) -> LCODWhamConfig:
@@ -84,6 +88,10 @@ def load_config(path: Path) -> LCODWhamConfig:
         )),
         negative_basin_angstrom=interval("negative_lcod_angstrom"),
         positive_basin_angstrom=interval("positive_lcod_angstrom"),
+        negative_basin_state=str(basins.get("negative_state", "negative-LCOD basin")).strip(),
+        positive_basin_state=str(basins.get("positive_state", "positive-LCOD basin")).strip(),
+        negative_basin_site=str(basins.get("negative_site", "")).strip(),
+        positive_basin_site=str(basins.get("positive_site", "")).strip(),
     )
     if Path(cfg.output_dirname).name != cfg.output_dirname or cfg.output_dirname in {".", ".."}:
         raise ValueError("output_dirname must be a single directory name")
@@ -104,6 +112,8 @@ def load_config(path: Path) -> LCODWhamConfig:
             < cfg.negative_basin_angstrom[1] < 0 < cfg.positive_basin_angstrom[0]
             < cfg.positive_basin_angstrom[1] <= cfg.report_maximum_angstrom):
         raise ValueError("The negative and positive LCOD basin ranges must be ordered within the report")
+    if not cfg.negative_basin_state or not cfg.positive_basin_state:
+        raise ValueError("Basin state labels must not be empty")
     return cfg
 
 
@@ -170,7 +180,13 @@ def calculate_wham(cfg: LCODWhamConfig, yaml_text: str, repo_root: Path) -> tupl
     grid, raw = read_wham_result(result_path)
     mask = (grid >= cfg.report_minimum_angstrom) & (grid <= cfg.report_maximum_angstrom)
     if not np.any(mask) or not np.all(np.isfinite(raw[mask])):
-        raise ValueError("WHAM PMF contains empty/non-finite bins inside report bounds")
+        bad = grid[mask & ~np.isfinite(raw)]
+        coordinates = ", ".join(f"{value:g}" for value in bad)
+        detail = f" at LCOD bin(s) {coordinates} Å" if coordinates else ""
+        raise ValueError(
+            "WHAM PMF contains empty/non-finite bins inside report bounds"
+            f"{detail}; restrict the report to continuously sampled bins"
+        )
     pmf = zero_pmf(grid, raw, cfg.zero_reference_angstrom)
     table = output / "pmf.csv"
     with table.open("w", newline="") as stream:
@@ -212,6 +228,26 @@ def pmf_features(
     }
 
 
+def equivalent_delta_pka(
+    gap_positive_minus_negative_kcal_mol: float, temperature_k: float
+) -> float:
+    """Convert a tautomer free-energy gap to an equivalent relative pKa.
+
+    The sign convention is ΔpKa(positive−negative) =
+    −ΔG(positive−negative)/(R T ln 10), so the lower-free-energy protonated
+    tautomer has the higher equivalent pKa when both share a common
+    deprotonated reference state.
+    """
+    if not math.isfinite(gap_positive_minus_negative_kcal_mol):
+        raise ValueError("Free-energy gap must be finite")
+    if not math.isfinite(temperature_k) or temperature_k <= 0:
+        raise ValueError("Temperature must be positive and finite")
+    gas_constant_kcal_mol_k = 0.00198720425864083
+    return -gap_positive_minus_negative_kcal_mol / (
+        gas_constant_kcal_mol_k * temperature_k * math.log(10.0)
+    )
+
+
 def plot_pmf_zero(
     raw_x: np.ndarray, raw_y: np.ndarray, smooth_x: np.ndarray,
     smooth_y: np.ndarray, limits: tuple[float, float]
@@ -236,6 +272,11 @@ def plot_report(cfg: LCODWhamConfig, output: Path, repo_root: Path) -> Path:
         plt.style.use(style)
     root = pull_root(cfg.equil.pull, repo_root)
     centers = lcod_centers(cfg.equil.pull.windows)
+    atoms = cfg.equil.pull.cv.atoms
+    lcod_definition = cfg.equil.pull.cv.label.strip() or (
+        f"r(atom {atoms[0]}, atom {atoms[1]}) − "
+        f"r(atom {atoms[2]}, atom {atoms[3]})"
+    )
     samples = read_samples(root / "equil_lcod.csv", centers, cfg.discard_ps)
     seeds = read_pull_seeds(root, centers, cfg.equil.pull_yaml.read_text())
     with (output / "pmf.csv").open(newline="") as stream:
@@ -247,6 +288,9 @@ def plot_report(cfg: LCODWhamConfig, output: Path, repo_root: Path) -> Path:
     smooth_x, smooth_y = dense_hermite_curve(grid, smooth_pmf(pmf, cfg.smoothing_penalty))
     features = pmf_features(smooth_x, smooth_y, cfg.negative_basin_angstrom,
                             cfg.positive_basin_angstrom)
+    features["equivalent_delta_pka_positive_minus_negative"] = equivalent_delta_pka(
+        float(features["gap_positive_minus_negative"]), cfg.temperature_k
+    )
     zero = plot_pmf_zero(grid, pmf, smooth_x, smooth_y, cfg.plot_xlim_angstrom)
     plotted_raw = pmf - zero
     plotted_smooth = smooth_y - zero
@@ -290,6 +334,26 @@ def plot_report(cfg: LCODWhamConfig, output: Path, repo_root: Path) -> Path:
         coordinate, energy = features[name]
         pmf_ax.scatter([coordinate], [energy - zero], s=35,
                        facecolor="white", edgecolor="#202124", linewidth=1.1, zorder=5)
+    negative_site = f"\n{cfg.negative_basin_site}" if cfg.negative_basin_site else ""
+    positive_site = f"\n{cfg.positive_basin_site}" if cfg.positive_basin_site else ""
+    for coordinate, energy, label in (
+        (features["negative_minimum"][0], features["negative_minimum"][1],
+         cfg.negative_basin_state + negative_site),
+        (features["positive_minimum"][0], features["positive_minimum"][1],
+         cfg.positive_basin_state + positive_site),
+    ):
+        pmf_ax.annotate(
+            label,
+            xy=(coordinate, energy - zero),
+            xytext=(0, 11),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=8.5,
+            bbox={"boxstyle": "round,pad=0.15", "facecolor": "white",
+                  "edgecolor": "none", "alpha": 0.82},
+            zorder=6,
+        )
     for seed in seeds:
         color = colors[seed.window_index]
         seed_ax.plot([seed.target_angstrom, seed.selected_angstrom],
@@ -300,11 +364,18 @@ def plot_report(cfg: LCODWhamConfig, output: Path, repo_root: Path) -> Path:
             axis.axvline(center, color=colors[index], linestyle="--", linewidth=0.65, alpha=0.35, zorder=0)
         axis.grid(False)
     pmf_ax.set(ylabel="PMF (minimum = 0; kcal mol⁻¹)",
-               title="CPP LCOD WHAM from equilibration trajectories (exploratory)")
+               title=f"{cfg.equil.pull.system} LCOD WHAM from equilibration trajectories (exploratory)")
     pmf_ax.set_ylim(bottom=0.0)
     density_ax.set(ylabel="P(LCOD) (Å⁻¹)", ylim=(0, None))
-    equil_ax.set(ylabel="Equilibration time (ps)", ylim=(0, 40))
-    seed_ax.set(ylabel="Seed window", xlabel="LCOD = r(NB–H) − r(NC–H) (Å)", ylim=(-1, len(centers)))
+    equil_ax.set(
+        ylabel="Equilibration time (ps)",
+        ylim=(0, equilibration_duration_ps(cfg.equil.dftb.header_lines)),
+    )
+    seed_ax.set(
+        ylabel="Seed window",
+        xlabel=f"LCOD = {lcod_definition} (Å)",
+        ylim=(-1, len(centers)),
+    )
     seed_ax.set_yticks(np.arange(0, len(centers), 5))
     seed_ax.set_xlim(*cfg.plot_xlim_angstrom)
     negative_x, negative_y = features["negative_minimum"]
@@ -319,12 +390,16 @@ def plot_report(cfg: LCODWhamConfig, output: Path, repo_root: Path) -> Path:
     )
     pmf_ax.text(
         0.22, 0.5 * (barrier_y + negative_y) - zero,
-        f"ΔG‡ −→+\n{features['barrier_negative_to_positive']:.2f} kcal mol⁻¹",
+        f"ΔG‡ ({cfg.negative_basin_state} → {cfg.positive_basin_state})\n"
+        f"{features['barrier_negative_to_positive']:.2f} kcal mol⁻¹",
         ha="left", va="center", fontsize=10, bbox=annotation_box, zorder=6,
     )
     pmf_ax.text(
         0.02, 0.96,
-        f"ΔG (+ vs −) = {features['gap_positive_minus_negative']:+.3f} kcal mol⁻¹\n"
+        f"ΔG({cfg.positive_basin_state} − {cfg.negative_basin_state}) = "
+        f"{features['gap_positive_minus_negative']:+.3f} kcal mol⁻¹\n"
+        f"equiv. ΔpKa({cfg.positive_basin_state} − {cfg.negative_basin_state}) = "
+        f"{features['equivalent_delta_pka_positive_minus_negative']:+.3f}\n"
         f"minima: {negative_x:+.2f}, {positive_x:+.2f} Å",
         transform=pmf_ax.transAxes, ha="left", va="top", fontsize=9,
         bbox=annotation_box, zorder=6,

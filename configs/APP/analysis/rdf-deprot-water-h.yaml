@@ -1,0 +1,25 @@
+system: APP
+buffer: 4.0
+prefix: solv
+method_dir: dftb
+bench_tag: N1T64C1
+run_ids: "1-10"
+cv_dir: equil
+traj_name: traject
+dftb_inp_name: dftb.inp
+parm_path: systems/APP/solv_4.0/salt/ready.parm7
+analysis_name: deprot-na-water-h
+
+# Match the charge analysis: retain only the clean first 20 ps of APP run 8.
+frames:
+  start: 1
+  stride: 1
+  stop_by_run:
+    8: 2001
+
+rdf:
+  dr: 0.01
+  r_max: 7.0
+  mask1: "@1"
+  mask2: ":WAT@H*"
+  volume: true

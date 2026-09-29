@@ -1,0 +1,36 @@
+equil_yaml: equil.yaml
+output_dirname: wham-equil
+
+# This is an exploratory PMF from equilibration, not independent production.
+# Keep every trajectory-derived cpptraj sample; discard_ps can be increased.
+discard_ps: 0.0
+
+coordinate:
+  # Restrict WHAM to the continuously sampled region. A few positive-tail
+  # observations above 1.6 Å are isolated from the main distribution by
+  # empty bins and cannot support a connected PMF.
+  minimum_angstrom: -1.6
+  maximum_angstrom: 1.6
+  bins: 64  # 0.05 Å
+  report_minimum_angstrom: -1.59
+  report_maximum_angstrom: 1.59
+
+wham:
+  executable: /nas/sycamore/home/emainas/software/wham/wham/wham
+  tolerance: 1.0e-6
+  temperature_k: 300.0
+  padding: 0
+
+# Additive zero: mean raw WHAM PMF around the O1-bound minimum.
+zero_reference_angstrom: [-1.0, -0.6]
+
+plot:
+  smoothing_penalty: 20.0  # gentler basin minima; pmf.csv remains raw WHAM
+  xlim_angstrom: [-1.5, 1.5]
+
+# Search the smooth guide for one minimum in each symmetry-related O-H basin.
+basins:
+  negative_lcod_angstrom: [-1.4, -0.3]
+  positive_lcod_angstrom: [0.3, 1.4]
+  negative_state: O1–HO
+  positive_state: O2–HO

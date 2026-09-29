@@ -1,4 +1,4 @@
-"""Report trajectory-derived LCOD traces from restrained CPP equilibration."""
+"""Report trajectory-derived LCOD traces from restrained equilibration."""
 
 from __future__ import annotations
 
@@ -142,7 +142,7 @@ def render_lcod_cpptraj_input(
     if frame_count < 2:
         raise ValueError("At least two complete trajectory frames are required")
     if box.shape != (3, 3) or not np.allclose(box, np.diag(np.diag(box)), atol=1.0e-8):
-        raise ValueError("CPP LCOD cpptraj report requires an orthorhombic box")
+        raise ValueError("LCOD cpptraj report requires an orthorhombic box")
     if np.any(np.diag(box) <= 0):
         raise ValueError("Box lengths must be positive")
     a, b, c, d = atoms
@@ -154,10 +154,10 @@ def render_lcod_cpptraj_input(
              "alpha 90 beta 90 gamma 90").format(*np.diag(box)),
             "fiximagedbonds :1",
             "autoimage",
-            f"distance NBH @{a} @{b}",
-            f"distance NCH @{c} @{d}",
+            f"distance DISTANCE1 @{a} @{b}",
+            f"distance DISTANCE2 @{c} @{d}",
             "run",
-            "calc LCOD = NBH - NCH",
+            "calc LCOD = DISTANCE1 - DISTANCE2",
             "writedata lcod.dat LCOD prec 18.10",
             "quit",
             "",
@@ -200,7 +200,7 @@ def collect_lcod_equil_samples(
     root = pull_root(cfg.pull, repo_root)
     topology = repo_root / "systems" / cfg.pull.system / f"{cfg.pull.prefix}_{cfg.pull.buffer:.1f}" / "salt" / "ready.parm7"
     if not topology.is_file():
-        raise RuntimeError(f"Missing CPP Amber topology: {topology}")
+        raise RuntimeError(f"Missing Amber topology: {topology}")
     cpptraj = resolve_cpptraj()
     samples: list[LCODEquilSample] = []
     missing: list[int] = []
@@ -341,6 +341,8 @@ def plot_lcod_samples(
     density_traces: list[DensityTrace],
     centers: list[float],
     expected_time_ps: float,
+    system: str,
+    lcod_definition: str,
     style_path: Path | None = None,
 ) -> None:
     """Plot pull seeds, vertical equilibration rays, and normalized densities."""
@@ -402,7 +404,7 @@ def plot_lcod_samples(
         axis.grid(False)
     density_ax.set(
         ylabel=r"$P(\mathrm{LCOD})$ (Å$^{-1}$)",
-        title=f"CPP LCOD umbrella equilibration ({len(grouped)}/{len(centers)} windows with data)",
+        title=f"{system} LCOD umbrella equilibration ({len(grouped)}/{len(centers)} windows with data)",
     )
     density_ax.set_ylim(bottom=0.0)
     equil_ax.set(
@@ -411,7 +413,7 @@ def plot_lcod_samples(
     )
     pull_ax.set(
         ylabel="Seed window index",
-        xlabel=r"LCOD = $r(\mathrm{N_B-H}) - r(\mathrm{N_C-H})$ (Å)",
+        xlabel=f"LCOD = {lcod_definition} (Å)",
         ylim=(-1.0, len(centers)),
     )
     pull_ax.set_yticks(np.arange(0, len(centers), 5))
@@ -445,6 +447,11 @@ def create_lcod_equil_report(
     write_lcod_samples_csv(csv_path, samples)
     write_density_csv(density_path, density_traces)
     expected_time_ps = equilibration_duration_ps(cfg.dftb.header_lines)
+    atoms = cfg.pull.cv.atoms
+    lcod_definition = cfg.pull.cv.label.strip() or (
+        f"r(atom {atoms[0]}, atom {atoms[1]}) − "
+        f"r(atom {atoms[2]}, atom {atoms[3]})"
+    )
     plot_lcod_samples(
         figure_path,
         samples,
@@ -452,6 +459,8 @@ def create_lcod_equil_report(
         density_traces,
         centers,
         expected_time_ps,
+        cfg.pull.system,
+        lcod_definition,
         repo_root / "plotting" / "lefteris.mplstyle",
     )
     (destination / "equil_report_spec.yaml").write_text(yaml_text)

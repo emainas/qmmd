@@ -1,0 +1,18 @@
+system: DPP
+buffer: 4.0
+prefix: solv
+method_dir: dftb
+bench_tag: N1T64C1
+run_ids: "1-10"
+cv_dir: equil
+traj_name: traject
+dftb_inp_name: dftb.inp
+parm_path: systems/DPP/solv_4.0/salt/ready.parm7
+analysis_name: deprot-nd-water-h
+
+rdf:
+  dr: 0.01
+  r_max: 7.0
+  mask1: "@43"
+  mask2: ":WAT@H*"
+  volume: true

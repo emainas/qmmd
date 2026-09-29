@@ -32,6 +32,11 @@ class RDFConfig:
     dataset: Optional[str]
     intrdf: Optional[str]
     rawrdf: Optional[str]
+    frame_start: int
+    frame_stop: Optional[int]
+    frame_stride: int
+    frame_stop_by_run: Dict[int, int]
+    analysis_name: Optional[str]
 
 
 def find_repo_root(start: Path) -> Path:
@@ -52,8 +57,17 @@ def require_cpptraj() -> Path:
         raise RuntimeError("cpptraj not found in PATH. Did you load Amber?")
 
     cpptraj_path = Path(cpptraj).resolve()
-    expected = Path(amberhome).resolve() / "bin" / "cpptraj"
-    if cpptraj_path != expected:
+    amberhome_path = Path(amberhome)
+    if amberhome_path.is_absolute():
+        expected = amberhome_path.resolve() / "bin" / "cpptraj"
+        matches_amberhome = cpptraj_path == expected
+    else:
+        expected = Path(amberhome) / "bin" / "cpptraj"
+        matches_amberhome = (
+            cpptraj_path.parent.name == "bin"
+            and cpptraj_path.parent.parent.name == amberhome_path.name
+        )
+    if not matches_amberhome:
         raise RuntimeError(
             f"cpptraj mismatch:\n"
             f"  PATH cpptraj: {cpptraj_path}\n"
@@ -90,6 +104,25 @@ def load_config(yaml_path: Path) -> RDFConfig:
     rdf = data.get("rdf", {})
     if not rdf:
         raise RuntimeError("rdf block is required")
+    frames = data.get("frames", {})
+    frame_start = int(frames.get("start", 1))
+    frame_stop_value = frames.get("stop")
+    frame_stop = None if frame_stop_value is None else int(frame_stop_value)
+    frame_stride = int(frames.get("stride", 1))
+    frame_stop_by_run = {
+        int(run_id): int(stop)
+        for run_id, stop in frames.get("stop_by_run", {}).items()
+    }
+    if frame_start < 1 or frame_stride < 1:
+        raise RuntimeError("frames.start and frames.stride must be positive")
+    if frame_stop is not None and frame_stop < frame_start:
+        raise RuntimeError("frames.stop must be greater than or equal to frames.start")
+    for run_id, stop in frame_stop_by_run.items():
+        if run_id < 1 or stop < frame_start:
+            raise RuntimeError(
+                "frames.stop_by_run keys must be positive run IDs and values "
+                "must be at least frames.start"
+            )
 
     return RDFConfig(
         system=data["system"],
@@ -112,6 +145,11 @@ def load_config(yaml_path: Path) -> RDFConfig:
         dataset=rdf.get("dataset"),
         intrdf=rdf.get("intrdf"),
         rawrdf=rdf.get("rawrdf"),
+        frame_start=frame_start,
+        frame_stop=frame_stop,
+        frame_stride=frame_stride,
+        frame_stop_by_run=frame_stop_by_run,
+        analysis_name=data.get("analysis_name"),
     )
 
 
@@ -185,8 +223,12 @@ def resolve_parm_path(cfg: RDFConfig, repo_root: Path) -> Path:
     return repo_root / p
 
 
-def _trajin_line(traj: Path) -> str:
-    return f"trajin {traj}"
+def _trajin_line(cfg: RDFConfig, traj: Path, run_id: int) -> str:
+    stop = cfg.frame_stop_by_run.get(run_id, cfg.frame_stop)
+    if cfg.frame_start == 1 and stop is None and cfg.frame_stride == 1:
+        return f"trajin {traj}"
+    stop_token = "last" if stop is None else str(stop)
+    return f"trajin {traj} {cfg.frame_start} {stop_token} {cfg.frame_stride}"
 
 
 def _sanitize_mask(mask: str) -> str:
@@ -265,13 +307,15 @@ def convert_ase_xyz_to_simple_xyz(src: Path, dst: Path) -> None:
             _write_simple_frame(fout, n_atoms, comment, coords)
 
 
-def write_cpptraj_in(cfg: RDFConfig, parm: Path, traj: Path, out_dir: Path) -> Path:
+def write_cpptraj_in(
+    cfg: RDFConfig, parm: Path, traj: Path, out_dir: Path, run_id: int
+) -> Path:
     m1 = _sanitize_mask(cfg.mask1)
     m2 = _sanitize_mask(cfg.mask2) if cfg.mask2 else "all"
     out_dat = out_dir / f"rdf_{m1}_{m2}.dat"
     parts: List[str] = [
         f"parm {parm}",
-        _trajin_line(traj),
+        _trajin_line(cfg, traj, run_id),
     ]
 
     radial_parts = [
@@ -302,7 +346,8 @@ def write_cpptraj_in(cfg: RDFConfig, parm: Path, traj: Path, out_dir: Path) -> P
     parts.append("run")
     parts.append("")
 
-    cppin = out_dir / "cpptraj.in"
+    suffix = f"_{_sanitize_mask(cfg.analysis_name)}" if cfg.analysis_name else ""
+    cppin = out_dir / f"cpptraj{suffix}.in"
     cppin.write_text("\n".join(parts))
     return cppin
 
@@ -336,7 +381,10 @@ def run_rdf(yaml_path: Path) -> None:
 
         out_dir = rdir / "analysis"
         out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / "spec.yaml").write_text(yaml_path.read_text())
+        spec_suffix = (
+            f"_{_sanitize_mask(cfg.analysis_name)}" if cfg.analysis_name else ""
+        )
+        (out_dir / f"spec{spec_suffix}.yaml").write_text(yaml_path.read_text())
 
         traj_for_cpp = traj
         needs_convert = traj.suffix.lower() == ".xyz"
@@ -352,7 +400,7 @@ def run_rdf(yaml_path: Path) -> None:
                 convert_ase_xyz_to_simple_xyz(traj, converted)
             traj_for_cpp = converted
 
-        cppin = write_cpptraj_in(cfg, parm, traj_for_cpp, out_dir)
+        cppin = write_cpptraj_in(cfg, parm, traj_for_cpp, out_dir, run_id)
         run_cpptraj(cppin)
         m1 = _sanitize_mask(cfg.mask1)
         m2 = _sanitize_mask(cfg.mask2) if cfg.mask2 else "all"

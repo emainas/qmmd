@@ -1,0 +1,105 @@
+equil_yaml: equil.yaml
+stage_dirname: prod-10ns
+
+# Amber interprets nstlim as the number of MD steps between exchange attempts.
+# The total time per replica is nstlim * numexchg * dt = 10 ns.
+remd_mdin:
+  production:
+    description: MEA charge-interpolation Hamiltonian replica exchange
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 500
+      numexchg: 10000
+      dt: 0.002
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ig: -1
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 5.0
+      ntpr: 500
+      ntwx: 5000
+      ntwr: 50000
+      ntwe: 0
+      ioutfm: 1
+
+runtime:
+  module: amber/26
+  executable: pmemd.MPI
+  mpi_launcher: mpirun
+  processes_per_replica: 2
+  rem_mode: 3
+  env:
+    TEMP: 300
+  strict_mode: true
+
+slurm:
+  job:
+    name: mea-refep-prod-10ns
+    partition: small
+    nodes: 2
+    ntasks: 32
+    tasks_per_node: 16
+    time: "2:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"
+
+# Evaluate every trajectory q_j under every lambda Hamiltonian k to build the
+# complete U_k(q_j) matrix used by FEP, BAR, TI, and MBAR analyses.
+single_point:
+  stage_dirname: post
+  energy_dirname: energies
+  mdin:
+    energy:
+      description: REFEP cross-Hamiltonian single-point trajectory evaluation
+      cntrl:
+        imin: 5
+        maxcyc: 1
+        ntb: 1
+        ntp: 0
+        cut: 5.0
+        ntc: 2
+        ntf: 2
+        ioutfm: 1
+        ntpr: 1
+        ntwx: 0
+        ntwe: 0
+  runtime:
+    module: amber/26
+    executable: sander
+    launcher: srun
+    ncdump_executable: ncdump
+    strict_mode: true
+  slurm:
+    job:
+      name: mea-refep-sp
+      partition: batch
+      nodes: 4
+      ntasks: 256
+      tasks_per_node: 64
+      memory: 32G
+      time: "4:00:00"
+      stdout: "slurm.%j.out"
+      stderr: "slurm.%j.err"
+
+# Analyze the complete U_k(q_j) matrix and the production exchange log.
+report:
+  output_dir: report
+  # CpHMD base convention: report G(protonated) - G(deprotonated).
+  reference_state: protonated
+  style: plotting/prl.mplstyle
+  temperature_k: 300.0
+  bootstrap_samples: 200
+  bootstrap_block_frames: 5
+  bootstrap_seed: 20260929
+  histogram_bins: 20
+  convergence_min_frames: 10
+  convergence_stride_frames: 5
+  mbar_tolerance: 1.0e-10
+  mbar_max_iterations: 10000
