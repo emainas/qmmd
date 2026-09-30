@@ -1,0 +1,29 @@
+system: PR4
+chemistry: carboxylic_acid
+
+input:
+  deprotonated_mol2: systems/PR4/init/pr4.mol2
+  dummy_geometry_pdb: systems/PR4/init/pr4_cphmd.pdb
+  # Neutral CH3CH2COOH charge set from the matching PRN-anti geometry.
+  protonated_mol2: systems/PRN-anti/init/anti_min.mol2
+
+carboxyl:
+  carbon: CG
+  oxygens: [O1, O2]
+
+  # Identifies the proton position represented by protonated_mol2.
+  protonated_oxygen: O1
+  proton_atom: H11
+
+  dummy_protons:
+    O1:
+      syn: H11
+      anti: H12
+    O2:
+      syn: H21
+      anti: H22
+
+output:
+  master_mol2: systems/PR4/init/pr4_cphmd.mol2
+  frcmod: systems/PR4/init/pr4_cphmd.frcmod
+  charge_sets: configs/PR4/cphmd/charge_sets.csv

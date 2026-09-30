@@ -38,6 +38,7 @@ from qmmd.us_lcod import (
 from qmmd.us_lcod_equil_report import run_us_lcod_equil_report
 from qmmd.us_lcod_wham import run_us_lcod_wham
 from qmmd.cphmd_prep import run_cphmd_prep
+from qmmd.cphmd_build import run_cphmd_build
 from qmmd.cphmd_dgref import run_cphmd_dgref_prep, run_cphmd_dgref_submit
 from qmmd.cphmd_dgref_report import run_cphmd_dgref_report
 from qmmd.cphmd_titr import run_cphmd_titr_prep, run_cphmd_titr_submit
@@ -68,6 +69,12 @@ def main():
         help="Print master/deprotonated MOL2 atom and charge mapping",
     )
     cphmd_prep.add_argument("yaml", type=Path)
+
+    cphmd_build = sub.add_parser(
+        "cphmd-build",
+        help="Add four geometry-only dummy protons to a carboxylate PDB",
+    )
+    cphmd_build.add_argument("yaml", type=Path)
 
     cphmd_dgref_prep = sub.add_parser(
         "cphmd-dgref-prep",
@@ -326,6 +333,8 @@ def main():
         run_mdequil(args.yaml)
     elif args.cmd == "cphmd-prep":
         run_cphmd_prep(args.yaml)
+    elif args.cmd == "cphmd-build":
+        run_cphmd_build(args.yaml)
     elif args.cmd == "cphmd-dgref-prep":
         run_cphmd_dgref_prep(args.yaml)
     elif args.cmd == "cphmd-dgref-submit":

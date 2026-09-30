@@ -1,0 +1,60 @@
+system: PR4
+buffer: 5.5
+prefix: solv
+job_name: dgref
+input_parm7: solv.parm7
+input_rst7: equil-npt.rst7
+
+cpin:
+  charge_sets: configs/PR4/cphmd/charge_sets.csv
+  # State order: deprotonated, O1-syn, O1-anti, O2-syn, O2-anti.
+  # All four protonated microstates share the optimized reference energy.
+  statene: 0.0, DELTAGREF, DELTAGREF, DELTAGREF, DELTAGREF
+  pka_corr: 0.0, 4.87, 4.87, 4.87, 4.87
+  cph_igb: 2
+
+report:
+  discard_first: 8
+
+dgref_mdin:
+  dgref_nvt:
+    description: PR4 reference-energy calibration at 300 K and constant volume
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 100000
+      dt: 0.001
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 5.0
+      ntpr: 500
+      ntwx: 1000
+      ntwe: 0
+      icnstph: 2
+      ntcnstph: 100
+      solvph: 4.87
+      ntrelax: 100
+      saltcon: 0.1
+
+runtime:
+  module: amber/26
+  executable: sander
+  env:
+    TEMP: 300
+  strict_mode: true
+
+slurm:
+  job:
+    name: pr4-dgref
+    partition: small
+    nodes: 2
+    time: "5:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"

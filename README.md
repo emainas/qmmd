@@ -69,6 +69,18 @@ Restraints suppress conformer transitions but also alter intrabasin sampling.
 
 ---
 
+## cphmd-build — Geometry-only carboxylate dummy protons
+
+Reads a deprotonated MOL2 structure and constructs two in-plane dummy-proton
+positions on each configured carboxylate oxygen. It writes one PDB beside the
+source MOL2 containing the original coordinates plus the four dummy protons.
+This step does not assign charges, change atom types, write force-field
+parameters, or run Amber.
+
+```bash
+qmmd cphmd-build configs/<molecule>/cphmd/build.yaml
+```
+
 ## cphmd-prep — CpHMD charge mapping preview
 
 Reads protonated and deprotonated MOL2 files, orders both charge sets by the
@@ -76,6 +88,13 @@ configured master MOL2, and prints the mapping. The single proton missing from
 the deprotonated state is shown with zero deprotonated charge. The same mapping,
 charge totals, and proton counts are written as CSV to the configured
 `output_file`.
+
+For `chemistry: carboxylic_acid`, the command combines a deprotonated MOL2,
+the geometry-only PDB from `cphmd-build`, and a protonated charge-source MOL2.
+It writes a four-dummy master MOL2, the dual-dummy carboxylate frcmod, and five
+charge states: deprotonated plus the syn/anti state on each oxygen. The two
+states on the second oxygen use the standard oxygen-charge swap relative to
+the configured protonated oxygen.
 
 ```bash
 qmmd cphmd-prep configs/<molecule>/cphmd/prep.yaml

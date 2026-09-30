@@ -24,6 +24,9 @@ class ChargeSets:
     deprot_charges: tuple[float, ...]
     proton_count_prot: int
     proton_count_deprot: int
+    state_names: tuple[str, ...] = ()
+    state_charges: tuple[tuple[float, ...], ...] = ()
+    proton_counts: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -132,8 +135,8 @@ def load_config(yaml_path: Path) -> DgrefConfig:
         raise ValueError("cpin.pka_corr values must be numeric") from exc
     if len(statene) != len(pka_corr):
         raise ValueError("cpin.statene and cpin.pka_corr must have equal lengths")
-    if sum(value.upper() == "DELTAGREF" for value in statene) != 1:
-        raise ValueError("cpin.statene must contain DELTAGREF exactly once")
+    if not any(value.upper() == "DELTAGREF" for value in statene):
+        raise ValueError("cpin.statene must contain DELTAGREF at least once")
     cph_igb = int(cpin["cph_igb"])
     if cph_igb not in {1, 2, 5, 7, 8}:
         raise ValueError("cpin.cph_igb must be one of 1, 2, 5, 7, or 8")
@@ -158,9 +161,14 @@ def load_config(yaml_path: Path) -> DgrefConfig:
         raise ValueError("ntcnstph must be positive and ntrelax non-negative")
     if float(cntrl["saltcon"]) < 0:
         raise ValueError("saltcon must be non-negative")
-    variable_state = next(i for i, value in enumerate(statene) if value.upper() == "DELTAGREF")
-    if abs(float(cntrl["solvph"]) - pka_corr[variable_state]) > 1e-9:
-        raise ValueError("solvph must equal pka_corr for the DELTAGREF state")
+    variable_states = [
+        i for i, value in enumerate(statene) if value.upper() == "DELTAGREF"
+    ]
+    if any(
+        abs(float(cntrl["solvph"]) - pka_corr[index]) > 1e-9
+        for index in variable_states
+    ):
+        raise ValueError("solvph must equal pka_corr for every DELTAGREF state")
 
     runtime_data = data.get("runtime")
     if not isinstance(runtime_data, dict):
@@ -220,17 +228,24 @@ def load_config(yaml_path: Path) -> DgrefConfig:
 def read_charge_sets(path: Path) -> ChargeSets:
     with path.open(newline="") as handle:
         rows = list(csv.reader(handle))
-    if not rows or rows[0] != ["atom_master", "charge_prot", "charge_deprot"]:
+    if (
+        not rows
+        or len(rows[0]) < 3
+        or rows[0][0] != "atom_master"
+        or any(not value.startswith("charge_") for value in rows[0][1:])
+    ):
         raise ValueError(f"Unexpected charge-set header in {path}")
 
     atom_names: list[str] = []
-    prot_charges: list[float] = []
-    deprot_charges: list[float] = []
+    state_names = tuple(value.removeprefix("charge_") for value in rows[0][1:])
+    state_columns: list[list[float]] = [[] for _ in state_names]
     total_row: list[str] | None = None
     proton_row: list[str] | None = None
     for row in rows[1:]:
-        if len(row) != 3:
-            raise ValueError(f"Every charge-set row must have three columns in {path}")
+        if len(row) != len(rows[0]):
+            raise ValueError(
+                f"Every charge-set row must have {len(rows[0])} columns in {path}"
+            )
         if row[0] == "TOTAL":
             total_row = row
         elif row[0] == "PROTON_COUNT":
@@ -240,8 +255,8 @@ def read_charge_sets(path: Path) -> ChargeSets:
                 raise ValueError("Atom rows must precede TOTAL and PROTON_COUNT")
             atom_names.append(row[0])
             try:
-                prot_charges.append(float(row[1]))
-                deprot_charges.append(float(row[2]))
+                for column, value in zip(state_columns, row[1:], strict=True):
+                    column.append(float(value))
             except ValueError as exc:
                 raise ValueError(f"Invalid charge row for atom {row[0]}") from exc
 
@@ -250,22 +265,33 @@ def read_charge_sets(path: Path) -> ChargeSets:
     if len(set(atom_names)) != len(atom_names):
         raise ValueError("Charge-set atom names must be unique")
     try:
-        reported_totals = (float(total_row[1]), float(total_row[2]))
-        proton_counts = (int(proton_row[1]), int(proton_row[2]))
+        reported_totals = tuple(float(value) for value in total_row[1:])
+        proton_counts = tuple(int(value) for value in proton_row[1:])
     except ValueError as exc:
         raise ValueError("Invalid TOTAL or PROTON_COUNT row") from exc
-    calculated_totals = (sum(prot_charges), sum(deprot_charges))
+    calculated_totals = tuple(sum(column) for column in state_columns)
     if any(abs(a - b) > 5e-7 for a, b in zip(reported_totals, calculated_totals)):
         raise ValueError("Reported charge totals do not match the charge arrays")
-    if proton_counts[0] - proton_counts[1] != 1:
-        raise ValueError("Base states must differ by exactly one proton")
+    if max(proton_counts) - min(proton_counts) != 1:
+        raise ValueError("Charge states must span exactly one protonation step")
+
+    if "prot" in state_names and "deprot" in state_names:
+        prot_index = state_names.index("prot")
+        deprot_index = state_names.index("deprot")
+    else:
+        deprot_index = proton_counts.index(min(proton_counts))
+        prot_index = proton_counts.index(max(proton_counts))
+    state_charges = tuple(tuple(column) for column in state_columns)
 
     return ChargeSets(
         atom_names=tuple(atom_names),
-        prot_charges=tuple(prot_charges),
-        deprot_charges=tuple(deprot_charges),
-        proton_count_prot=proton_counts[0],
-        proton_count_deprot=proton_counts[1],
+        prot_charges=state_charges[prot_index],
+        deprot_charges=state_charges[deprot_index],
+        proton_count_prot=proton_counts[prot_index],
+        proton_count_deprot=proton_counts[deprot_index],
+        state_names=state_names,
+        state_charges=state_charges,
+        proton_counts=proton_counts,
     )
 
 
@@ -399,15 +425,75 @@ def render_two_state_cpin(
     return "\n".join(lines) + "\n"
 
 
+def render_multistate_cpin(
+    system: str,
+    charges: ChargeSets,
+    topology: TopologyInfo,
+    statene: tuple[str, ...],
+    pka_corr: tuple[float, ...],
+    cph_igb: int,
+) -> str:
+    if topology.atom_names != charges.atom_names:
+        raise ValueError(
+            "Charge-set atom ordering does not match the topology residue: "
+            f"{charges.atom_names} != {topology.atom_names}"
+        )
+    state_charges = charges.state_charges or (
+        charges.prot_charges,
+        charges.deprot_charges,
+    )
+    proton_counts = charges.proton_counts or (
+        charges.proton_count_prot,
+        charges.proton_count_deprot,
+    )
+    if len(statene) != len(state_charges) or len(pka_corr) != len(state_charges):
+        raise ValueError(
+            "cpin.statene and cpin.pka_corr must match the charge-state count"
+        )
+    flattened = [charge for state in state_charges for charge in state]
+    state_count = len(state_charges)
+    lines = [
+        "&CNSTPHE_LIMITS",
+        f" ntres=1, maxh={state_count}, natchrg={len(flattened)}, "
+        f"ntstates={state_count},",
+        "/",
+        "&CNSTPH",
+    ]
+    lines.extend(_wrapped_field(" CHRGDAT=", [f"{charge:.6f}" for charge in flattened]))
+    lines.extend(_wrapped_field(" PROTCNT=", [str(value) for value in proton_counts]))
+    lines.extend(
+        _wrapped_field(
+            " RESNAME=",
+            [f"'System: {system}'", f"'Residue: {system} {topology.residue_number}'"],
+        )
+    )
+    lines.append(" RESSTATE=0,")
+    lines.append(
+        " STATEINF(0)%FIRST_ATOM="
+        f"{topology.first_atom}, STATEINF(0)%FIRST_CHARGE=0, "
+        "STATEINF(0)%FIRST_STATE=0,"
+    )
+    lines.append(
+        f" STATEINF(0)%NUM_ATOMS={len(charges.atom_names)}, "
+        f"STATEINF(0)%NUM_STATES={state_count},"
+    )
+    lines.extend(_wrapped_field(" STATENE=", list(statene)))
+    lines.extend(_wrapped_field(" PKA_CORR=", [f"{value:.4f}" for value in pka_corr]))
+    lines.append(
+        f" TRESCNT=1, CPHFIRST_SOL={topology.first_solvent}, "
+        f"CPH_IGB={cph_igb}, CPH_INTDIEL=1.0,"
+    )
+    lines.append("/")
+    return "\n".join(lines) + "\n"
+
+
 def render_cpin(cfg: DgrefConfig, charges: ChargeSets, topology: TopologyInfo) -> str:
-    if len(cfg.statene) != 2 or len(cfg.pka_corr) != 2:
-        raise ValueError("Base dgref preparation currently requires exactly two states")
-    return render_two_state_cpin(
+    return render_multistate_cpin(
         cfg.system,
         charges,
         topology,
-        (cfg.statene[0], cfg.statene[1]),
-        (cfg.pka_corr[0], cfg.pka_corr[1]),
+        cfg.statene,
+        cfg.pka_corr,
         cfg.cph_igb,
     )
 

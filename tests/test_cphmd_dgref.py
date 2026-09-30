@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from qmmd.cphmd_dgref import (
+    TopologyInfo,
     load_config,
     prepare_dgref,
     read_charge_sets,
@@ -15,9 +16,34 @@ from qmmd.cphmd_dgref import (
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/MEA/cphmd/dgref.yaml"
+PR4_CONFIG = ROOT / "configs/PR4/cphmd/dgref.yaml"
 
 
 class CpHMDDgrefTests(unittest.TestCase):
+    def test_pr4_five_state_acid_cpin(self):
+        cfg = load_config(PR4_CONFIG)
+        charges = read_charge_sets(cfg.charge_sets)
+        topology = TopologyInfo(
+            residue_number=1,
+            first_atom=1,
+            atom_names=charges.atom_names,
+            first_solvent=15,
+        )
+
+        self.assertEqual(
+            charges.state_names,
+            ("deprot", "o1_syn", "o1_anti", "o2_syn", "o2_anti"),
+        )
+        self.assertEqual(charges.proton_counts, (0, 1, 1, 1, 1))
+        cpin = render_cpin(cfg, charges, topology)
+        self.assertIn("maxh=5", cpin)
+        self.assertIn("natchrg=70", cpin)
+        self.assertIn("ntstates=5", cpin)
+        self.assertIn("PROTCNT=0,1,1,1,1,", cpin)
+        self.assertEqual(cpin.count("DELTAGREF"), 4)
+        self.assertIn("STATEINF(0)%NUM_ATOMS=14", cpin)
+        self.assertIn("STATEINF(0)%NUM_STATES=5", cpin)
+
     def test_real_mea_inputs_and_cpin(self):
         cfg = load_config(CONFIG)
         charges = read_charge_sets(cfg.charge_sets)

@@ -1,0 +1,18 @@
+system: PR4
+mol2: systems/PR4/init/pr4.mol2
+output_pdb: pr4_cphmd.pdb
+
+carboxyl:
+  carbon: CG
+  oxygens: [O1, O2]
+  dummy_protons:
+    O1:
+      syn: H11
+      anti: H12
+    O2:
+      syn: H21
+      anti: H22
+
+geometry:
+  oh_distance_angstrom: 0.9725
+  dummy_pair_angle_degrees: 134.0
