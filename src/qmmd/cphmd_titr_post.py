@@ -335,7 +335,10 @@ def _write_state_csvs(
         raise ValueError("Sorted CpH state members do not match the configured pH ladder")
 
     charges = read_charge_sets(titr.charge_sets)
-    proton_counts = (charges.proton_count_prot, charges.proton_count_deprot)
+    proton_counts = charges.proton_counts or (
+        charges.proton_count_prot,
+        charges.proton_count_deprot,
+    )
     invalid_states = sorted(
         {state for row in rows for state in row if state < 0 or state >= len(proton_counts)}
     )

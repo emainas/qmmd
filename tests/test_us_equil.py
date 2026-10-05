@@ -118,6 +118,61 @@ class USEquilTests(unittest.TestCase):
                     converter=fake_converter,
                 )
 
+    def test_preparation_can_read_prepared_salt_xyz(self):
+        cfg = load_config(CONFIG)
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            base = Path(tmp)
+            pull_root = base / "us-pull"
+            pull_root.mkdir()
+            (pull_root / "pull_spec.yaml").write_text(cfg.pull_yaml.read_text())
+            salt_yaml = ROOT / "configs/BV/us/salt-dih.yaml"
+            salt_spec = salt_yaml.read_text()
+            (pull_root / "salt").mkdir()
+            (pull_root / "salt/salt_spec.yaml").write_text(salt_spec)
+            symbols = ["C", "C", "C", "O", "O", "H", "H", "H", "H", "H", "H"]
+            xyz_text = "\n".join(
+                [
+                    "11",
+                    'Lattice="16 0 0 0 16 0 0 0 16"',
+                    *[
+                        f"{symbol} {atom_index:.1f} 0.0 0.0"
+                        for atom_index, symbol in enumerate(symbols)
+                    ],
+                    "",
+                ]
+            )
+            for index in range(19):
+                pull = pull_root / f"window-{index:03d}" / "pull"
+                pull.mkdir(parents=True)
+                (pull / "pull.rst7").write_text("restart\n")
+                (pull / "pull.out").write_text("Final Performance Info:\n")
+                salt = pull.parent / "salt"
+                salt.mkdir()
+                (salt / "ready.xyz").write_text(xyz_text)
+                (salt / "salt_spec.yaml").write_text(salt_spec)
+
+            test_cfg = replace(
+                cfg,
+                pull=replace(cfg.pull, system_dir=str(base)),
+                conversion=replace(
+                    cfg.conversion,
+                    source_stage="salt",
+                    salt_yaml=salt_yaml,
+                ),
+            )
+
+            def converter_must_not_run(*_args):
+                raise AssertionError("salt-source equilibration should not invoke cpptraj")
+
+            outputs = prepare_us_equil(
+                test_cfg,
+                CONFIG.read_text(),
+                ROOT,
+                converter=converter_must_not_run,
+            )
+            self.assertEqual(len(outputs), 19)
+            self.assertEqual((outputs[0] / "start.xyz").read_text(), xyz_text)
+
     def test_submit_complete_set_after_one_confirmation(self):
         cfg = load_config(CONFIG)
         yaml_text = CONFIG.read_text()

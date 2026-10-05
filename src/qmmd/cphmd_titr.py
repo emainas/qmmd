@@ -12,10 +12,12 @@ from typing import Any, Callable
 import yaml
 
 from qmmd.cphmd_dgref import (
+    ChargeSets,
+    TopologyInfo,
     find_repo_root,
     read_charge_sets,
     read_topology_info,
-    render_two_state_cpin,
+    render_multistate_cpin,
 )
 
 
@@ -58,7 +60,7 @@ class TitrConfig:
     input_rst7: str
     charge_sets: Path
     dgref_job_name: str
-    pka_corr: tuple[float, float]
+    pka_corr: tuple[float, ...]
     cph_igb: int
     ph_values: tuple[float, ...]
     description: str
@@ -110,9 +112,15 @@ def load_titr_config(yaml_path: Path) -> TitrConfig:
     cpin = _mapping(data.get("cpin"), "cpin")
     charge_sets = _resolve_repo_path(cpin.get("charge_sets"), "cpin.charge_sets", repo_root)
     pka_values = cpin.get("pka_corr")
-    if not isinstance(pka_values, list) or len(pka_values) != 2:
-        raise ValueError("cpin.pka_corr must contain exactly two numeric values")
-    pka_corr = (float(pka_values[0]), float(pka_values[1]))
+    if not isinstance(pka_values, list) or len(pka_values) < 2:
+        raise ValueError("cpin.pka_corr must contain at least two numeric values")
+    pka_corr = tuple(float(value) for value in pka_values)
+    state_count = len(read_charge_sets(charge_sets).state_charges)
+    if len(pka_corr) != state_count:
+        raise ValueError(
+            "cpin.pka_corr must contain one value per charge state "
+            f"({state_count})"
+        )
     cph_igb = int(cpin["cph_igb"])
     if cph_igb not in {1, 2, 5, 7, 8}:
         raise ValueError("cpin.cph_igb must be one of 1, 2, 5, 7, or 8")
@@ -323,6 +331,35 @@ def render_dgref_provenance(dgref: float, dgref_log: Path, repo_root: Path) -> s
     )
 
 
+def render_titration_cpin(
+    cfg: TitrConfig,
+    charges: ChargeSets,
+    topology: TopologyInfo,
+    dgref: float,
+) -> str:
+    """Render a CPIN while preserving every configured protonation microstate."""
+    proton_counts = charges.proton_counts or (
+        charges.proton_count_prot,
+        charges.proton_count_deprot,
+    )
+    minimum = min(proton_counts)
+    maximum = max(proton_counts)
+    if maximum - minimum != 1:
+        raise ValueError("Charge states must span exactly one protonation step")
+    statene = tuple(
+        "0.0" if count == minimum else f"{dgref:.6f}"
+        for count in proton_counts
+    )
+    return render_multistate_cpin(
+        cfg.system,
+        charges,
+        topology,
+        statene,
+        cfg.pka_corr,
+        cfg.cph_igb,
+    )
+
+
 def prepare_titration(
     cfg: TitrConfig,
     repo_root: Path,
@@ -339,14 +376,7 @@ def prepare_titration(
     dgref = read_converged_dgref(dgref_log)
     charges = read_charge_sets(cfg.charge_sets)
     topology = read_topology_info(parm7_source, cfg.system)
-    cpin_text = render_two_state_cpin(
-        cfg.system,
-        charges,
-        topology,
-        (f"{dgref:.6f}", "0.0"),
-        cfg.pka_corr,
-        cfg.cph_igb,
-    )
+    cpin_text = render_titration_cpin(cfg, charges, topology, dgref)
 
     destination = output_dir.resolve() if output_dir else titr_dir(cfg, repo_root)
     destination.mkdir(parents=True, exist_ok=True)
@@ -444,14 +474,7 @@ def submit_titration(
     dgref = read_converged_dgref(dgref_log)
     charges = read_charge_sets(cfg.charge_sets)
     topology = read_topology_info(prepared_parm7, cfg.system)
-    cpin_text = render_two_state_cpin(
-        cfg.system,
-        charges,
-        topology,
-        (f"{dgref:.6f}", "0.0"),
-        cfg.pka_corr,
-        cfg.cph_igb,
-    )
+    cpin_text = render_titration_cpin(cfg, charges, topology, dgref)
 
     expected_text = {
         "groupfile": render_groupfile(cfg),

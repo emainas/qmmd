@@ -699,8 +699,8 @@ def write_acid_frcmod(path: Path, cfg: AcidPrepConfig, master: FullMol2) -> None
         "ho-oh-ho    60.000   134.000\n"
         "oh-c-oh     80.000   120.000\n\n"
         "IMPROPER\n"
-        "x -x -oh-ho    0       1.000     180.000       2.000\n"
-        f"{neighbor_type}-oh-c -oh    0      10.500     180.000       2.000\n"
+        "X -X -oh-ho   0       1.000   180.000   2.000\n"
+        f"{neighbor_type}-oh-c -oh      10.500   180.000   2.000\n"
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text)

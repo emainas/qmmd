@@ -23,6 +23,7 @@ from qmmd.gif import run_gif_submit, run_gif_run
 from qmmd.station import run_station
 from qmmd.us_pull import run_us_pull_prep, run_us_pull_submit
 from qmmd.us_pull_report import run_us_pull_report
+from qmmd.us_salt import run_us_salt_prep
 from qmmd.us_equil import run_us_equil_prep, run_us_equil_submit
 from qmmd.us_equil_report import run_us_equil_report
 from qmmd.us_prod import run_us_prod_prep, run_us_prod_submit
@@ -47,6 +48,7 @@ from qmmd.cphmd_titr_report import run_cphmd_titr_report
 from qmmd.cphmd_view import run_cphmd_view
 from qmmd.refep_prep import run_refep_prep
 from qmmd.refep_equil import run_refep_equil_prep, run_refep_equil_submit
+from qmmd.refep_equil_report import run_refep_equil_report
 from qmmd.refep_prod import run_refep_prod_prep, run_refep_prod_submit
 from qmmd.refep_prod_post import (
     run_refep_prod_post_prep,
@@ -142,6 +144,12 @@ def main():
         help="Validate and submit prepared REFEP lambda equilibrations",
     )
     refep_equil_submit.add_argument("yaml", type=Path)
+
+    refep_equil_report = sub.add_parser(
+        "refep-equil-report",
+        help="Report completed REFEP lambda equilibrations and optional dihedrals",
+    )
+    refep_equil_report.add_argument("yaml", type=Path)
 
     refep_prod_prep = sub.add_parser(
         "refep-prod-prep",
@@ -266,6 +274,12 @@ def main():
     )
     us_pull_report.add_argument("yaml", type=Path)
 
+    us_salt_prep = sub.add_parser(
+        "us-salt-prep",
+        help="Replace the counterion with one common distant hydroxide across pull windows",
+    )
+    us_salt_prep.add_argument("yaml", type=Path)
+
     us_equil_prep = sub.add_parser(
         "us-equil-prep",
         help="Prepare restrained DCDFTBMD equilibration inputs for pull windows",
@@ -357,6 +371,8 @@ def main():
         run_refep_equil_prep(args.yaml)
     elif args.cmd == "refep-equil-submit":
         run_refep_equil_submit(args.yaml)
+    elif args.cmd == "refep-equil-report":
+        run_refep_equil_report(args.yaml)
     elif args.cmd == "refep-prod-prep":
         run_refep_prod_prep(args.yaml)
     elif args.cmd == "refep-prod-submit":
@@ -423,6 +439,8 @@ def main():
         run_us_pull_submit(args.yaml)
     elif args.cmd == "us-pull-report":
         run_us_pull_report(args.yaml)
+    elif args.cmd == "us-salt-prep":
+        run_us_salt_prep(args.yaml)
     elif args.cmd == "us-equil-prep":
         run_us_equil_prep(args.yaml)
     elif args.cmd == "us-equil-submit":

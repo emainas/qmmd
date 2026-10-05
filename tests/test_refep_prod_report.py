@@ -22,6 +22,8 @@ from qmmd.refep_prod_report import (
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "refep" / "prod.yaml"
+ANTI_CONFIG = REPO / "configs" / "PRN-anti" / "refep" / "prod.yaml"
+SYN_CONFIG = REPO / "configs" / "PRN-syn" / "refep" / "prod.yaml"
 
 
 class RefepProdReportTests(unittest.TestCase):
@@ -34,6 +36,18 @@ class RefepProdReportTests(unittest.TestCase):
         self.assertEqual(grid.energies.shape, (16, 16, 50))
         self.assertAlmostEqual(grid.time_ps[-1], 500.0)
         self.assertEqual(self.cfg.bootstrap_block_frames, 5)
+
+    def test_prn_reports_inherit_optional_equil_dihedral(self):
+        anti = load_refep_report_config(ANTI_CONFIG)
+        syn = load_refep_report_config(SYN_CONFIG)
+        self.assertIsNotNone(anti.dihedral)
+        self.assertIsNotNone(syn.dihedral)
+        assert anti.dihedral is not None
+        assert syn.dihedral is not None
+        self.assertEqual(anti.dihedral.atom_ids, (5, 3, 4, 11))
+        self.assertEqual(syn.dihedral.atom_ids, (5, 3, 4, 11))
+        self.assertEqual(reporting_labels(anti), ("deprotonated", "protonated-anti"))
+        self.assertEqual(reporting_labels(syn), ("deprotonated", "protonated-syn"))
 
     def test_bar_symmetric_work(self):
         forward = np.asarray([0.7, 1.0, 1.3])

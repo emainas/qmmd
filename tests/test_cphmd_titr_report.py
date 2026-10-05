@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 
 from qmmd.cphmd_titr_report import (
+    ProtonationRecord,
+    analyze_syn_anti,
     bhattacharyya_overlap,
     fit_henderson_hasselbalch,
     load_titr_report_config,
@@ -16,6 +18,7 @@ from qmmd.cphmd_titr_report import (
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "cphmd" / "cphmd.yaml"
+PR4_CONFIG = REPO / "configs" / "PR4" / "cphmd" / "cphmd.yaml"
 
 
 class CpHMDTitrReportTests(unittest.TestCase):
@@ -30,6 +33,32 @@ class CpHMDTitrReportTests(unittest.TestCase):
         self.assertIn("reptimeslope 10", text)
         self.assertIn("acceptout exchange-acceptance.dat", text)
         self.assertIn("repidx", text)
+        self.assertIsNone(cfg.syn_anti)
+
+    def test_pr4_syn_anti_state_names_map_to_cpin_indices(self):
+        cfg = load_titr_report_config(PR4_CONFIG)
+        self.assertIsNotNone(cfg.syn_anti)
+        assert cfg.syn_anti is not None
+        self.assertEqual(cfg.syn_anti.syn_states, (1, 3))
+        self.assertEqual(cfg.syn_anti.anti_states, (2, 4))
+
+    def test_syn_anti_fractions_are_conditional_on_protonation(self):
+        records = [
+            ProtonationRecord(i, i * 100, 4.0, "PR4", 1, state, int(state > 0))
+            for i, state in enumerate([0, 1, 3, 2, 0, 4, 1], start=1)
+        ]
+        rows = analyze_syn_anti(
+            np.asarray([4.0]),
+            {4.0: records},
+            (1, 3),
+            (2, 4),
+        )
+        self.assertEqual(rows[0].protonated_count, 5)
+        self.assertEqual(rows[0].syn_count, 3)
+        self.assertEqual(rows[0].anti_count, 2)
+        self.assertAlmostEqual(rows[0].syn_fraction, 0.6)
+        self.assertAlmostEqual(rows[0].anti_fraction, 0.4)
+        self.assertAlmostEqual(rows[0].syn_to_anti_ratio, 1.5)
 
     def test_henderson_hasselbalch_fit(self):
         ph = np.arange(7.0, 11.0, 0.5)

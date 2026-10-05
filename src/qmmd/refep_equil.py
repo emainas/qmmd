@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import math
 import shlex
 import shutil
 import subprocess
@@ -15,7 +16,21 @@ from typing import Any, Callable
 
 import yaml
 
-from qmmd.refep_prep import RefepPrepConfig, load_refep_prep_config
+from qmmd.refep_prep import (
+    RefepPrepConfig,
+    load_refep_prep_config,
+    read_amber_topology,
+)
+
+
+REFEP_RESTRAINT_FILE = "restraint.rst"
+
+
+@dataclass(frozen=True, slots=True)
+class RefepRestraintConfig:
+    atoms: tuple[int, int, int, int]
+    target_deg: float
+    force_constant: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +61,7 @@ class RefepEquilConfig:
     stage_dirname: str
     description: str
     cntrl: dict[str, Any]
+    restraint: RefepRestraintConfig | None
     runtime: RefepEquilRuntimeConfig
     slurm: RefepEquilSlurmConfig
 
@@ -60,6 +76,78 @@ def _nonempty_string(value: object, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field} must be a nonempty string")
     return value.strip()
+
+
+def load_refep_restraint(
+    value: object, field: str = "restraint"
+) -> RefepRestraintConfig | None:
+    """Parse one optional Amber dihedral restraint; null/empty mappings disable it."""
+    if value is None or value == {}:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError(f"{field} must be a YAML mapping, null, or empty")
+    allowed = {"atoms", "target_deg", "force_constant"}
+    unknown = sorted(set(value) - allowed)
+    if unknown:
+        raise ValueError(f"Unknown {field} fields: " + ", ".join(unknown))
+    atoms_value = value.get("atoms")
+    if (
+        not isinstance(atoms_value, list)
+        or len(atoms_value) != 4
+        or any(type(atom) is not int or atom < 1 for atom in atoms_value)
+        or len(set(atoms_value)) != 4
+    ):
+        raise ValueError(
+            f"{field}.atoms must contain four distinct positive one-based atom IDs"
+        )
+    try:
+        target = float(value["target_deg"])
+        force_constant = float(value["force_constant"])
+    except KeyError as exc:
+        raise ValueError(f"Missing {field}.{exc.args[0]}") from exc
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{field}.target_deg and {field}.force_constant must be numeric"
+        ) from exc
+    if not math.isfinite(target) or not -180.0 <= target <= 180.0:
+        raise ValueError(f"{field}.target_deg must be finite and within [-180, 180]")
+    if not math.isfinite(force_constant) or force_constant <= 0.0:
+        raise ValueError(f"{field}.force_constant must be positive and finite")
+    atoms = (atoms_value[0], atoms_value[1], atoms_value[2], atoms_value[3])
+    return RefepRestraintConfig(
+        atoms=atoms,
+        target_deg=target,
+        force_constant=force_constant,
+    )
+
+
+def render_refep_restraint(restraint: RefepRestraintConfig) -> str:
+    """Render an Amber NMR torsion restraint in degrees and kcal/mol/rad^2."""
+    target = restraint.target_deg
+    force_constant = restraint.force_constant
+    return "\n".join(
+        [
+            "&rst",
+            " iat=" + ",".join(str(atom) for atom in restraint.atoms) + ",",
+            (
+                f" r1={target - 180.0:.6f}, r2={target:.6f}, "
+                f"r3={target:.6f}, r4={target + 180.0:.6f},"
+            ),
+            f" rk2={force_constant:.6f}, rk3={force_constant:.6f},",
+            "/",
+            "",
+        ]
+    )
+
+
+def equil_simulation_payload(text: str) -> object:
+    """Return only fields that affect prepared REFEP equilibration inputs."""
+    data = yaml.safe_load(text)
+    if isinstance(data, dict):
+        data = dict(data)
+        data.pop("report", None)
+        data.pop("dihedral", None)
+    return data
 
 
 def _single_component(value: object, field: str) -> str:
@@ -126,6 +214,15 @@ def load_refep_equil_config(yaml_path: Path) -> RefepEquilConfig:
     if any(int(cntrl[key]) <= 0 for key in ("ntpr", "ntwx", "ntwr")):
         raise ValueError("equil_mdin ntpr, ntwx, and ntwr must be positive")
 
+    restraint = load_refep_restraint(data.get("restraint"))
+    if restraint is not None:
+        atom_count = read_amber_topology(prep.input_parm7).atom_count
+        if max(restraint.atoms) > atom_count:
+            raise ValueError(
+                "restraint.atoms contains atom ID "
+                f"{max(restraint.atoms)}, but the topology has {atom_count} atoms"
+            )
+
     runtime_data = _mapping(data.get("runtime"), "runtime")
     runtime = RefepEquilRuntimeConfig(
         module=_nonempty_string(runtime_data.get("module"), "runtime.module"),
@@ -167,6 +264,7 @@ def load_refep_equil_config(yaml_path: Path) -> RefepEquilConfig:
         ),
         description=description,
         cntrl=cntrl,
+        restraint=restraint,
         runtime=runtime,
         slurm=slurm,
     )
@@ -188,14 +286,20 @@ def _format_amber_value(value: Any) -> str:
 
 def render_equil_mdin(cfg: RefepEquilConfig, index: int) -> str:
     lam = index / (cfg.prep.windows - 1)
+    cntrl = dict(cfg.cntrl)
+    if cfg.restraint is not None:
+        cntrl["nmropt"] = 1
     lines = [
         f"{cfg.description}; lambda window {index:03d} (lambda={lam:.10f})",
         "&cntrl",
     ]
     lines.extend(
-        f"  {key}={_format_amber_value(value)}," for key, value in cfg.cntrl.items()
+        f"  {key}={_format_amber_value(value)}," for key, value in cntrl.items()
     )
-    lines.extend(["/", ""])
+    lines.append("/")
+    if cfg.restraint is not None:
+        lines.extend(["&wt type='END' /", f"DISANG={REFEP_RESTRAINT_FILE}"])
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -361,6 +465,10 @@ def prepare_refep_equil(
             shutil.copy2(source_topology, window / "system.parm7")
             shutil.copy2(restart, window / "start.rst7")
             (window / "equil.mdin").write_text(render_equil_mdin(cfg, index))
+            if cfg.restraint is not None:
+                (window / REFEP_RESTRAINT_FILE).write_text(
+                    render_refep_restraint(cfg.restraint)
+                )
             window_run = window / "run.sh"
             window_run.write_text(render_window_run_script(cfg))
             window_run.chmod(0o755)
@@ -383,6 +491,12 @@ def run_refep_equil_prep(yaml_path: Path) -> None:
     time_ps = int(cfg.cntrl["nstlim"]) * float(cfg.cntrl["dt"])
     print(f"OK: wrote {cfg.prep.windows} independent REFEP NVT equilibration inputs in {destination}")
     print(f"OK: each lambda window will equilibrate for {time_ps:g} ps")
+    if cfg.restraint is not None:
+        atoms = "-".join(str(atom) for atom in cfg.restraint.atoms)
+        print(
+            f"OK: restraining dihedral {atoms} at {cfg.restraint.target_deg:g} degrees "
+            f"with k={cfg.restraint.force_constant:g} kcal/mol/rad^2"
+        )
     print("NOTE: preparation only; no Amber job was run or submitted")
 
 
@@ -424,7 +538,11 @@ def submit_refep_equil(
 ) -> bool:
     destination = output_dir.resolve() if output_dir else refep_equil_dir(cfg)
     spec = destination / "refep-equil-spec.yaml"
-    if not spec.is_file() or spec.read_text() != yaml_text:
+    if (
+        not spec.is_file()
+        or equil_simulation_payload(spec.read_text())
+        != equil_simulation_payload(yaml_text)
+    ):
         print(f"SKIP: {spec} does not exactly match the supplied config")
         return False
 
@@ -464,6 +582,11 @@ def submit_refep_equil(
             "equil.mdin": render_equil_mdin(cfg, index),
             "run.sh": render_window_run_script(cfg),
         }
+        if cfg.restraint is not None:
+            expected_text[REFEP_RESTRAINT_FILE] = render_refep_restraint(cfg.restraint)
+        elif (window / REFEP_RESTRAINT_FILE).exists():
+            print(f"SKIP: unexpected disabled restraint file in {window}")
+            return False
         if not prepared_topology.is_file() or _sha256(prepared_topology) != row["sha256"]:
             print(f"SKIP: {prepared_topology} differs from its validated lambda topology")
             return False

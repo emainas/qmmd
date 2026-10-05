@@ -1,4 +1,4 @@
-system: BV
+system: CPP
 buffer: 4.0
 prefix: solv
 
@@ -8,7 +8,7 @@ run_ids: "1-50"
 cv_dir: equil
 traj_name: traject
 dftb_inp_name: dftb.inp
-parm_path: systems/BV/solv_4.0/salt/ready.parm7
+parm_path: systems/CPP/solv_4.0/salt/ready.parm7
 
 dihedrals:
  - name: double5

@@ -1,0 +1,62 @@
+prep_yaml: prep.yaml
+stage_dirname: equil
+
+# Optional report-only torsion. Atom IDs are one-based topology indices.
+dihedral:
+  label: O2-CG-O1-H11
+  atom_ids: [5, 3, 4, 11]
+  target_deg: 0.0
+
+# Optional dynamics bias. Use null or {} to disable it.
+# E = force_constant * angular_displacement_in_radians^2 (kcal/mol).
+restraint:
+  atoms: [5, 3, 4, 11]
+  target_deg: 0.0
+  force_constant: 50.0
+
+report:
+  output_dir: report
+  cpptraj_executable: cpptraj
+  style: plotting/prl.mplstyle
+
+# Relax each lambda independently from the density-equilibrated syn restart.
+equil_mdin:
+  nvt:
+    description: Independent PRN-syn REFEP lambda-window equilibration at 300 K
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 100000
+      dt: 0.002
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ig: -1
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 5.0
+      ntpr: 500
+      ntwx: 1000
+      ntwr: 5000
+      ioutfm: 1
+
+runtime:
+  module: amber/26
+  executable: pmemd
+  launcher: srun
+  strict_mode: true
+
+slurm:
+  job:
+    name: prn-syn-refep-equil
+    partition: small
+    nodes: 2
+    ntasks: 16
+    tasks_per_node: 8
+    time: "2:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"

@@ -132,7 +132,8 @@ qmmd cphmd-dgref-report configs/<molecule>/cphmd/dgref.yaml
 
 After `finddgref.py` has completed successfully, prepare explicit-solvent
 replica-exchange CpHMD titration inputs. The command reads the converged ΔGref
-from the calibration log, builds the two-state CPINs, writes one MDIN per pH,
+from the calibration log, builds CPINs that preserve all configured protonation
+microstates, writes one MDIN per pH,
 and creates the Amber groupfile and MPI/Slurm launch scripts under the sibling
 `systems/<system>/<prefix>_<buffer>/cphmd/<job_name>/` directory. The pH ladder,
 MD controls, and resources are defined in YAML. This command prepares files
@@ -219,6 +220,42 @@ checksums, common starting restart, and generated scripts. It refuses to submit
 if any equilibration or Slurm outputs already exist and asks for confirmation
 before calling `sbatch`.
 
+Both REFEP equilibration and production support one optional conformer restraint:
+
+```yaml
+restraint:
+  atoms: [5, 3, 4, 11]  # one-based topology IDs
+  target_deg: 180.0
+  force_constant: 50.0  # kcal/mol/rad^2; E = k * displacement^2
+```
+
+The commands write an Amber NMR torsion file, set `nmropt=1`, and add `DISANG`
+to every lambda MD input. The production definition must exactly match the
+referenced equilibration restraint. Omit `restraint`, or set it to `null` or
+`{}`, to disable the bias. The restraint is identical across lambda windows:
+it confines sampling to the selected conformational basin without becoming a
+lambda-dependent term. Resulting free energies describe that restrained basin.
+
+Report completed lambda-window temperature and potential-energy traces with:
+
+```bash
+qmmd refep-equil-report configs/<molecule>/refep/equil.yaml
+```
+
+An optional top-level `dihedral` mapping adds a CPPTRAJ time-series report
+without changing the prepared simulation inputs. It accepts a label, four
+one-based topology atom IDs, and the periodic branch center, for example:
+
+```yaml
+dihedral:
+  label: O2-CG-O1-H11
+  atom_ids: [5, 3, 4, 11]
+  target_deg: 180.0
+```
+
+When omitted, no dihedral calculation or output is produced. The report writes
+the plotted thermodynamic and optional dihedral samples as aligned CSV files.
+
 After all lambda equilibrations complete, prepare the Hamiltonian
 replica-exchange production calculation. This verifies every equilibration,
 copies each lambda-specific topology and final restart, and writes the common
@@ -242,7 +279,9 @@ lambda Hamiltonians `k` are evaluated with Amber `sander`, `imin=5`, and
 `maxcyc=1`, producing the complete `U_k(q_j)` matrix required by subsequent
 FEP, BAR, TI, and MBAR analysis. Preparation validates the production run and
 writes inputs only; submission performs an exact preflight and asks for
-confirmation.
+confirmation. `single_point.slurm.job.ntasks` controls the maximum number of
+concurrent energy calculations; when it is smaller than the full grid, the
+runner processes all grid entries in bounded waves.
 
 ```bash
 qmmd refep-prod-post-prep configs/<molecule>/refep/prod.yaml
@@ -273,6 +312,12 @@ replica-exchange report. The report includes forward/reverse FEP, neighbor BAR,
 full-matrix MBAR, a charge-path TI calculation, convergence, work overlap, and
 walker-mixing diagnostics. It writes every figure together with its aligned
 CSV data under the configured sibling `refep/prod/report/` directory.
+If the referenced `equil.yaml` contains the optional top-level `dihedral`
+mapping, the production report also measures that torsion in every fixed-lambda
+production trajectory and writes `prod-dihedral.png`, `prod-dihedral.csv`, and
+CPPTRAJ provenance. The production time series is rendered as scatter points;
+the equilibration dihedral report retains connected lines. Configurations
+without `dihedral` are unchanged.
 Set `report.reference_state` to an endpoint label when the reported free energy
 must follow a state-reference convention. The reported direction is then the
 other endpoint to the reference endpoint, i.e. `G(reference) - G(other)`. For a
@@ -324,6 +369,37 @@ O2-CG-O1-H11 ensemble around one full reference solute. Those are the only two
 files needed to view the clock.
 Small-partition pull jobs default to two nodes and reject
 configurations requesting fewer than two.
+
+### us-salt-prep - Replace a counterion consistently across umbrella windows
+
+```bash
+qmmd us-salt-prep configs/<molecule>/us/salt.yaml
+```
+
+This preparation-only command applies the existing counterion-to-hydroxide
+transformation to every completed Amber pull window. It evaluates every water's
+minimum periodic solute distance over the complete window set and uses the same
+water residue and hydrogen in every window: specifically, the water maximizing
+that minimum distance. Consequently all windows receive byte-identical
+`ready.parm7` topologies and differ only in their coordinates. Outputs and
+cpptraj provenance are written to `window-XXX/salt/`; the common topology,
+selection record, and distance table are written to the umbrella root's
+`salt/` directory. Existing salt outputs are never overwritten.
+
+To start DFTB equilibration from these coordinates, set the equilibration YAML's
+conversion source explicitly:
+
+```yaml
+conversion:
+  amber_module: amber/26
+  source_stage: salt
+  xyz_name: ready.xyz
+  salt_yaml: salt-dih.yaml
+```
+
+For salted input, the common and per-window `salt_spec.yaml` snapshots must
+exactly match `salt_yaml`. The default remains `source_stage: pull`, preserving
+existing configurations that do not contain any salt settings.
 
 ### us-equil-prep - Prepare restrained DCDFTBMD equilibration
 

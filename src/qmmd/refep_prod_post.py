@@ -209,9 +209,9 @@ def load_refep_prod_post_config(yaml_path: Path) -> RefepProdPostConfig:
     combinations = prod.equil.prep.windows**2
     if slurm.nodes <= 0 or slurm.ntasks <= 0 or slurm.tasks_per_node <= 0:
         raise ValueError("Single-point Slurm nodes, ntasks, and tasks_per_node must be positive")
-    if slurm.ntasks != combinations:
+    if slurm.ntasks > combinations:
         raise ValueError(
-            "single_point.slurm.job.ntasks must equal the full energy-grid size "
+            "single_point.slurm.job.ntasks cannot exceed the full energy-grid size "
             f"({combinations})"
         )
     if slurm.ntasks > slurm.nodes * slurm.tasks_per_node:
@@ -685,23 +685,55 @@ if [[ -z "$launcher" ]]; then
     exit 1
 fi
 
+workers="${{SLURM_NTASKS:-{cfg.slurm.ntasks}}}"
+if ! [[ "$workers" =~ ^[1-9][0-9]*$ ]]; then
+    echo "ERROR: SLURM_NTASKS must be a positive integer" >&2
+    exit 1
+fi
+
 pids=()
+wait_batch() {{
+    local batch_status=0
+    local pid
+    for pid in "${{pids[@]}}"; do
+        if ! wait "$pid"; then
+            batch_status=1
+        fi
+    done
+    pids=()
+    return "$batch_status"
+}}
+
+status=0
+launched=0
 {{
     IFS= read -r _header
     while IFS=, read -r sample evaluation stem trajectory topology coordinate frames; do
         "$launcher" --exclusive --exact --nodes=1 --ntasks=1 --cpus-per-task=1 \\
           bash run-energy.sh "$stem" "$trajectory" "$topology" "$coordinate" \\
+          < /dev/null \\
           > "{cfg.energy_dirname}/$stem.launch.log" 2>&1 &
         pids+=("$!")
+        launched=$((launched + 1))
+        if (( ${{#pids[@]}} >= workers )); then
+            if ! wait_batch; then
+                status=1
+            fi
+            echo "Completed $launched/{combinations} calculations"
+        fi
     done
 }} < task-manifest.csv
 
-status=0
-for pid in "${{pids[@]}}"; do
-    if ! wait "$pid"; then
+if (( launched != {combinations} )); then
+    echo "ERROR: launched $launched/{combinations} REFEP calculations" >&2
+    status=1
+fi
+
+if (( ${{#pids[@]}} > 0 )); then
+    if ! wait_batch; then
         status=1
     fi
-done
+fi
 if (( status != 0 )); then
     echo "ERROR: one or more REFEP single-point calculations failed" >&2
     exit "$status"

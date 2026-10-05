@@ -17,10 +17,15 @@ from typing import Any, Callable
 import yaml
 
 from qmmd.refep_equil import (
+    REFEP_RESTRAINT_FILE,
     RefepEquilConfig,
+    RefepRestraintConfig,
+    equil_simulation_payload,
+    load_refep_restraint,
     load_refep_equil_config,
     refep_equil_dir,
     render_equil_mdin,
+    render_refep_restraint,
 )
 
 
@@ -63,6 +68,7 @@ class RefepProdConfig:
     stage_dirname: str
     description: str
     cntrl: dict[str, Any]
+    restraint: RefepRestraintConfig | None
     runtime: RefepProdRuntimeConfig
     slurm: RefepProdSlurmConfig
 
@@ -166,6 +172,13 @@ def load_refep_prod_config(yaml_path: Path) -> RefepProdConfig:
     if int(cntrl["ntwx"]) % nstlim:
         raise ValueError("ntwx must be an integer multiple of nstlim for exchange alignment")
 
+    restraint = load_refep_restraint(data.get("restraint"))
+    if restraint != equil.restraint:
+        raise ValueError(
+            "Production restraint must exactly match the referenced equil.yaml "
+            "restraint; use null or {} in both files to disable it"
+        )
+
     runtime_data = _mapping(data.get("runtime"), "runtime")
     env = dict(_mapping(runtime_data.get("env", {}), "runtime.env"))
     runtime = RefepProdRuntimeConfig(
@@ -214,6 +227,7 @@ def load_refep_prod_config(yaml_path: Path) -> RefepProdConfig:
         stage_dirname=_single_component(data.get("stage_dirname", "prod"), "stage_dirname"),
         description=description,
         cntrl=cntrl,
+        restraint=restraint,
         runtime=runtime,
         slurm=slurm,
     )
@@ -256,7 +270,11 @@ def validate_completed_equilibration(cfg: RefepProdConfig) -> list[CompletedEqui
             f"{topology_spec} does not exactly match the referenced prep.yaml"
         )
     spec = equil_dir / "refep-equil-spec.yaml"
-    if not spec.is_file() or spec.read_text() != cfg.equil_yaml.read_text():
+    if (
+        not spec.is_file()
+        or equil_simulation_payload(spec.read_text())
+        != equil_simulation_payload(cfg.equil_yaml.read_text())
+    ):
         raise ValueError(f"{spec} does not exactly match the referenced equil.yaml")
 
     topology_rows = _read_csv(
@@ -304,6 +322,18 @@ def validate_completed_equilibration(cfg: RefepProdConfig) -> list[CompletedEqui
         mdin = source_dir / "equil.mdin"
         if not mdin.is_file() or mdin.read_text() != render_equil_mdin(cfg.equil, index):
             raise ValueError(f"Equilibration MDIN does not match equil.yaml: {mdin}")
+        restraint_path = source_dir / REFEP_RESTRAINT_FILE
+        if cfg.equil.restraint is not None:
+            expected_restraint = render_refep_restraint(cfg.equil.restraint)
+            if (
+                not restraint_path.is_file()
+                or restraint_path.read_text() != expected_restraint
+            ):
+                raise ValueError(
+                    f"Equilibration restraint does not match equil.yaml: {restraint_path}"
+                )
+        elif restraint_path.exists():
+            raise ValueError(f"Unexpected disabled equilibration restraint: {restraint_path}")
         mdout = source_dir / "equil.mdout"
         mdout_text = mdout.read_text(errors="replace")
         if not final_step_re.search(mdout_text) or "Final Performance Info:" not in mdout_text:
@@ -331,11 +361,17 @@ def _format_amber_value(value: Any) -> str:
 
 
 def render_prod_mdin(cfg: RefepProdConfig) -> str:
+    cntrl = dict(cfg.cntrl)
+    if cfg.restraint is not None:
+        cntrl["nmropt"] = 1
     lines = [cfg.description, "&cntrl"]
     lines.extend(
-        f"  {key}={_format_amber_value(value)}," for key, value in cfg.cntrl.items()
+        f"  {key}={_format_amber_value(value)}," for key, value in cntrl.items()
     )
-    lines.extend(["/", ""])
+    lines.append("/")
+    if cfg.restraint is not None:
+        lines.extend(["&wt type='END' /", f"DISANG={REFEP_RESTRAINT_FILE}"])
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -430,20 +466,25 @@ def render_prod_manifest(windows: list[CompletedEquilWindow]) -> str:
 
 def render_provenance(cfg: RefepProdConfig) -> str:
     total_steps = int(cfg.cntrl["nstlim"]) * int(cfg.cntrl["numexchg"])
-    return yaml.safe_dump(
-        {
-            "method": "Hamiltonian replica exchange REFEP",
-            "amber_rem_mode": cfg.runtime.rem_mode,
-            "replicas": cfg.equil.prep.windows,
-            "processes_per_replica": cfg.runtime.processes_per_replica,
-            "exchange_interval_steps": int(cfg.cntrl["nstlim"]),
-            "exchange_attempts": int(cfg.cntrl["numexchg"]),
-            "total_steps_per_replica": total_steps,
-            "total_time_ps_per_replica": total_steps * float(cfg.cntrl["dt"]),
-            "equilibration_config": str(cfg.equil_yaml),
-        },
-        sort_keys=False,
-    )
+    provenance: dict[str, Any] = {
+        "method": "Hamiltonian replica exchange REFEP",
+        "amber_rem_mode": cfg.runtime.rem_mode,
+        "replicas": cfg.equil.prep.windows,
+        "processes_per_replica": cfg.runtime.processes_per_replica,
+        "exchange_interval_steps": int(cfg.cntrl["nstlim"]),
+        "exchange_attempts": int(cfg.cntrl["numexchg"]),
+        "total_steps_per_replica": total_steps,
+        "total_time_ps_per_replica": total_steps * float(cfg.cntrl["dt"]),
+        "equilibration_config": str(cfg.equil_yaml),
+    }
+    if cfg.restraint is not None:
+        provenance["restraint"] = {
+            "type": "Amber NMR dihedral",
+            "atoms_one_based": list(cfg.restraint.atoms),
+            "target_deg": cfg.restraint.target_deg,
+            "force_constant_kcal_mol_rad2": cfg.restraint.force_constant,
+        }
+    return yaml.safe_dump(provenance, sort_keys=False)
 
 
 def prepare_refep_prod(
@@ -466,6 +507,10 @@ def prepare_refep_prod(
             shutil.copy2(window.restart, work / f"{stem}.equil.rst7")
 
         (work / "prod.mdin").write_text(render_prod_mdin(cfg))
+        if cfg.restraint is not None:
+            (work / REFEP_RESTRAINT_FILE).write_text(
+                render_refep_restraint(cfg.restraint)
+            )
         (work / "groupfile").write_text(render_groupfile(cfg))
         (work / "lambda-manifest.csv").write_text(render_prod_manifest(completed))
         (work / "refep-prod-spec.yaml").write_text(cfg.yaml_path.read_text())
@@ -495,6 +540,12 @@ def run_refep_prod_prep(yaml_path: Path) -> None:
         f"OK: exchange every {exchange_ps:g} ps for {cfg.cntrl['numexchg']} attempts; "
         f"{total_ns:g} ns and {frames} saved frames per replica"
     )
+    if cfg.restraint is not None:
+        atoms = "-".join(str(atom) for atom in cfg.restraint.atoms)
+        print(
+            f"OK: restraining dihedral {atoms} at {cfg.restraint.target_deg:g} degrees "
+            f"with k={cfg.restraint.force_constant:g} kcal/mol/rad^2"
+        )
     print("NOTE: preparation only; no Amber job was run or submitted")
 
 
@@ -579,6 +630,11 @@ def submit_refep_prod(
         "run.sh": render_run_script(cfg),
         "slurm.sh": render_slurm_script(cfg),
     }
+    if cfg.restraint is not None:
+        expected_text[REFEP_RESTRAINT_FILE] = render_refep_restraint(cfg.restraint)
+    elif (destination / REFEP_RESTRAINT_FILE).exists():
+        print(f"SKIP: unexpected disabled restraint file in {destination}")
+        return False
     for name, expected in expected_text.items():
         path = destination / name
         if not path.is_file() or path.read_text() != expected:

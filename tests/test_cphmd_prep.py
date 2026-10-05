@@ -158,7 +158,16 @@ class CpHMDPrepTests(unittest.TestCase):
             self.assertEqual(by_name["O1"], ["-0.750000", "-0.616100", "-0.616100", "-0.447000", "-0.447000"])
             self.assertEqual(by_name["TOTAL"], ["-0.998999", "-0.000001", "-0.000001", "-0.000001", "-0.000001"])
             self.assertEqual(by_name["PROTON_COUNT"], ["0", "1", "1", "1", "1"])
-            self.assertIn("ho-oh-ho    60.000   134.000", frcmod.read_text())
+            frcmod_text = frcmod.read_text()
+            self.assertIn("ho-oh-ho    60.000   134.000", frcmod_text)
+            self.assertIn(
+                "X -X -oh-ho   0       1.000   180.000   2.000", frcmod_text
+            )
+            self.assertIn(
+                "c3-oh-c -oh      10.500   180.000   2.000", frcmod_text
+            )
+            self.assertNotIn("x -x -oh-ho", frcmod_text)
+            self.assertNotIn("c3-oh-c -oh    0", frcmod_text)
             self.assertIn(f"OK: wrote acid master MOL2 to {master}", output.getvalue())
             self.assertEqual(deprotonated.read_text(), original_deprotonated)
 

@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from qmmd.cphmd_dgref import find_repo_root
+from qmmd.cphmd_dgref import find_repo_root, read_charge_sets
 from qmmd.cphmd_titr_post import (
     TitrPostConfig,
     load_titr_post_config,
@@ -38,6 +38,15 @@ class TitrReportConfig:
     rolling_window_records: int
     slope_window_exchanges: int
     style: Path
+    syn_anti: SynAntiConfig | None
+
+
+@dataclass(frozen=True)
+class SynAntiConfig:
+    syn_names: tuple[str, ...]
+    anti_names: tuple[str, ...]
+    syn_states: tuple[int, ...]
+    anti_states: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -63,6 +72,18 @@ class EdgeAcceptance:
     target: int
     forward_percent: float
     reverse_percent: float
+
+
+@dataclass(frozen=True)
+class SynAntiPopulation:
+    ph: float
+    total_records: int
+    protonated_count: int
+    syn_count: int
+    anti_count: int
+    syn_fraction: float
+    anti_fraction: float
+    syn_to_anti_ratio: float
 
 
 def _child_path(value: object, field: str, default: str) -> str:
@@ -115,6 +136,50 @@ def load_titr_report_config(yaml_path: Path) -> TitrReportConfig:
     if not style.is_file():
         raise FileNotFoundError(f"Missing matplotlib style: {style}")
 
+    syn_anti_raw = raw.get("syn_anti")
+    syn_anti: SynAntiConfig | None = None
+    if syn_anti_raw is not None:
+        if not isinstance(syn_anti_raw, dict):
+            raise ValueError("titration_report.syn_anti must be a YAML mapping")
+        raw_syn = syn_anti_raw.get("syn_states")
+        raw_anti = syn_anti_raw.get("anti_states")
+        if not isinstance(raw_syn, list) or not raw_syn:
+            raise ValueError("titration_report.syn_anti.syn_states must be a nonempty list")
+        if not isinstance(raw_anti, list) or not raw_anti:
+            raise ValueError("titration_report.syn_anti.anti_states must be a nonempty list")
+        syn_names = tuple(str(value).strip() for value in raw_syn)
+        anti_names = tuple(str(value).strip() for value in raw_anti)
+        if any(not value for value in (*syn_names, *anti_names)):
+            raise ValueError("Syn/anti state names must be nonempty")
+        if set(syn_names) & set(anti_names):
+            raise ValueError("Syn and anti state groups must not overlap")
+
+        charges = read_charge_sets(post.titr.charge_sets)
+        state_lookup = {name: index for index, name in enumerate(charges.state_names)}
+        unknown = sorted((set(syn_names) | set(anti_names)) - state_lookup.keys())
+        if unknown:
+            raise ValueError("Unknown syn/anti charge states: " + ", ".join(unknown))
+        proton_counts = charges.proton_counts or (
+            charges.proton_count_prot,
+            charges.proton_count_deprot,
+        )
+        protonated_states = {
+            index for index, count in enumerate(proton_counts) if count == max(proton_counts)
+        }
+        configured_states = {
+            state_lookup[name] for name in (*syn_names, *anti_names)
+        }
+        if configured_states != protonated_states:
+            raise ValueError(
+                "Syn and anti groups must partition every protonated charge state"
+            )
+        syn_anti = SynAntiConfig(
+            syn_names=syn_names,
+            anti_names=anti_names,
+            syn_states=tuple(state_lookup[name] for name in syn_names),
+            anti_states=tuple(state_lookup[name] for name in anti_names),
+        )
+
     return TitrReportConfig(
         post=post,
         output_dir=output_dir,
@@ -126,6 +191,7 @@ def load_titr_report_config(yaml_path: Path) -> TitrReportConfig:
         rolling_window_records=rolling_window_records,
         slope_window_exchanges=slope_window,
         style=style,
+        syn_anti=syn_anti,
     )
 
 
@@ -353,6 +419,48 @@ def _state_probabilities(
         for j in range(len(ph)):
             overlap[i, j] = bhattacharyya_overlap(probabilities[i], probabilities[j])
     return state_values, probabilities, overlap
+
+
+def analyze_syn_anti(
+    ph: np.ndarray,
+    grouped: dict[float, list[ProtonationRecord]],
+    syn_states: tuple[int, ...],
+    anti_states: tuple[int, ...],
+) -> list[SynAntiPopulation]:
+    """Calculate syn/anti populations conditional on being protonated."""
+    syn_set = set(syn_states)
+    anti_set = set(anti_states)
+    rows: list[SynAntiPopulation] = []
+    for value in ph:
+        records = grouped[float(value)]
+        syn_count = sum(record.state in syn_set for record in records)
+        anti_count = sum(record.state in anti_set for record in records)
+        protonated_count = syn_count + anti_count
+        if protonated_count:
+            syn_fraction = syn_count / protonated_count
+            anti_fraction = anti_count / protonated_count
+        else:
+            syn_fraction = math.nan
+            anti_fraction = math.nan
+        if anti_count:
+            ratio = syn_count / anti_count
+        elif syn_count:
+            ratio = math.inf
+        else:
+            ratio = math.nan
+        rows.append(
+            SynAntiPopulation(
+                ph=float(value),
+                total_records=len(records),
+                protonated_count=protonated_count,
+                syn_count=syn_count,
+                anti_count=anti_count,
+                syn_fraction=syn_fraction,
+                anti_fraction=anti_fraction,
+                syn_to_anti_ratio=ratio,
+            )
+        )
+    return rows
 
 
 def _write_csv(path: Path, header: list[str], rows: list[list[object]]) -> None:
@@ -731,6 +839,69 @@ def _plot_state_overlap(
     plt.close(fig)
 
 
+def _plot_syn_anti_populations(
+    cfg: TitrReportConfig,
+    path: Path,
+    rows: list[SynAntiPopulation],
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.style.use(cfg.style)
+    ph = np.asarray([row.ph for row in rows])
+    syn = np.asarray([row.syn_fraction for row in rows])
+    anti = np.asarray([row.anti_fraction for row in rows])
+    ratio = np.asarray([row.syn_to_anti_ratio for row in rows])
+    protonated = np.asarray([row.protonated_count for row in rows])
+
+    fig, (fraction_ax, ratio_ax) = plt.subplots(
+        2,
+        1,
+        figsize=(8.0, 7.6),
+        sharex=True,
+        height_ratios=[1.35, 1.0],
+        constrained_layout=True,
+    )
+    fraction_ax.plot(ph, syn, marker="o", label="Syn / total protonated")
+    fraction_ax.plot(ph, anti, marker="s", label="Anti / total protonated")
+    fraction_ax.axhline(0.5, color="0.55", ls="--", lw=0.9)
+    fraction_ax.set(
+        ylabel="Conditional molar fraction",
+        ylim=(-0.03, 1.03),
+        title="Syn and anti populations within the protonated ensemble",
+    )
+    fraction_ax.legend()
+
+    finite = np.isfinite(ratio)
+    ratio_ax.plot(ph[finite], ratio[finite], color="#C43C39", marker="o", label="Syn / anti")
+    ratio_ax.axhline(1.0, color="0.35", ls="--", lw=0.9, label="Equal populations")
+    ratio_ax.set(xlabel="pH", ylabel="Syn:anti molar ratio")
+    ratio_ax.set_xticks(ph)
+
+    count_ax = ratio_ax.twinx()
+    spacing = float(np.min(np.diff(ph))) if len(ph) > 1 else 1.0
+    count_ax.bar(
+        ph,
+        protonated,
+        width=0.45 * spacing,
+        color="0.72",
+        alpha=0.28,
+        label="Protonated samples",
+        zorder=0,
+    )
+    count_ax.set_ylabel("Protonated samples", color="0.4")
+    count_ax.tick_params(axis="y", colors="0.4")
+    handles, labels = ratio_ax.get_legend_handles_labels()
+    count_handles, count_labels = count_ax.get_legend_handles_labels()
+    ratio_ax.legend(handles + count_handles, labels + count_labels, loc="best")
+
+    fig.suptitle(f"{cfg.post.titr.system} protonated microstate balance", fontsize=15)
+    fig.savefig(path, dpi=300)
+    plt.close(fig)
+
+
 def build_titration_report(cfg: TitrReportConfig, repo_root: Path) -> Path:
     post = _validate_postprocessed_data(cfg, repo_root)
     destination = report_dir(cfg, repo_root)
@@ -738,6 +909,16 @@ def build_titration_report(cfg: TitrReportConfig, repo_root: Path) -> Path:
     residue, grouped, max_protons = _selected_series(cfg, records)
     ph, fraction, sem, transitions, fit, block_fits = _analyze_titration(cfg, grouped, max_protons)
     state_values, probabilities, overlap = _state_probabilities(ph, grouped)
+    syn_anti_rows = (
+        analyze_syn_anti(
+            ph,
+            grouped,
+            cfg.syn_anti.syn_states,
+            cfg.syn_anti.anti_states,
+        )
+        if cfg.syn_anti is not None
+        else None
+    )
 
     with tempfile.TemporaryDirectory(prefix=".report-work-", dir=post) as tmp:
         work = Path(tmp)
@@ -779,6 +960,38 @@ def build_titration_report(cfg: TitrReportConfig, repo_root: Path) -> Path:
         _plot_titration_curve(cfg, work / "titration-curve.png", ph, fraction, sem, fit, block_fits)
         _plot_protonation_timeseries(cfg, work / "protonation-timeseries.png", grouped, max_protons)
         _plot_state_overlap(cfg, work / "protonation-state-overlap.png", ph, overlap, edges)
+        if syn_anti_rows is not None:
+            _write_csv(
+                work / "syn-anti-populations.csv",
+                [
+                    "pH",
+                    "total_records",
+                    "protonated_count",
+                    "syn_count",
+                    "anti_count",
+                    "syn_fraction_of_protonated",
+                    "anti_fraction_of_protonated",
+                    "syn_to_anti_ratio",
+                ],
+                [
+                    [
+                        f"{row.ph:.6f}",
+                        row.total_records,
+                        row.protonated_count,
+                        row.syn_count,
+                        row.anti_count,
+                        f"{row.syn_fraction:.8f}",
+                        f"{row.anti_fraction:.8f}",
+                        f"{row.syn_to_anti_ratio:.8f}",
+                    ]
+                    for row in syn_anti_rows
+                ],
+            )
+            _plot_syn_anti_populations(
+                cfg,
+                work / "syn-anti-populations.png",
+                syn_anti_rows,
+            )
 
         valid_block_pka = [value.pka for value in block_fits if value is not None]
         adjacent_edges = [edge for edge in edges if edge.target != 1]
@@ -818,6 +1031,22 @@ def build_titration_report(cfg: TitrReportConfig, repo_root: Path) -> Path:
                 "this is not Hamiltonian energy overlap"
             ),
         }
+        if cfg.syn_anti is not None and syn_anti_rows is not None:
+            summary["syn_anti"] = {
+                "definition": "conditional populations within the protonated ensemble",
+                "syn_states": list(cfg.syn_anti.syn_names),
+                "anti_states": list(cfg.syn_anti.anti_names),
+                "per_pH": [
+                    {
+                        "pH": row.ph,
+                        "protonated_count": row.protonated_count,
+                        "syn_fraction": row.syn_fraction,
+                        "anti_fraction": row.anti_fraction,
+                        "syn_to_anti_ratio": row.syn_to_anti_ratio,
+                    }
+                    for row in syn_anti_rows
+                ],
+            }
         (work / "report-summary.yaml").write_text(yaml.safe_dump(summary, sort_keys=False))
 
         destination.mkdir(parents=True, exist_ok=True)
@@ -843,3 +1072,11 @@ def run_cphmd_titr_report(yaml_path: Path) -> None:
         f"acceptance {exchange['adjacent_acceptance_percent_min']:.1f}-"
         f"{exchange['adjacent_acceptance_percent_max']:.1f}%"
     )
+    syn_anti = summary.get("syn_anti")
+    if syn_anti is not None:
+        print("Syn:anti ratio within the protonated ensemble:")
+        for row in syn_anti["per_pH"]:
+            print(
+                f"  pH {row['pH']:g}: {row['syn_to_anti_ratio']:.3f} "
+                f"({row['protonated_count']} protonated samples)"
+            )

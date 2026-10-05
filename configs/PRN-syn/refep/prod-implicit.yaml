@@ -1,0 +1,117 @@
+equil_yaml: equil.yaml
+stage_dirname: prod-10ns
+
+# Mirrors prod.yaml so this file can rescore the restrained production ensemble.
+restraint:
+  atoms: [5, 3, 4, 11]
+  target_deg: 0.0
+  force_constant: 50.0
+
+# This production definition must remain identical to prod.yaml so the completed
+# explicit-solvent ensemble can be reused for implicit-solvent rescoring.
+remd_mdin:
+  production:
+    description: PRN-syn charge-interpolation Hamiltonian replica exchange
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 500
+      numexchg: 10000
+      dt: 0.002
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ig: -1
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 5.0
+      ntpr: 500
+      ntwx: 5000
+      ntwr: 50000
+      ntwe: 0
+      ioutfm: 1
+
+runtime:
+  module: amber/26
+  executable: pmemd.MPI
+  mpi_launcher: mpirun
+  processes_per_replica: 2
+  rem_mode: 3
+  env:
+    TEMP: 300
+  strict_mode: true
+
+slurm:
+  job:
+    name: prn-syn-refep-prod-10ns
+    partition: small
+    nodes: 2
+    ntasks: 32
+    tasks_per_node: 16
+    time: "2:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"
+
+# Rescore the explicit-solvent ensemble after stripping solvent and ions. This
+# diagnoses the GB2 charge-mutation free energy; it is not implicit sampling.
+single_point:
+  stage_dirname: post-igb2
+  energy_dirname: energies
+  keep_mask: ":1"
+  stripped_dirname: stripped
+  mdin:
+    energy:
+      description: PRN-syn GB2 rescoring of explicit-solvent REFEP ensembles
+      cntrl:
+        imin: 5
+        maxcyc: 1
+        ntb: 0
+        ntp: 0
+        igb: 2
+        saltcon: 0.1
+        cut: 999.0
+        rgbmax: 999.0
+        ntc: 2
+        ntf: 2
+        ioutfm: 1
+        ntpr: 1
+        ntwx: 0
+        ntwe: 0
+  runtime:
+    module: amber/26
+    executable: sander
+    launcher: srun
+    ncdump_executable: ncdump
+    cpptraj_executable: cpptraj
+    local_workers: 16
+    strict_mode: true
+  slurm:
+    job:
+      name: prn-syn-refep-igb2-sp
+      partition: small
+      nodes: 2
+      ntasks: 96
+      tasks_per_node: 48
+      memory: 32G
+      time: "4:00:00"
+      stdout: "slurm.%j.out"
+      stderr: "slurm.%j.err"
+
+report:
+  output_dir: report-igb2
+  # Report the CpHMD convention G(protonated) - G(deprotonated).
+  reference_state: protonated-syn
+  style: plotting/prl.mplstyle
+  temperature_k: 300.0
+  bootstrap_samples: 200
+  bootstrap_block_frames: 5
+  bootstrap_seed: 20261001
+  histogram_bins: 20
+  convergence_min_frames: 10
+  convergence_stride_frames: 5
+  mbar_tolerance: 1.0e-10
+  mbar_max_iterations: 10000

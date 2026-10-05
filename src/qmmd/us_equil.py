@@ -39,6 +39,9 @@ from qmmd.us_pull import (
 @dataclass(frozen=True, slots=True)
 class ConversionConfig:
     amber_module: str
+    source_stage: str = "pull"
+    xyz_name: str = "ready.xyz"
+    salt_yaml: Path | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,11 +164,33 @@ def load_config(yaml_path: Path) -> USEquilConfig:
     if exponent <= 0 or exponent % 2:
         raise ValueError("wall.exponent must be a positive even integer")
 
+    conversion_data = data.get("conversion", {"amber_module": "amber/26"})
+    source_stage = _single_component(
+        conversion_data.get("source_stage", "pull"), "conversion.source_stage"
+    )
+    if source_stage not in {"pull", "salt"}:
+        raise ValueError("conversion.source_stage must be 'pull' or 'salt'")
+    salt_yaml: Path | None = None
+    if conversion_data.get("salt_yaml") is not None:
+        salt_value = Path(str(conversion_data["salt_yaml"]))
+        salt_yaml = salt_value if salt_value.is_absolute() else (resolved.parent / salt_value).resolve()
+        if not salt_yaml.is_file():
+            raise RuntimeError(f"Missing salt configuration: {salt_yaml}")
+    if source_stage == "salt" and salt_yaml is None:
+        raise ValueError("conversion.salt_yaml is required when source_stage is 'salt'")
+
     return USEquilConfig(
         pull_yaml=pull_yaml,
         pull=pull_cfg,
         stage_dirname=_single_component(data.get("stage_dirname", "equil"), "stage_dirname"),
-        conversion=ConversionConfig(**data.get("conversion", {"amber_module": "amber/26"})),
+        conversion=ConversionConfig(
+            amber_module=str(conversion_data.get("amber_module", "amber/26")),
+            source_stage=source_stage,
+            xyz_name=_single_component(
+                conversion_data.get("xyz_name", "ready.xyz"), "conversion.xyz_name"
+            ),
+            salt_yaml=salt_yaml,
+        ),
         cv=CVConfig(width),
         wall=WallConfig(coefficient, exponent),
         dftb=dftb,
@@ -336,7 +361,9 @@ def prepare_us_equil(
         raise RuntimeError(f"{prepared_pull_spec} does not exactly match {cfg.pull_yaml}")
 
     topology, _, _ = source_paths(cfg.pull, repo_root)
-    if not topology.is_file() or topology.stat().st_size == 0:
+    if cfg.conversion.source_stage == "pull" and (
+        not topology.is_file() or topology.stat().st_size == 0
+    ):
         raise RuntimeError(f"Missing/empty Amber topology: {topology}")
     centers = window_centers(cfg.pull.windows)
     destinations = [
@@ -347,7 +374,8 @@ def prepare_us_equil(
     if existing:
         raise FileExistsError(f"US equilibration directory already exists; not touching: {existing[0]}")
 
-    restarts: list[Path] = []
+    sources: list[Path] = []
+    salt_spec_text: str | None = None
     for index in range(len(centers)):
         pull_stage = pull_root / f"window-{index:03d}" / "pull"
         restart = pull_stage / "pull.rst7"
@@ -358,15 +386,57 @@ def prepare_us_equil(
             errors="replace"
         ):
             raise RuntimeError(f"Amber pull window did not reach normal completion: {amber_output}")
-        restarts.append(restart)
+        if cfg.conversion.source_stage == "pull":
+            sources.append(restart)
+            continue
+
+        salt_stage = pull_root / f"window-{index:03d}" / cfg.conversion.source_stage
+        source_xyz = salt_stage / cfg.conversion.xyz_name
+        if not source_xyz.is_file() or source_xyz.stat().st_size == 0:
+            raise RuntimeError(f"Missing/empty salted umbrella coordinates: {source_xyz}")
+        salt_spec = salt_stage / "salt_spec.yaml"
+        if not salt_spec.is_file() or salt_spec.stat().st_size == 0:
+            raise RuntimeError(f"Missing/empty salted umbrella snapshot: {salt_spec}")
+        current_spec = salt_spec.read_text()
+        if salt_spec_text is None:
+            salt_spec_text = current_spec
+        elif current_spec != salt_spec_text:
+            raise RuntimeError("Salted umbrella windows do not share one exact salt_spec.yaml")
+        sources.append(source_xyz)
+
+    if cfg.conversion.source_stage == "salt":
+        if cfg.conversion.salt_yaml is None:  # guarded during YAML loading
+            raise ValueError("Salted conversion requires conversion.salt_yaml")
+        expected_salt_spec = cfg.conversion.salt_yaml.read_text()
+        if salt_spec_text != expected_salt_spec:
+            raise RuntimeError(
+                "Salted umbrella snapshots do not exactly match "
+                f"{cfg.conversion.salt_yaml}"
+            )
+        common_spec = pull_root / cfg.conversion.source_stage / "salt_spec.yaml"
+        if not common_spec.is_file() or common_spec.read_text() != salt_spec_text:
+            raise RuntimeError(
+                f"Common salt snapshot does not match every umbrella window: {common_spec}"
+            )
 
     rendered: list[tuple[str, str, str]] = []
     with tempfile.TemporaryDirectory(dir="/tmp", prefix="qmmd-us-equil-") as tmp:
         temporary = Path(tmp)
-        for index, (center, restart) in enumerate(zip(centers, restarts)):
-            xyz = temporary / f"window-{index:03d}.xyz"
-            converter(topology, restart, xyz, cfg.conversion.amber_module)
+        composition: tuple[int, tuple[str, ...]] | None = None
+        for index, (center, source) in enumerate(zip(centers, sources)):
+            if cfg.conversion.source_stage == "pull":
+                xyz = temporary / f"window-{index:03d}.xyz"
+                converter(topology, source, xyz, cfg.conversion.amber_module)
+            else:
+                xyz = source
             natoms, vectors, coordinates = read_xyz(xyz)
+            current_composition = (natoms, tuple(sorted(symbol for symbol, *_ in coordinates)))
+            if composition is None:
+                composition = current_composition
+            elif current_composition != composition:
+                raise RuntimeError(
+                    f"Atom/element composition differs in salted window-{index:03d}"
+                )
             if max(cfg.pull.restraint.atoms) > natoms:
                 raise ValueError(
                     f"Dihedral atom ID exceeds {natoms} atoms in window-{index:03d}"

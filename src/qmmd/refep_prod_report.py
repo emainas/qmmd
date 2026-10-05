@@ -14,6 +14,17 @@ import numpy as np
 import yaml
 
 from qmmd.cphmd_dgref import find_repo_root
+from qmmd.refep_equil_report import (
+    DihedralSample,
+    RefepDihedralConfig,
+    angle_near_target,
+    load_refep_equil_report_config,
+    plot_dihedral_timeseries,
+    read_cpptraj_dihedral,
+    render_dihedral_cpptraj_input,
+    run_cpptraj,
+    write_dihedral_csv,
+)
 from qmmd.refep_prod import refep_prod_dir
 from qmmd.refep_prod_post import (
     RefepProdPostConfig,
@@ -57,6 +68,7 @@ class RefepReportConfig:
     convergence_stride_frames: int
     mbar_tolerance: float
     mbar_max_iterations: int
+    dihedral: RefepDihedralConfig | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,6 +196,8 @@ def load_refep_report_config(yaml_path: Path) -> RefepReportConfig:
     if mbar_tolerance <= 0.0 or mbar_max_iterations < 1:
         raise ValueError("report MBAR tolerance and iteration limit must be positive")
 
+    equil_report = load_refep_equil_report_config(post.prod.equil_yaml)
+
     return RefepReportConfig(
         post=post,
         output_dir=_child_path(raw.get("output_dir"), "report.output_dir", "report"),
@@ -198,6 +212,7 @@ def load_refep_report_config(yaml_path: Path) -> RefepReportConfig:
         convergence_stride_frames=convergence_stride_frames,
         mbar_tolerance=mbar_tolerance,
         mbar_max_iterations=mbar_max_iterations,
+        dihedral=equil_report.dihedral,
     )
 
 
@@ -1130,6 +1145,65 @@ def _plot_replica_health(
     plt.close(fig)
 
 
+def collect_production_dihedrals(
+    cfg: RefepReportConfig,
+    work: Path,
+) -> list[DihedralSample]:
+    """Measure an optional equil.yaml dihedral in every production lambda ensemble."""
+    if cfg.dihedral is None:
+        return []
+    prod = cfg.post.prod
+    source = refep_prod_dir(prod)
+    windows = prod.equil.prep.windows
+    total_steps = int(prod.cntrl["nstlim"]) * int(prod.cntrl["numexchg"])
+    expected_frames = total_steps // int(prod.cntrl["ntwx"])
+    frame_dt = int(prod.cntrl["ntwx"]) * float(prod.cntrl["dt"])
+    samples: list[DihedralSample] = []
+    combined_inputs: list[str] = []
+    combined_logs: list[str] = []
+    for index in range(windows):
+        stem = f"lambda-{index:03d}"
+        input_path = work / f"prod-dihedral-{index:03d}.cpptraj.in"
+        output_path = work / f"prod-dihedral-{index:03d}.dat"
+        log_path = work / f"prod-dihedral-{index:03d}.cpptraj.log"
+        input_text = render_dihedral_cpptraj_input(
+            source / f"{stem}.parm7",
+            source / f"{stem}.nc",
+            output_path,
+            cfg.dihedral,
+        )
+        input_path.write_text(input_text)
+        run_cpptraj(
+            input_path,
+            log_path,
+            prod.runtime.module,
+            cfg.post.runtime.cpptraj_executable,
+        )
+        values = read_cpptraj_dihedral(output_path)
+        if len(values) != expected_frames:
+            raise ValueError(
+                f"Production window {index:03d} has {len(values)} dihedral frames; "
+                f"expected {expected_frames}"
+            )
+        lambda_value = index / (windows - 1)
+        for frame, angle in values:
+            samples.append(
+                DihedralSample(
+                    window=index,
+                    lambda_value=lambda_value,
+                    frame=frame,
+                    time_ps=frame * frame_dt,
+                    raw_deg=angle,
+                    branch_deg=angle_near_target(angle, cfg.dihedral.target_deg),
+                )
+            )
+        combined_inputs.extend([f"# {stem}", input_text])
+        combined_logs.extend([f"===== {stem} =====", log_path.read_text()])
+    (work / "prod-dihedral-cpptraj.in").write_text("\n".join(combined_inputs))
+    (work / "prod-dihedral-cpptraj.log").write_text("\n".join(combined_logs))
+    return samples
+
+
 def generate_refep_report(
     cfg: RefepReportConfig, output_dir: Path | None = None
 ) -> tuple[Path, FreeEnergyAnalysis, dict[str, float], ReplicaDiagnostics]:
@@ -1143,6 +1217,7 @@ def generate_refep_report(
 
     with tempfile.TemporaryDirectory(prefix=".refep-report-", dir=destination.parent) as tmp:
         work = Path(tmp)
+        dihedrals = collect_production_dihedrals(cfg, work)
         _write_numerical_outputs(
             cfg,
             work,
@@ -1169,6 +1244,28 @@ def generate_refep_report(
         _plot_replica_health(
             cfg, work / "replica-exchange-health.png", grid, replica
         )
+        if cfg.dihedral is not None:
+            write_dihedral_csv(work / "prod-dihedral.csv", dihedrals)
+            plot_dihedral_timeseries(
+                work / "prod-dihedral.png",
+                cfg.style,
+                cfg.post.prod.equil.prep.system,
+                "production",
+                cfg.dihedral,
+                cfg.post.prod.equil.prep.windows,
+                dihedrals,
+                scatter=True,
+            )
+            summary_path = work / "summary.yaml"
+            summary = yaml.safe_load(summary_path.read_text())
+            summary["dihedral"] = {
+                "label": cfg.dihedral.label,
+                "atom_ids_one_based": list(cfg.dihedral.atom_ids),
+                "target_deg": cfg.dihedral.target_deg,
+                "samples": len(dihedrals),
+                "source": "fixed-lambda production trajectories",
+            }
+            summary_path.write_text(yaml.safe_dump(summary, sort_keys=False))
         (work / "refep-report-spec.yaml").write_text(cfg.post.yaml_path.read_text())
         destination.mkdir(parents=True, exist_ok=True)
         for source in work.iterdir():
@@ -1199,4 +1296,9 @@ def run_refep_prod_report(yaml_path: Path) -> None:
         print(
             "NOTE: implicit-solvent rescoring of explicit-solvent ensembles; "
             "diagnostic, not a rigorously sampled implicit-solvent ΔG"
+        )
+    if cfg.dihedral is not None:
+        print(
+            f"OK: plotted {cfg.dihedral.label} production time series for "
+            f"{cfg.post.prod.equil.prep.windows} lambda windows"
         )

@@ -12,10 +12,12 @@ from qmmd.cphmd_titr import (
     render_slurm_script,
     submit_titration,
 )
+from qmmd.cphmd_dgref import read_charge_sets, read_topology_info
 
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "cphmd" / "cphmd.yaml"
+PR4_CONFIG = REPO / "configs" / "PR4" / "cphmd" / "cphmd.yaml"
 
 
 class CpHMDTitrPrepTests(unittest.TestCase):
@@ -27,6 +29,24 @@ class CpHMDTitrPrepTests(unittest.TestCase):
         self.assertEqual(cfg.cntrl["ntb"], 1)
         self.assertEqual(cfg.cntrl["ntp"], 0)
         self.assertEqual(cfg.cntrl["cut"], 5.0)
+
+    def test_pr4_config_preserves_all_acid_microstates(self):
+        cfg = load_titr_config(PR4_CONFIG)
+        charges = read_charge_sets(cfg.charge_sets)
+        topology = read_topology_info(
+            REPO / "systems" / "PR4" / "solv_5.5" / "prep" / cfg.input_parm7,
+            cfg.system,
+        )
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            destination, dgref = prepare_titration(cfg, REPO, Path(tmp) / "titr")
+            cpin = (destination / "replica-01.cpin").read_text()
+
+        self.assertEqual(len(cfg.pka_corr), 5)
+        self.assertEqual(charges.proton_counts, (0, 1, 1, 1, 1))
+        self.assertEqual(topology.atom_names, charges.atom_names)
+        self.assertIn("ntstates=5", cpin)
+        self.assertIn("PROTCNT=0,1,1,1,1,", cpin)
+        self.assertEqual(cpin.count(f"{dgref:.6f}"), 4)
 
     def test_reads_only_successful_final_dgref(self):
         successful = """

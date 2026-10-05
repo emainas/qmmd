@@ -21,6 +21,9 @@ from qmmd.refep_prod_post import (
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "refep" / "prod.yaml"
 RESCORE_CONFIG = REPO / "configs" / "MEA" / "refep" / "prod-igb2-rescore.yaml"
+PRN_ANTI_IMPLICIT_CONFIG = (
+    REPO / "configs" / "PRN-anti" / "refep" / "prod-implicit.yaml"
+)
 
 
 class RefepProdPostTests(unittest.TestCase):
@@ -119,6 +122,19 @@ class RefepProdPostTests(unittest.TestCase):
         manifest = render_task_manifest(cfg, validate_completed_production(cfg))
         self.assertIn("stripped/lambda-000.nc", manifest)
         self.assertIn("stripped/lambda-015.parm7", manifest)
+
+    def test_slurm_grid_can_run_in_bounded_waves(self):
+        cfg = load_refep_prod_post_config(PRN_ANTI_IMPLICIT_CONFIG)
+        self.assertEqual(cfg.slurm.ntasks, 96)
+        run = render_post_run_script(cfg)
+        self.assertIn('workers="${SLURM_NTASKS:-96}"', run)
+        self.assertIn("if (( ${#pids[@]} >= workers )); then", run)
+        self.assertIn("< /dev/null", run)
+        self.assertIn("if (( launched != 256 )); then", run)
+        slurm = render_post_slurm_script(cfg)
+        self.assertIn("#SBATCH -N 2", slurm)
+        self.assertIn("#SBATCH -n 96", slurm)
+        self.assertIn("#SBATCH --ntasks-per-node=48", slurm)
 
 
 if __name__ == "__main__":

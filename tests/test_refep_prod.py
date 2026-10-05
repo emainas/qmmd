@@ -19,6 +19,11 @@ from qmmd.refep_prod import (
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "refep" / "prod.yaml"
+ANTI_CONFIG = REPO / "configs" / "PRN-anti" / "refep" / "prod.yaml"
+SYN_CONFIG = REPO / "configs" / "PRN-syn" / "refep" / "prod.yaml"
+ANTI_IMPLICIT_CONFIG = (
+    REPO / "configs" / "PRN-anti" / "refep" / "prod-implicit.yaml"
+)
 
 
 class RefepProdTests(unittest.TestCase):
@@ -34,12 +39,13 @@ class RefepProdTests(unittest.TestCase):
         self.assertEqual(self.cfg.cntrl["ntb"], 1)
         self.assertEqual(self.cfg.cntrl["ntp"], 0)
         self.assertEqual(self.cfg.cntrl["cut"], 5.0)
+        self.assertIsNone(self.cfg.restraint)
         total_ps = (
             self.cfg.cntrl["nstlim"]
             * self.cfg.cntrl["numexchg"]
             * self.cfg.cntrl["dt"]
         )
-        self.assertEqual(total_ps, 500.0)
+        self.assertEqual(total_ps, 10000.0)
 
     def test_completed_equilibration_is_accepted(self):
         windows = validate_completed_equilibration(self.cfg)
@@ -51,9 +57,10 @@ class RefepProdTests(unittest.TestCase):
     def test_rendered_hremd_inputs(self):
         mdin = render_prod_mdin(self.cfg)
         self.assertIn("nstlim=500", mdin)
-        self.assertIn("numexchg=500", mdin)
+        self.assertIn("numexchg=10000", mdin)
         self.assertIn("ntb=1", mdin)
         self.assertIn("ntp=0", mdin)
+        self.assertNotIn("DISANG", mdin)
 
         groupfile = render_groupfile(self.cfg)
         lines = groupfile.splitlines()
@@ -74,7 +81,39 @@ class RefepProdTests(unittest.TestCase):
         self.assertIn("#SBATCH --ntasks-per-node=16", slurm)
 
         provenance = render_provenance(self.cfg)
-        self.assertIn("total_time_ps_per_replica: 500.0", provenance)
+        self.assertIn("total_time_ps_per_replica: 10000.0", provenance)
+
+    def test_production_uses_matching_equilibration_restraint(self):
+        anti = load_refep_prod_config(ANTI_CONFIG)
+        syn = load_refep_prod_config(SYN_CONFIG)
+        anti_implicit = load_refep_prod_config(ANTI_IMPLICIT_CONFIG)
+        assert anti.restraint is not None
+        assert syn.restraint is not None
+        self.assertEqual(anti.restraint, anti.equil.restraint)
+        self.assertEqual(syn.restraint, syn.equil.restraint)
+        self.assertEqual(anti_implicit.restraint, anti.restraint)
+        self.assertEqual(anti.restraint.target_deg, 180.0)
+        self.assertEqual(syn.restraint.target_deg, 0.0)
+        anti_mdin = render_prod_mdin(anti)
+        self.assertIn("nmropt=1", anti_mdin)
+        self.assertIn("&wt type='END' /", anti_mdin)
+        self.assertIn("DISANG=restraint.rst", anti_mdin)
+        provenance = render_provenance(anti)
+        self.assertIn("atoms_one_based:", provenance)
+        self.assertIn("force_constant_kcal_mol_rad2: 50.0", provenance)
+
+    def test_production_rejects_restraint_mismatch(self):
+        text = ANTI_CONFIG.read_text().replace(
+            "equil_yaml: equil.yaml",
+            f"equil_yaml: {ANTI_CONFIG.with_name('equil.yaml').resolve()}",
+            1,
+        )
+        text = text.replace("target_deg: 180.0", "target_deg: 0.0", 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "prod.yaml"
+            path.write_text(text)
+            with self.assertRaisesRegex(ValueError, "must exactly match"):
+                load_refep_prod_config(path)
 
     def test_prepare_copies_lambda_specific_inputs(self):
         with tempfile.TemporaryDirectory() as tmp:

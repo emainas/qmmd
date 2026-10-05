@@ -1,0 +1,17 @@
+pull_yaml: pull-dih.yaml
+output_dirname: salt
+
+# Apply the established BV counterion-to-hydroxide transformation after pulling.
+# One common water residue is selected by maximizing its minimum distance from
+# BV over all 19 windows, so every window uses the same atom deletion/topology.
+counterion: Cl-
+solute_mask: ":1"
+nclosest: 999999
+delete_h: H1
+
+# Refuse preparation if even the best common water approaches BV more closely
+# than this in any pull window.
+minimum_solute_distance_angstrom: 6.0
+
+runtime:
+  amber_module: amber/26
