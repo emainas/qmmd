@@ -38,6 +38,15 @@ class TopologyInfo:
 
 
 @dataclass(frozen=True)
+class CpinResidue:
+    residue_name: str
+    charges: ChargeSets
+    topology: TopologyInfo
+    statene: tuple[str, ...]
+    pka_corr: tuple[float, ...]
+
+
+@dataclass(frozen=True)
 class RuntimeConfig:
     module: str
     executable: str
@@ -65,6 +74,7 @@ class DgrefConfig:
     input_parm7: str
     input_rst7: str
     charge_sets: Path
+    states: tuple[str, ...] | None
     statene: tuple[str, ...]
     pka_corr: tuple[float, ...]
     cph_igb: int
@@ -127,6 +137,18 @@ def load_config(yaml_path: Path) -> DgrefConfig:
     if not charge_sets.is_file():
         raise FileNotFoundError(f"Missing charge_sets: {charge_sets}")
 
+    state_value = cpin.get("states")
+    states = (
+        None
+        if state_value is None
+        else tuple(_comma_values(state_value, "cpin.states"))
+    )
+    if states is not None:
+        if len(states) < 2:
+            raise ValueError("cpin.states must select at least two charge states")
+        if len(set(states)) != len(states):
+            raise ValueError("cpin.states must not contain duplicates")
+
     statene = tuple(_comma_values(cpin.get("statene"), "cpin.statene"))
     pka_values = _comma_values(cpin.get("pka_corr"), "cpin.pka_corr")
     try:
@@ -135,6 +157,10 @@ def load_config(yaml_path: Path) -> DgrefConfig:
         raise ValueError("cpin.pka_corr values must be numeric") from exc
     if len(statene) != len(pka_corr):
         raise ValueError("cpin.statene and cpin.pka_corr must have equal lengths")
+    if states is not None and len(statene) != len(states):
+        raise ValueError(
+            "cpin.statene and cpin.pka_corr must match the cpin.states count"
+        )
     if not any(value.upper() == "DELTAGREF" for value in statene):
         raise ValueError("cpin.statene must contain DELTAGREF at least once")
     cph_igb = int(cpin["cph_igb"])
@@ -214,6 +240,7 @@ def load_config(yaml_path: Path) -> DgrefConfig:
         input_parm7=input_parm7,
         input_rst7=input_rst7,
         charge_sets=charge_sets,
+        states=states,
         statene=statene,
         pka_corr=pka_corr,
         cph_igb=cph_igb,
@@ -295,6 +322,83 @@ def read_charge_sets(path: Path) -> ChargeSets:
     )
 
 
+def select_charge_states(
+    charges: ChargeSets,
+    state_names: tuple[str, ...] | None,
+) -> ChargeSets:
+    """Return an ordered state subset while preserving the topology atom map."""
+    if state_names is None:
+        return charges
+    missing = [name for name in state_names if name not in charges.state_names]
+    if missing:
+        raise ValueError(
+            "cpin.states contains states absent from the charge table: "
+            + ", ".join(missing)
+        )
+    indices = tuple(charges.state_names.index(name) for name in state_names)
+    selected_charges = tuple(charges.state_charges[index] for index in indices)
+    selected_counts = tuple(charges.proton_counts[index] for index in indices)
+    if max(selected_counts) - min(selected_counts) != 1:
+        raise ValueError("Selected cpin.states must span exactly one protonation step")
+    prot_index = selected_counts.index(max(selected_counts))
+    deprot_index = selected_counts.index(min(selected_counts))
+    return ChargeSets(
+        atom_names=charges.atom_names,
+        prot_charges=selected_charges[prot_index],
+        deprot_charges=selected_charges[deprot_index],
+        proton_count_prot=selected_counts[prot_index],
+        proton_count_deprot=selected_counts[deprot_index],
+        state_names=state_names,
+        state_charges=selected_charges,
+        proton_counts=selected_counts,
+    )
+
+
+def omit_invariant_zero_charge_atoms(
+    charges: ChargeSets,
+    atom_names: tuple[str, ...],
+    tolerance: float = 1.0e-12,
+) -> ChargeSets:
+    """Remove explicitly named atoms only when they are zero in every state."""
+    if not atom_names:
+        return charges
+    missing = [name for name in atom_names if name not in charges.atom_names]
+    if missing:
+        raise ValueError(
+            "cpin.omit_atoms contains atoms absent from the charge table: "
+            + ", ".join(missing)
+        )
+    omitted = set(atom_names)
+    indices = tuple(
+        index for index, name in enumerate(charges.atom_names) if name not in omitted
+    )
+    state_charges = charges.state_charges or (
+        charges.prot_charges,
+        charges.deprot_charges,
+    )
+    for name in atom_names:
+        index = charges.atom_names.index(name)
+        values = [state[index] for state in state_charges]
+        if any(abs(value) > tolerance for value in values):
+            raise ValueError(
+                f"Cannot omit {name}; its charge is not zero in every selected state: "
+                + ", ".join(f"{value:+.8f}" for value in values)
+            )
+    selected_charges = tuple(
+        tuple(state[index] for index in indices) for state in state_charges
+    )
+    return ChargeSets(
+        atom_names=tuple(charges.atom_names[index] for index in indices),
+        prot_charges=tuple(charges.prot_charges[index] for index in indices),
+        deprot_charges=tuple(charges.deprot_charges[index] for index in indices),
+        proton_count_prot=charges.proton_count_prot,
+        proton_count_deprot=charges.proton_count_deprot,
+        state_names=charges.state_names,
+        state_charges=selected_charges,
+        proton_counts=charges.proton_counts,
+    )
+
+
 def _read_prmtop_flag(lines: list[str], name: str) -> list[str]:
     try:
         start = next(i for i, line in enumerate(lines) if line.strip() == f"%FLAG {name}")
@@ -318,7 +422,11 @@ def _read_prmtop_flag(lines: list[str], name: str) -> list[str]:
     return values
 
 
-def read_topology_info(path: Path, residue_name: str) -> TopologyInfo:
+def read_topology_residue_info(
+    path: Path,
+    residue_number: int,
+    residue_name: str,
+) -> TopologyInfo:
     lines = path.read_text().splitlines()
     pointers = [int(value) for value in _read_prmtop_flag(lines, "POINTERS")]
     natom = pointers[0]
@@ -328,12 +436,16 @@ def read_topology_info(path: Path, residue_name: str) -> TopologyInfo:
     residue_pointers = [
         int(value) for value in _read_prmtop_flag(lines, "RESIDUE_POINTER")[:nres]
     ]
-    matches = [i for i, label in enumerate(residue_labels) if label == residue_name]
-    if len(matches) != 1:
+    if residue_number < 1 or residue_number > nres:
         raise ValueError(
-            f"Topology must contain exactly one {residue_name} residue; found {len(matches)}"
+            f"Topology residue number {residue_number} is outside 1-{nres}"
         )
-    residue_index = matches[0]
+    residue_index = residue_number - 1
+    observed_name = residue_labels[residue_index]
+    if observed_name != residue_name:
+        raise ValueError(
+            f"Topology residue {residue_number} is {observed_name}, expected {residue_name}"
+        )
     first_atom = residue_pointers[residue_index]
     last_atom = (
         residue_pointers[residue_index + 1] - 1
@@ -356,6 +468,19 @@ def read_topology_info(path: Path, residue_name: str) -> TopologyInfo:
         atom_names=tuple(atom_names[first_atom - 1:last_atom]),
         first_solvent=first_solvent,
     )
+
+
+def read_topology_info(path: Path, residue_name: str) -> TopologyInfo:
+    lines = path.read_text().splitlines()
+    pointers = [int(value) for value in _read_prmtop_flag(lines, "POINTERS")]
+    nres = pointers[11]
+    residue_labels = _read_prmtop_flag(lines, "RESIDUE_LABEL")[:nres]
+    matches = [i for i, label in enumerate(residue_labels) if label == residue_name]
+    if len(matches) != 1:
+        raise ValueError(
+            f"Topology must contain exactly one {residue_name} residue; found {len(matches)}"
+        )
+    return read_topology_residue_info(path, matches[0] + 1, residue_name)
 
 
 def _wrapped_field(prefix: str, values: list[str], width: int = 80) -> list[str]:
@@ -433,54 +558,97 @@ def render_multistate_cpin(
     pka_corr: tuple[float, ...],
     cph_igb: int,
 ) -> str:
-    if topology.atom_names != charges.atom_names:
-        raise ValueError(
-            "Charge-set atom ordering does not match the topology residue: "
-            f"{charges.atom_names} != {topology.atom_names}"
-        )
-    state_charges = charges.state_charges or (
-        charges.prot_charges,
-        charges.deprot_charges,
+    return render_multi_residue_cpin(
+        system,
+        (CpinResidue(system, charges, topology, statene, pka_corr),),
+        cph_igb,
     )
-    proton_counts = charges.proton_counts or (
-        charges.proton_count_prot,
-        charges.proton_count_deprot,
-    )
-    if len(statene) != len(state_charges) or len(pka_corr) != len(state_charges):
-        raise ValueError(
-            "cpin.statene and cpin.pka_corr must match the charge-state count"
+
+
+def render_multi_residue_cpin(
+    system: str,
+    residues: tuple[CpinResidue, ...],
+    cph_igb: int,
+) -> str:
+    """Render an explicit-solvent CPIN for one or more titratable residues."""
+    if not residues:
+        raise ValueError("At least one titratable residue is required")
+    ordered = tuple(sorted(residues, key=lambda item: item.topology.residue_number))
+    residue_numbers = [item.topology.residue_number for item in ordered]
+    if len(set(residue_numbers)) != len(residue_numbers):
+        raise ValueError("Titratable topology residue numbers must be unique")
+    first_solvents = {item.topology.first_solvent for item in ordered}
+    if len(first_solvents) != 1:
+        raise ValueError("Titratable residues disagree on the first solvent atom")
+
+    flattened: list[float] = []
+    proton_counts: list[int] = []
+    statene_values: list[str] = []
+    pka_values: list[float] = []
+    state_counts: list[int] = []
+    for item in ordered:
+        if item.topology.atom_names != item.charges.atom_names:
+            raise ValueError(
+                "Charge-set atom ordering does not match topology residue "
+                f"{item.topology.residue_number}: "
+                f"{item.charges.atom_names} != {item.topology.atom_names}"
+            )
+        state_charges = item.charges.state_charges or (
+            item.charges.prot_charges,
+            item.charges.deprot_charges,
         )
-    flattened = [charge for state in state_charges for charge in state]
-    state_count = len(state_charges)
+        counts = item.charges.proton_counts or (
+            item.charges.proton_count_prot,
+            item.charges.proton_count_deprot,
+        )
+        if len(item.statene) != len(state_charges) or len(item.pka_corr) != len(
+            state_charges
+        ):
+            raise ValueError(
+                "cpin.statene and cpin.pka_corr must match each site's state count"
+            )
+        flattened.extend(charge for state in state_charges for charge in state)
+        proton_counts.extend(counts)
+        statene_values.extend(item.statene)
+        pka_values.extend(item.pka_corr)
+        state_counts.append(len(state_charges))
+
     lines = [
         "&CNSTPHE_LIMITS",
-        f" ntres=1, maxh={state_count}, natchrg={len(flattened)}, "
-        f"ntstates={state_count},",
+        f" ntres={len(ordered)}, maxh={max(state_counts)}, "
+        f"natchrg={len(flattened)}, ntstates={sum(state_counts)},",
         "/",
         "&CNSTPH",
     ]
     lines.extend(_wrapped_field(" CHRGDAT=", [f"{charge:.6f}" for charge in flattened]))
     lines.extend(_wrapped_field(" PROTCNT=", [str(value) for value in proton_counts]))
-    lines.extend(
-        _wrapped_field(
-            " RESNAME=",
-            [f"'System: {system}'", f"'Residue: {system} {topology.residue_number}'"],
+    # Match ParmEd's conventional label: residue name followed by one-based index.
+    residue_names = [f"'System: {system}'"] + [
+        f"'Residue: {item.residue_name} {item.topology.residue_number}'"
+        for item in ordered
+    ]
+    lines.extend(_wrapped_field(" RESNAME=", residue_names))
+    lines.extend(_wrapped_field(" RESSTATE=", ["0"] * len(ordered)))
+
+    first_charge = 0
+    first_state = 0
+    for index, (item, state_count) in enumerate(zip(ordered, state_counts)):
+        lines.append(
+            f" STATEINF({index})%FIRST_ATOM={item.topology.first_atom}, "
+            f"STATEINF({index})%FIRST_CHARGE={first_charge}, "
+            f"STATEINF({index})%FIRST_STATE={first_state},"
         )
-    )
-    lines.append(" RESSTATE=0,")
+        lines.append(
+            f" STATEINF({index})%NUM_ATOMS={len(item.charges.atom_names)}, "
+            f"STATEINF({index})%NUM_STATES={state_count},"
+        )
+        first_charge += len(item.charges.atom_names) * state_count
+        first_state += state_count
+
+    lines.extend(_wrapped_field(" STATENE=", statene_values))
+    lines.extend(_wrapped_field(" PKA_CORR=", [f"{value:.4f}" for value in pka_values]))
     lines.append(
-        " STATEINF(0)%FIRST_ATOM="
-        f"{topology.first_atom}, STATEINF(0)%FIRST_CHARGE=0, "
-        "STATEINF(0)%FIRST_STATE=0,"
-    )
-    lines.append(
-        f" STATEINF(0)%NUM_ATOMS={len(charges.atom_names)}, "
-        f"STATEINF(0)%NUM_STATES={state_count},"
-    )
-    lines.extend(_wrapped_field(" STATENE=", list(statene)))
-    lines.extend(_wrapped_field(" PKA_CORR=", [f"{value:.4f}" for value in pka_corr]))
-    lines.append(
-        f" TRESCNT=1, CPHFIRST_SOL={topology.first_solvent}, "
+        f" TRESCNT={len(ordered)}, CPHFIRST_SOL={next(iter(first_solvents))}, "
         f"CPH_IGB={cph_igb}, CPH_INTDIEL=1.0,"
     )
     lines.append("/")
@@ -488,6 +656,7 @@ def render_multistate_cpin(
 
 
 def render_cpin(cfg: DgrefConfig, charges: ChargeSets, topology: TopologyInfo) -> str:
+    charges = select_charge_states(charges, cfg.states)
     return render_multistate_cpin(
         cfg.system,
         charges,
@@ -535,7 +704,7 @@ fi
   -o dgref.out \\
   -inf mdinfo \\
   -log dgref.log \\
-  -p {cfg.input_parm7} \\
+  -p {prepared_parm7_name(cfg)} \\
   -c {cfg.input_rst7} \\
   -r dgref.rst7 \\
   -x dgref.nc \\
@@ -566,13 +735,29 @@ def dgref_dir(cfg: DgrefConfig, repo_root: Path) -> Path:
     return system_base_dir(cfg, repo_root) / "cphmd" / cfg.job_name
 
 
+def input_parm7_source(cfg: DgrefConfig, repo_root: Path) -> Path:
+    """Resolve a topology input while preserving the legacy prep-dir default."""
+    configured = Path(cfg.input_parm7)
+    if configured.is_absolute():
+        return configured
+    base = system_base_dir(cfg, repo_root)
+    if configured.parent == Path("."):
+        return base / "prep" / configured
+    return base / configured
+
+
+def prepared_parm7_name(cfg: DgrefConfig) -> str:
+    """Return the local topology basename used inside the DGref directory."""
+    return Path(cfg.input_parm7).name
+
+
 def prepare_dgref(
     cfg: DgrefConfig,
     repo_root: Path,
     output_dir: Path | None = None,
 ) -> Path:
     base = system_base_dir(cfg, repo_root)
-    parm7_source = base / "prep" / cfg.input_parm7
+    parm7_source = input_parm7_source(cfg, repo_root)
     rst7_source = base / "mdequil" / cfg.input_rst7
     for label, path in (("parm7", parm7_source), ("rst7", rst7_source)):
         if not path.is_file() or path.stat().st_size == 0:
@@ -583,7 +768,7 @@ def prepare_dgref(
     destination = output_dir.resolve() if output_dir else dgref_dir(cfg, repo_root)
     destination.mkdir(parents=True, exist_ok=True)
 
-    shutil.copy2(parm7_source, destination / cfg.input_parm7)
+    shutil.copy2(parm7_source, destination / prepared_parm7_name(cfg))
     shutil.copy2(rst7_source, destination / cfg.input_rst7)
     (destination / "dgref.cpin").write_text(render_cpin(cfg, charges, topology))
     (destination / "dgref.mdin").write_text(render_mdin(cfg))
@@ -627,9 +812,9 @@ def submit_dgref(
         return False
 
     base = system_base_dir(cfg, repo_root)
-    parm7_source = base / "prep" / cfg.input_parm7
+    parm7_source = input_parm7_source(cfg, repo_root)
     rst7_source = base / "mdequil" / cfg.input_rst7
-    prepared_parm7 = destination / cfg.input_parm7
+    prepared_parm7 = destination / prepared_parm7_name(cfg)
     prepared_rst7 = destination / cfg.input_rst7
     for label, source, prepared in (
         ("topology", parm7_source, prepared_parm7),

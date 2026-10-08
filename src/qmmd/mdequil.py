@@ -53,6 +53,8 @@ class MDEquilConfig:
     buffer: float
     prefix: str
     job_name: str
+    input_parm7: Path
+    input_rst7: Path
     md: MDConfig
     runtime: RuntimeConfig
     slurm: Optional[SlurmConfig] = None
@@ -99,11 +101,21 @@ def load_config(yaml_path: Path) -> MDEquilConfig:
     if data.get("slurm") is not None:
         slurm_cfg = SlurmConfig(job=SlurmJobConfig(**data["slurm"]["job"]))
 
+    prefix = data.get("prefix", "solv")
+    input_parm7 = data.get("input_parm7", f"{prefix}.parm7")
+    input_rst7 = data.get("input_rst7", f"{prefix}.rst7")
+    if not isinstance(input_parm7, str) or not input_parm7.strip():
+        raise ValueError("input_parm7 must be a nonempty path")
+    if not isinstance(input_rst7, str) or not input_rst7.strip():
+        raise ValueError("input_rst7 must be a nonempty path")
+
     return MDEquilConfig(
         system=data["system"],
         buffer=float(data["buffer"]),
-        prefix=data.get("prefix", "solv"),
+        prefix=prefix,
         job_name=data.get("job_name", "mdequil"),
+        input_parm7=Path(input_parm7),
+        input_rst7=Path(input_rst7),
         md=md_cfg,
         runtime=runtime_cfg,
         slurm=slurm_cfg,
@@ -185,9 +197,15 @@ def write_run_sh(cfg: MDEquilConfig, out_dir: Path, prep_dir_path: Path) -> Path
 
     env_lines = "\n".join([f"export {k}={v}" for k, v in cfg.runtime.env.items()])
 
-    # Use prep topology/coords as inputs
-    parm7 = (prep_dir_path / f"{cfg.prefix}.parm7").resolve()
-    rst7  = (prep_dir_path / f"{cfg.prefix}.rst7").resolve()
+    # Relative input paths are resolved from the system's prep directory.
+    parm7 = cfg.input_parm7
+    if not parm7.is_absolute():
+        parm7 = prep_dir_path / parm7
+    parm7 = parm7.resolve()
+    rst7 = cfg.input_rst7
+    if not rst7.is_absolute():
+        rst7 = prep_dir_path / rst7
+    rst7 = rst7.resolve()
 
     text = f"""\
 #!/usr/bin/env bash
@@ -311,8 +329,14 @@ def run_mdequil(yaml_path: Path) -> None:
     if not pdir.exists():
         raise FileNotFoundError(f"Missing prep dir: {pdir}")
 
-    parm7 = pdir / f"{cfg.prefix}.parm7"
-    rst7  = pdir / f"{cfg.prefix}.rst7"
+    parm7 = cfg.input_parm7
+    if not parm7.is_absolute():
+        parm7 = pdir / parm7
+    parm7 = parm7.resolve()
+    rst7 = cfg.input_rst7
+    if not rst7.is_absolute():
+        rst7 = pdir / rst7
+    rst7 = rst7.resolve()
     if not parm7.exists() or parm7.stat().st_size == 0:
         raise RuntimeError(f"Missing/empty input: {parm7}")
     if not rst7.exists() or rst7.stat().st_size == 0:
@@ -328,7 +352,8 @@ def run_mdequil(yaml_path: Path) -> None:
     (output_dir / "spec.yaml").write_text(yaml_path.read_text())
 
     print(f"OK: wrote md inputs + scripts in {output_dir}")
-    print(f"OK: using prep inputs from {pdir}")
+    print(f"OK: using topology {parm7}")
+    print(f"OK: using coordinates {rst7}")
     
     if slurm_sh is not None:
         print("Submitting job via sbatch...")

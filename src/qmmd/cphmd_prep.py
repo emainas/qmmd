@@ -43,6 +43,21 @@ class AcidPrepConfig:
 
 
 @dataclass(frozen=True)
+class MultiStateSpec:
+    name: str
+    mol2: Path
+    proton_count: int
+
+
+@dataclass(frozen=True)
+class MultiStatePrepConfig:
+    system: str
+    master_mol2: Path
+    states: tuple[MultiStateSpec, ...]
+    output_file: Path
+
+
+@dataclass(frozen=True)
 class FullMol2Atom:
     index: int
     name: str
@@ -70,6 +85,14 @@ class FullMol2:
 
 @dataclass(frozen=True)
 class AcidChargeStates:
+    atom_names: tuple[str, ...]
+    state_names: tuple[str, ...]
+    charges: tuple[tuple[float, ...], ...]
+    proton_counts: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class MultiStateChargeStates:
     atom_names: tuple[str, ...]
     state_names: tuple[str, ...]
     charges: tuple[tuple[float, ...], ...]
@@ -267,13 +290,75 @@ def _load_acid_config(yaml_path: Path, data: dict[object, object]) -> AcidPrepCo
     )
 
 
-def load_config(yaml_path: Path) -> CpHMDPrepConfig | AcidPrepConfig:
+def _load_multistate_config(
+    yaml_path: Path,
+    data: dict[object, object],
+) -> MultiStatePrepConfig:
+    resolved = yaml_path.resolve()
+    repo_root = find_repo_root(resolved)
+    system = data.get("system")
+    if not isinstance(system, str) or not system.strip():
+        raise ValueError("system must be a nonempty string")
+
+    master_mol2 = _repo_path(
+        repo_root, data.get("master_mol2"), "master_mol2"
+    )
+    if not master_mol2.is_file():
+        raise FileNotFoundError(f"Missing master_mol2: {master_mol2}")
+
+    raw_states = data.get("states")
+    if not isinstance(raw_states, list) or len(raw_states) < 2:
+        raise ValueError("states must contain at least two charge-state mappings")
+    states: list[MultiStateSpec] = []
+    for index, raw_state in enumerate(raw_states):
+        field = f"states[{index}]"
+        if not isinstance(raw_state, dict):
+            raise ValueError(f"{field} must be a YAML mapping")
+        name = raw_state.get("name")
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"{field}.name must be a nonempty string")
+        normalized_name = name.strip().lower()
+        if not normalized_name.replace("_", "").replace("-", "").isalnum():
+            raise ValueError(
+                f"{field}.name may contain only letters, numbers, '_' and '-'"
+            )
+        mol2 = _repo_path(repo_root, raw_state.get("mol2"), f"{field}.mol2")
+        if not mol2.is_file():
+            raise FileNotFoundError(f"Missing {field}.mol2: {mol2}")
+        proton_count = raw_state.get("proton_count")
+        if type(proton_count) is not int or proton_count < 0:
+            raise ValueError(f"{field}.proton_count must be a non-negative integer")
+        states.append(MultiStateSpec(normalized_name, mol2, proton_count))
+
+    names = [state.name for state in states]
+    if len(set(names)) != len(names):
+        raise ValueError("states must have unique names")
+    proton_counts = [state.proton_count for state in states]
+    if max(proton_counts) - min(proton_counts) != 1:
+        raise ValueError("states must span exactly one protonation step")
+    if master_mol2 not in {state.mol2 for state in states}:
+        raise ValueError("master_mol2 must identify one configured state MOL2 file")
+
+    output_file = _repo_path(repo_root, data.get("output_file"), "output_file")
+    return MultiStatePrepConfig(
+        system=system.strip(),
+        master_mol2=master_mol2,
+        states=tuple(states),
+        output_file=output_file,
+    )
+
+
+def load_config(
+    yaml_path: Path,
+) -> CpHMDPrepConfig | AcidPrepConfig | MultiStatePrepConfig:
     data = yaml.safe_load(yaml_path.resolve().read_text())
     if not isinstance(data, dict):
         raise ValueError("CpHMD prep configuration must be a YAML mapping")
     chemistry = data.get("chemistry")
     if chemistry is None:
         return _load_base_config(yaml_path)
+    if chemistry == "multistate_base":
+        return _load_multistate_config(yaml_path, data)
     if chemistry != "carboxylic_acid":
         raise ValueError(f"Unsupported cphmd-prep chemistry: {chemistry}")
     return _load_acid_config(yaml_path, data)
@@ -318,7 +403,9 @@ def read_mol2_atoms(path: Path) -> list[Mol2Atom]:
     return atoms
 
 
-def map_charges(cfg: CpHMDPrepConfig | AcidPrepConfig) -> list[ChargeMapping]:
+def map_charges(
+    cfg: CpHMDPrepConfig | AcidPrepConfig | MultiStatePrepConfig,
+) -> list[ChargeMapping]:
     if not isinstance(cfg, CpHMDPrepConfig):
         raise TypeError("map_charges is the two-state base mapping helper")
     master_atoms = read_mol2_atoms(cfg.master)
@@ -747,6 +834,111 @@ def format_acid_charge_states(states: AcidChargeStates) -> str:
     )
 
 
+def build_multistate_charge_states(
+    cfg: MultiStatePrepConfig,
+) -> MultiStateChargeStates:
+    master = read_full_mol2(cfg.master_mol2)
+    atom_names = tuple(atom.name for atom in master.atoms)
+    master_signature = tuple(
+        (atom.index, atom.name, atom.atom_type, atom.residue_id)
+        for atom in master.atoms
+    )
+    master_bonds = tuple(
+        (bond.index, bond.atom1, bond.atom2, bond.bond_type)
+        for bond in master.bonds
+    )
+    columns: list[tuple[float, ...]] = []
+    for state in cfg.states:
+        structure = read_full_mol2(state.mol2)
+        signature = tuple(
+            (atom.index, atom.name, atom.atom_type, atom.residue_id)
+            for atom in structure.atoms
+        )
+        if signature != master_signature:
+            raise ValueError(
+                f"State {state.name} atom ordering/types do not match master_mol2"
+            )
+        bonds = tuple(
+            (bond.index, bond.atom1, bond.atom2, bond.bond_type)
+            for bond in structure.bonds
+        )
+        if bonds != master_bonds:
+            raise ValueError(f"State {state.name} bonds do not match master_mol2")
+        for master_atom, state_atom in zip(
+            master.atoms, structure.atoms, strict=True
+        ):
+            maximum_delta = max(
+                abs(left - right)
+                for left, right in zip(
+                    master_atom.coordinates,
+                    state_atom.coordinates,
+                    strict=True,
+                )
+            )
+            if maximum_delta > 5.1e-4:
+                raise ValueError(
+                    f"State {state.name} coordinates differ at atom {state_atom.name}"
+                )
+        columns.append(tuple(atom.charge for atom in structure.atoms))
+    return MultiStateChargeStates(
+        atom_names=atom_names,
+        state_names=tuple(state.name for state in cfg.states),
+        charges=tuple(columns),
+        proton_counts=tuple(state.proton_count for state in cfg.states),
+    )
+
+
+def write_multistate_charge_sets(
+    path: Path,
+    states: MultiStateChargeStates,
+) -> None:
+    rows = [["atom_master", *(f"charge_{name}" for name in states.state_names)]]
+    for atom_index, atom_name in enumerate(states.atom_names):
+        rows.append(
+            [
+                atom_name,
+                *(f"{column[atom_index]:.12f}" for column in states.charges),
+            ]
+        )
+    rows.append(
+        ["TOTAL", *(f"{sum(column):+.12f}" for column in states.charges)]
+    )
+    rows.append(["PROTON_COUNT", *(str(value) for value in states.proton_counts)])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as handle:
+        csv.writer(handle).writerows(rows)
+
+
+def format_multistate_charge_states(states: MultiStateChargeStates) -> str:
+    rows = [
+        ["atom_master", *states.state_names],
+        *[
+            [
+                atom_name,
+                *(f"{column[atom_index]:.6f}" for column in states.charges),
+            ]
+            for atom_index, atom_name in enumerate(states.atom_names)
+        ],
+        ["TOTAL", *(f"{sum(column):+.6f}" for column in states.charges)],
+        ["PROTON_COUNT", *(str(value) for value in states.proton_counts)],
+    ]
+    widths = [
+        max(len(row[column]) for row in rows)
+        for column in range(len(rows[0]))
+    ]
+    return "\n".join(
+        "  ".join(value.ljust(widths[index]) for index, value in enumerate(row))
+        for row in rows
+    )
+
+
+def run_multistate_prep(cfg: MultiStatePrepConfig) -> None:
+    states = build_multistate_charge_states(cfg)
+    write_multistate_charge_sets(cfg.output_file, states)
+    print(format_multistate_charge_states(states))
+    print(f"OK: wrote multistate charge sets to {cfg.output_file}")
+
+
 def run_acid_prep(cfg: AcidPrepConfig) -> None:
     deprotonated = read_full_mol2(cfg.deprotonated_mol2)
     protonated = read_full_mol2(cfg.protonated_mol2)
@@ -765,6 +957,9 @@ def run_cphmd_prep(yaml_path: Path) -> None:
     cfg = load_config(yaml_path)
     if isinstance(cfg, AcidPrepConfig):
         run_acid_prep(cfg)
+        return
+    if isinstance(cfg, MultiStatePrepConfig):
+        run_multistate_prep(cfg)
         return
     mapping = map_charges(cfg)
     print(

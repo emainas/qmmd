@@ -1,0 +1,21 @@
+name: BLA
+
+leaprc_mol: leaprc.gaff2
+leaprc_sol: leaprc.water.tip3p
+frcmod_ion: frcmod.ionsjc_tip3p
+
+# Protonated TPS (+1) bonded to two deprotonated PRX residues (-1 each).
+mol2: systems/BLA/init/bla.mol2
+frcmod:
+  - systems/BLA/init/tps.frcmod
+  - systems/BLA/init/prx.frcmod
+
+water_model: TIP3PBOX
+buffer: 10.0
+
+# Neutralize the -1 zwitterionic BLA master topology.
+counterion: Na+
+counterion_num: 1
+
+input_dir: systems/BLA/init/
+prefix: solv

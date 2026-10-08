@@ -68,7 +68,7 @@ def main():
 
     cphmd_prep = sub.add_parser(
         "cphmd-prep",
-        help="Print master/deprotonated MOL2 atom and charge mapping",
+        help="Print and write aligned CpHMD MOL2 charge states",
     )
     cphmd_prep.add_argument("yaml", type=Path)
 
@@ -300,7 +300,7 @@ def main():
 
     us_prod_prep = sub.add_parser(
         "us-prod-prep",
-        help="Prepare restrained DCDFTBMD production inputs from equilibration restarts",
+        help="Prepare restrained DCDFTBMD production from equilibration output",
     )
     us_prod_prep.add_argument("yaml", type=Path)
 

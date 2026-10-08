@@ -1,15 +1,19 @@
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from qmmd.cphmd_dgref import (
     TopologyInfo,
+    input_parm7_source,
     load_config,
+    prepared_parm7_name,
     prepare_dgref,
     read_charge_sets,
     read_topology_info,
     render_cpin,
     render_mdin,
+    select_charge_states,
     submit_dgref,
 )
 
@@ -17,9 +21,31 @@ from qmmd.cphmd_dgref import (
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/MEA/cphmd/dgref.yaml"
 PR4_CONFIG = ROOT / "configs/PR4/cphmd/dgref.yaml"
+TPS_APP_CONFIG = ROOT / "configs/TPS/cphmd/dgref-app.yaml"
 
 
 class CpHMDDgrefTests(unittest.TestCase):
+    def test_tps_pairwise_state_selection(self):
+        cfg = load_config(TPS_APP_CONFIG)
+        all_charges = read_charge_sets(cfg.charge_sets)
+        charges = select_charge_states(all_charges, cfg.states)
+        topology = TopologyInfo(
+            residue_number=1,
+            first_atom=1,
+            atom_names=charges.atom_names,
+            first_solvent=61,
+        )
+
+        self.assertEqual(charges.state_names, ("ppp", "app"))
+        self.assertEqual(charges.proton_counts, (4, 3))
+        cpin = render_cpin(cfg, all_charges, topology)
+        self.assertIn("maxh=2", cpin)
+        self.assertIn("natchrg=120", cpin)
+        self.assertIn("ntstates=2", cpin)
+        self.assertIn("PROTCNT=4,3,", cpin)
+        self.assertIn("STATENE=DELTAGREF,0.0,", cpin)
+        self.assertIn("PKA_CORR=5.0000,0.0000,", cpin)
+
     def test_pr4_five_state_acid_cpin(self):
         cfg = load_config(PR4_CONFIG)
         charges = read_charge_sets(cfg.charge_sets)
@@ -96,6 +122,17 @@ class CpHMDDgrefTests(unittest.TestCase):
             self.assertIn("#SBATCH -t 5:00:00", slurm)
             self.assertIn("bash run.sh", slurm)
             self.assertFalse((destination / "dgref.out").exists())
+
+    def test_stage_relative_topology_uses_basename_in_bundle(self):
+        cfg = replace(
+            load_config(CONFIG),
+            input_parm7="mdequil/solv_modradii.parm7",
+        )
+        self.assertEqual(
+            input_parm7_source(cfg, ROOT),
+            ROOT / "systems/MEA/solv_5.5/mdequil/solv_modradii.parm7",
+        )
+        self.assertEqual(prepared_parm7_name(cfg), "solv_modradii.parm7")
 
     def test_submit_requires_confirmation_and_uses_sbatch_script(self):
         cfg = load_config(CONFIG)

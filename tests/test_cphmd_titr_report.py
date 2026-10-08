@@ -19,6 +19,10 @@ from qmmd.cphmd_titr_report import (
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "cphmd" / "cphmd.yaml"
 PR4_CONFIG = REPO / "configs" / "PR4" / "cphmd" / "cphmd.yaml"
+BLA_CONFIG = REPO / "configs" / "BLA" / "cphmd" / "cphmd.yaml"
+BLA_PRN_ONLY_CONFIG = (
+    REPO / "configs" / "BLA" / "cphmd" / "cphmd-prn-tails-mbondi2.yaml"
+)
 
 
 class CpHMDTitrReportTests(unittest.TestCase):
@@ -41,6 +45,41 @@ class CpHMDTitrReportTests(unittest.TestCase):
         assert cfg.syn_anti is not None
         self.assertEqual(cfg.syn_anti.syn_states, (1, 3))
         self.assertEqual(cfg.syn_anti.anti_states, (2, 4))
+
+    def test_bla_composite_report_maps_tps_and_both_prx_tails(self):
+        cfg = load_titr_report_config(BLA_CONFIG)
+        self.assertIsNotNone(cfg.composite)
+        assert cfg.composite is not None
+        self.assertIsNotNone(cfg.composite.tps)
+        self.assertIsNotNone(cfg.composite.prx)
+        assert cfg.composite.tps is not None
+        assert cfg.composite.prx is not None
+        self.assertEqual(cfg.composite.tps.residue_id, 1)
+        self.assertEqual(
+            (
+                cfg.composite.tps.protonated_state,
+                cfg.composite.tps.bpp_state,
+                cfg.composite.tps.cpp_state,
+            ),
+            (0, 1, 2),
+        )
+        self.assertEqual(cfg.composite.prx.residue_ids, (2, 3))
+        self.assertEqual(cfg.composite.prx.deprotonated_state, 0)
+        self.assertEqual(cfg.composite.prx.syn_states, (1, 3))
+        self.assertEqual(cfg.composite.prx.anti_states, (2, 4))
+
+    def test_bla_composite_report_allows_prn_only_control(self):
+        cfg = load_titr_report_config(BLA_PRN_ONLY_CONFIG)
+        self.assertIsNotNone(cfg.composite)
+        assert cfg.composite is not None
+        self.assertIsNone(cfg.composite.tps)
+        self.assertIsNotNone(cfg.composite.prx)
+        assert cfg.composite.prx is not None
+        self.assertEqual(cfg.composite.prx.residue_ids, (2, 3))
+        self.assertEqual(cfg.composite.prx.residue_name, "PRN")
+        self.assertEqual(cfg.composite.prx.deprotonated_state, 0)
+        self.assertEqual(cfg.composite.prx.syn_states, (1, 3))
+        self.assertEqual(cfg.composite.prx.anti_states, (2, 4))
 
     def test_syn_anti_fractions_are_conditional_on_protonation(self):
         records = [

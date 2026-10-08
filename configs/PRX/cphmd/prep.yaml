@@ -1,0 +1,30 @@
+system: PRX
+chemistry: carboxylic_acid
+
+input:
+  # Nine-atom transferable scaffold; the reference-only HA3 cap is separate.
+  deprotonated_mol2: systems/PRX/init/prx.mol2
+  dummy_geometry_pdb: systems/PRX/init/prx_cphmd.pdb
+  # Neutral O1-syn charge source with only the physical H11 proton present.
+  protonated_mol2: systems/PRX/init/prx_protonated.mol2
+
+carboxyl:
+  carbon: CG
+  oxygens: [O1, O2]
+
+  # Identifies the O1-syn proton position represented by protonated_mol2.
+  protonated_oxygen: O1
+  proton_atom: H11
+
+  dummy_protons:
+    O1:
+      syn: H11
+      anti: H12
+    O2:
+      syn: H21
+      anti: H22
+
+output:
+  master_mol2: systems/PRX/init/prx_cphmd.mol2
+  frcmod: systems/PRX/init/prx_cphmd.frcmod
+  charge_sets: configs/PRX/cphmd/charge_sets.csv

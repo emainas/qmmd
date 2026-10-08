@@ -13,7 +13,7 @@ from typing import Callable
 
 import yaml
 
-from qmmd.cphmd_dgref import find_repo_root, read_charge_sets
+from qmmd.cphmd_dgref import find_repo_root, read_charge_sets, select_charge_states
 from qmmd.cphmd_titr import TitrConfig, _replica_stem, load_titr_config, titr_dir
 
 
@@ -312,6 +312,51 @@ def _write_fraction_csv(
                 writer.writerow([f"{ph:.6f}", residue, residue_id, f"{value:.6f}"])
 
 
+def _column_proton_counts(
+    titr: TitrConfig,
+    columns: list[StateColumn],
+) -> tuple[tuple[int, ...], ...]:
+    """Return the local state-to-proton-count table for every CpH column."""
+    if not titr.sites:
+        if titr.charge_sets is None:
+            raise ValueError("Single-site titration has no charge table")
+        charges = select_charge_states(
+            read_charge_sets(titr.charge_sets), titr.states
+        )
+        counts = charges.proton_counts or (
+            charges.proton_count_prot,
+            charges.proton_count_deprot,
+        )
+        return tuple(counts for _column in columns)
+
+    by_residue: dict[tuple[str, int], tuple[int, ...]] = {}
+    for site in titr.sites:
+        charges = select_charge_states(
+            read_charge_sets(site.charge_sets), site.states
+        )
+        counts = charges.proton_counts or (
+            charges.proton_count_prot,
+            charges.proton_count_deprot,
+        )
+        by_residue[(site.residue_name, site.residue_number)] = counts
+
+    missing = sorted(
+        {
+            (column.residue, column.residue_id)
+            for column in columns
+            if (column.residue, column.residue_id) not in by_residue
+        }
+    )
+    if missing:
+        labels = ", ".join(f"{name}:{resid}" for name, resid in missing)
+        raise ValueError(
+            "CPPTRAJ reported titratable residues absent from cpin.sites: " + labels
+        )
+    return tuple(
+        by_residue[(column.residue, column.residue_id)] for column in columns
+    )
+
+
 def _write_state_csvs(
     cfg: TitrPostConfig,
     work_dir: Path,
@@ -334,16 +379,21 @@ def _write_state_csvs(
     if member_set != set(range(len(titr.ph_values))):
         raise ValueError("Sorted CpH state members do not match the configured pH ladder")
 
-    charges = read_charge_sets(titr.charge_sets)
-    proton_counts = charges.proton_counts or (
-        charges.proton_count_prot,
-        charges.proton_count_deprot,
-    )
+    column_counts = _column_proton_counts(titr, columns)
     invalid_states = sorted(
-        {state for row in rows for state in row if state < 0 or state >= len(proton_counts)}
+        {
+            (columns[index].residue, columns[index].residue_id, state)
+            for row in rows
+            for index, state in enumerate(row)
+            if state < 0 or state >= len(column_counts[index])
+        }
     )
     if invalid_states:
-        raise ValueError(f"CpH records contain undefined state indices: {invalid_states}")
+        details = ", ".join(
+            f"{residue}:{residue_id} state {state}"
+            for residue, residue_id, state in invalid_states
+        )
+        raise ValueError("CpH records contain undefined local state indices: " + details)
 
     first_time = _first_cpout_time(source / f"{_replica_stem(1, len(titr.ph_values))}.cpout")
     state_dt = ntcnstph * float(titr.cntrl["dt"])
@@ -364,7 +414,7 @@ def _write_state_csvs(
         )
         for record, values in enumerate(rows, start=1):
             cpout_time = first_time + (record - 1) * state_dt
-            for column, state in zip(columns, values):
+            for column, state, proton_counts in zip(columns, values, column_counts):
                 writer.writerow(
                     [
                         record,
@@ -401,7 +451,7 @@ def _write_state_csvs(
             record = trajectory_frame * records_per_coordinate
             values = rows[record - 1]
             cpout_time = first_time + (record - 1) * state_dt
-            for column, state in zip(columns, values):
+            for column, state, proton_counts in zip(columns, values, column_counts):
                 ph = titr.ph_values[column.member]
                 writer.writerow(
                     [

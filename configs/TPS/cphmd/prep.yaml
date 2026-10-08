@@ -1,0 +1,25 @@
+system: TPS
+chemistry: multistate_base
+
+# PPP is the single-topology master and contains all four pyrrolic hydrogens.
+master_mol2: systems/TPS/init/tps.mol2
+
+# State order is retained in the printed table and charge_sets.csv.
+states:
+  - name: ppp
+    mol2: systems/TPS/init/tps.mol2
+    proton_count: 4
+  - name: app
+    mol2: systems/TPS/init/atp.mol2
+    proton_count: 3
+  - name: bpp
+    mol2: systems/TPS/init/btp.mol2
+    proton_count: 3
+  - name: cpp
+    mol2: systems/TPS/init/ctp.mol2
+    proton_count: 3
+  - name: dpp
+    mol2: systems/TPS/init/dtp.mol2
+    proton_count: 3
+
+output_file: configs/TPS/cphmd/charge_sets.csv

@@ -2,10 +2,30 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from qmmd.mdequil import MDStage, load_config, render_mdin, render_dihedral_restraints, write_mdin_files
+from qmmd.mdequil import (
+    MDStage,
+    load_config,
+    render_mdin,
+    render_dihedral_restraints,
+    write_mdin_files,
+    write_run_sh,
+)
 
 
 class RestraintTests(unittest.TestCase):
+    def test_custom_prep_topology_is_used_by_every_stage(self):
+        root = Path(__file__).resolve().parents[1]
+        cfg = load_config(root / "configs/BLA/mdequil/mdequil.yaml")
+        self.assertEqual(cfg.input_parm7, Path("solv_modradii.parm7"))
+        self.assertEqual(cfg.input_rst7, Path("solv.rst7"))
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            tmp_path = Path(tmp)
+            prep = tmp_path / "prep"
+            out = tmp_path / "mdequil"
+            script = write_run_sh(cfg, out, prep).read_text()
+            modified = str((prep / "solv_modradii.parm7").resolve())
+            self.assertEqual(script.count(f'-p "{modified}"'), 4)
+
     def test_old_input_unchanged(self):
         stage = MDStage('test', {'imin': 1})
         self.assertEqual(render_mdin(stage), 'test\n&cntrl\n  imin=1,\n/\n')

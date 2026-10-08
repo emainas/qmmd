@@ -138,12 +138,27 @@ def render_prod_cpptraj_input(
     )
 
 
+def resolve_prod_topology(cfg: USProdConfig, repo_root: Path) -> Path:
+    """Return the topology matching the composition used for DFTB windows."""
+    if cfg.equil.conversion.source_stage == "salt":
+        topology = (
+            pull_dir(cfg.run.pull, repo_root)
+            / cfg.equil.conversion.source_stage
+            / "ready.parm7"
+        )
+    else:
+        topology, _, _ = source_paths(cfg.run.pull, repo_root)
+    if not topology.is_file() or topology.stat().st_size == 0:
+        raise RuntimeError(f"Missing/empty production analysis topology: {topology}")
+    return topology
+
+
 def collect_prod_samples(
     cfg: USProdConfig, yaml_text: str, repo_root: Path
 ) -> tuple[list[EquilSample], list[int]]:
     """Calculate production torsions from coordinate trajectories with cpptraj."""
     root = pull_dir(cfg.run.pull, repo_root)
-    topology, _, _ = source_paths(cfg.run.pull, repo_root)
+    topology = resolve_prod_topology(cfg, repo_root)
     solute_residue, _ = amber_residue_for_atoms(
         topology, cfg.run.pull.restraint.atoms
     )

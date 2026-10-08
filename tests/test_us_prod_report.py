@@ -10,7 +10,9 @@ from qmmd.us_prod_report import (
     build_pull_target_ladder,
     read_dftb_trajectory_times,
     render_prod_cpptraj_input,
+    resolve_prod_topology,
 )
+from qmmd.us_prod import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,6 +50,14 @@ class USProdReportTests(unittest.TestCase):
         self.assertIn("fiximagedbonds :1", text)
         self.assertIn("autoimage", text)
         self.assertIn("dihedral production @5 @3 @4 @11", text)
+
+    def test_bv_salted_report_uses_matching_salt_topology(self):
+        config = ROOT / "configs/BV/us/prod-dih.yaml"
+        topology = resolve_prod_topology(load_config(config), ROOT)
+        self.assertEqual(
+            topology,
+            ROOT / "systems/BV/solv_4.0/us-single15/salt/ready.parm7",
+        )
 
     def test_density_histogram_is_normalized_and_gaussian_is_fitted(self):
         samples = [

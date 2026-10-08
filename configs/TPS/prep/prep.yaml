@@ -1,13 +1,17 @@
 name: TPS
+
 leaprc_mol: leaprc.gaff2
 leaprc_sol: leaprc.water.tip3p
 frcmod_ion: frcmod.ionsjc_tip3p
-frcmod: systems/TPS/tps.frcmod
 
-mol2: systems/TPS/tps.mol2
+# Fully protonated (+1) PPP master state.
+mol2: systems/TPS/init/tps.mol2
+frcmod: systems/TPS/init/tps.frcmod
 
 water_model: TIP3PBOX
-buffer: 6.5
+buffer: 10.0
+
+# Neutralize the +1 PPP master topology.
 counterion: Cl-
 counterion_num: 1
 

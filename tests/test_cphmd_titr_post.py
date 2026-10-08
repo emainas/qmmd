@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 
 from qmmd.cphmd_titr_post import (
+    StateColumn,
+    _column_proton_counts,
     load_titr_post_config,
     parse_fraction_plot,
     parse_state_table,
@@ -13,6 +15,7 @@ from qmmd.cphmd_titr_post import (
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "cphmd" / "cphmd.yaml"
+BLA_CONFIG = REPO / "configs" / "BLA" / "cphmd" / "cphmd.yaml"
 
 
 class CpHMDTitrPostTests(unittest.TestCase):
@@ -57,6 +60,20 @@ class CpHMDTitrPostTests(unittest.TestCase):
             labels, fraction_rows = parse_fraction_plot(fractions)
             self.assertEqual(labels, ["MEA:1"])
             self.assertEqual(fraction_rows[-1], (7.5, [0.8]))
+
+    def test_composite_sites_use_residue_specific_local_state_tables(self):
+        cfg = load_titr_post_config(BLA_CONFIG)
+        columns = [
+            StateColumn("TPS", 1, 0),
+            StateColumn("PRX", 2, 0),
+            StateColumn("PRX", 3, 0),
+            StateColumn("TPS", 1, 1),
+        ]
+        counts = _column_proton_counts(cfg.titr, columns)
+        self.assertEqual(counts[0], (4, 3, 3))
+        self.assertEqual(counts[1], (0, 1, 1, 1, 1))
+        self.assertEqual(counts[2], (0, 1, 1, 1, 1))
+        self.assertEqual(counts[3], (4, 3, 3))
 
 
 if __name__ == "__main__":

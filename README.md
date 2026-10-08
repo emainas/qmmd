@@ -23,7 +23,7 @@ qmmd --help
 Generates a solvated system using `tleap`.
 
 **Inputs**
-- `mol2`, `frcmod`
+- `mol2`, and either one `frcmod` path or an ordered list of frcmod paths
 - water model
 - buffer size
 - optional counterions
@@ -32,6 +32,22 @@ Generates a solvated system using `tleap`.
 - solv.par7
 - solv.rst7
 - spec.yaml
+
+An optional non-titrating cap or other auxiliary MOL2 can be combined with the
+primary solute before solvation. Bond selections use one-based
+`residue.atom` notation in the combined LEaP unit:
+
+```yaml
+additional_mol2:
+  - unit: cap
+    mol2: systems/PRX/init/prx_cap.mol2
+inter_residue_bonds:
+  - [1.CA, 2.HA3]
+```
+
+The additional component remains a distinct topology residue. This allows a
+reference-only cap to complete the model compound without adding the cap atoms
+to the titratable residue or its CPIN charge arrays.
 
 **Run**
 
@@ -44,6 +60,10 @@ qmmd prep configs/<molecule>/prep/prep.yaml
 ## mdequil - MD Equilibration
 
 NVT and NPT equilibration with classical force field using Amber's sander module
+
+By default, `mdequil` reads `<prefix>.parm7` and `<prefix>.rst7` from the
+system's `prep/` directory. Set `input_parm7` or `input_rst7` to another file
+in that directory when a post-LEaP topology or coordinate variant is required.
 
 **Run**
 
@@ -89,6 +109,12 @@ the deprotonated state is shown with zero deprotonated charge. The same mapping,
 charge totals, and proton counts are written as CSV to the configured
 `output_file`.
 
+For a base with multiple deprotonated tautomers, use
+`chemistry: multistate_base`, one master MOL2 containing the union of all atoms,
+and an ordered `states` list. Every state must have identical atom ordering,
+types, coordinates, and bonds; dummy hydrogens carry zero charge in the states
+where they are absent. The command prints and writes all state columns together.
+
 For `chemistry: carboxylic_acid`, the command combines a deprotonated MOL2,
 the geometry-only PDB from `cphmd-build`, and a protonated charge-source MOL2.
 It writes a four-dummy master MOL2, the dual-dummy carboxylate frcmod, and five
@@ -105,6 +131,12 @@ Amber topology, copies the topology and equilibrated restart, and writes the
 calibration CPIN, MD input, run script, Slurm script, and YAML snapshot under
 `systems/<system>/<prefix>_<buffer>/cphmd/<job_name>/`. It enforces the NVT
 ensemble required by Amber CpHMD and prepares files only.
+For a pairwise calibration drawn from a multistate charge table, optional
+`cpin.states` selects the ordered states written to that CPIN; unselected
+states are absent and cannot participate in the calibration.
+For `input_parm7`, a bare filename retains the legacy `prep/` lookup; a staged
+path such as `mdequil/solv_modradii.parm7` is resolved from the system directory
+and copied into the DGref directory under its basename.
 
 ```bash
 qmmd cphmd-dgref-prep configs/<molecule>/cphmd/dgref.yaml
@@ -136,8 +168,19 @@ from the calibration log, builds CPINs that preserve all configured protonation
 microstates, writes one MDIN per pH,
 and creates the Amber groupfile and MPI/Slurm launch scripts under the sibling
 `systems/<system>/<prefix>_<buffer>/cphmd/<job_name>/` directory. The pH ladder,
-MD controls, and resources are defined in YAML. This command prepares files
-only and never launches or submits them.
+MD controls, and resources are defined in YAML. For a calibrated two-state
+subset of a larger charge table, `cpin.states` selects the ordered states to
+include and `cpin.pka_corr` must contain one value per selected state. This
+command prepares files only and never launches or submits them.
+
+For a molecule decomposed into several titratable topology residues,
+`cpin.sites` builds one composite CPIN. Each site identifies its one-based
+topology residue number, residue name, charge table, state subset, per-state
+reference energy, and `pka_corr`. A state energy may point to a successful
+DGref log and apply a multiplier, allowing independent pairwise calibrations
+to be placed on one common energy gauge. `omit_atoms` is restricted to atoms
+whose charge is zero in every selected state; this supports zero-charge model
+caps that disappear when residues are bonded into the full molecule.
 
 ```bash
 qmmd cphmd-titr-prep configs/<molecule>/cphmd/cphmd.yaml
@@ -168,6 +211,13 @@ qmmd cphmd-titr-post configs/<molecule>/cphmd/cphmd.yaml
 
 Generate titration, protonation-sampling, and replica-exchange diagnostics from
 the fixed-pH postprocessing outputs:
+
+For a composite molecule, optional `titration_report.composite` definitions
+map selected state names onto chemically meaningful observables. The report can
+separate a TPS protonated/deprotonated equilibrium from its conditional BPP/CPP
+tautomer balance, report each PRX tail's titration and conditional syn/anti
+balance, and calculate the joint zero-, one-, and two-proton tail populations.
+Each composite figure has a corresponding aligned CSV table.
 
 ```bash
 qmmd cphmd-titr-report configs/<molecule>/cphmd/cphmd.yaml
@@ -442,6 +492,26 @@ scripts, exact `prod_spec.yaml`, and SKF links. Production uses
 `RESTART=TRUE`, so coordinates, velocities, and the MD restart state come from
 that binary file. Preparation never runs DCDFTBMD or submits a job, and it
 refuses to overwrite any existing production directory.
+For a scheduler-terminated equilibration that still has a valid binary restart,
+`allow_incomplete_equilibration: true` explicitly permits production
+preparation from that checkpoint. The default is `false`. The override checks
+the restart against its backup checkpoint when available and writes
+`equil_source.json` in every production directory with the source status,
+reported endpoint, size, and SHA-256 checksum. This option does not reconstruct
+a restart from the text trajectory. To limit the exception to known
+scheduler-terminated windows, add their zero-based indices, for example
+`incomplete_equilibration_windows: [0]`. Any other non-normal window remains a
+hard error, which prevents accidentally copying a restart from a job that is
+still running. Omitting the list retains the all-window override behavior.
+Alternatively, `equil_source: last_trajectory_frame` starts from the final
+complete XYZ frame currently present in each equilibration `traject`. It ignores
+an incomplete growing-file tail and therefore also works for running or
+cancelled equilibration jobs. This mode writes the selected coordinates to
+`equil_last_frame.xyz`, records their step, time, and SHA-256 digest in
+`equil_source.json`, and requires `RESTART=FALSE READVELOCITY=FALSE`. Since an
+XYZ trajectory contains no velocities or thermostat restart state, DCDFTBMD
+initializes new velocities at `INITTEMP`; production time starts from zero and
+`NSTEP` is the production length rather than a cumulative endpoint.
 The submit command requires the complete production window set, exact
 `prod_spec.yaml` matches, and all required inputs, restart files, and scripts.
 It displays every target and asks once before submitting one Slurm job per

@@ -10,14 +10,23 @@ from qmmd.cphmd_titr import (
     render_replica_mdin,
     render_run_script,
     render_slurm_script,
+    render_titration_cpin,
     submit_titration,
 )
-from qmmd.cphmd_dgref import read_charge_sets, read_topology_info
+from qmmd.cphmd_dgref import (
+    read_charge_sets,
+    read_topology_info,
+    select_charge_states,
+)
 
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "cphmd" / "cphmd.yaml"
 PR4_CONFIG = REPO / "configs" / "PR4" / "cphmd" / "cphmd.yaml"
+TPS_BPP_CONFIG = REPO / "configs" / "TPS" / "cphmd" / "cphmd-bpp.yaml"
+TPS_CPP_CONFIG = REPO / "configs" / "TPS" / "cphmd" / "cphmd-cpp.yaml"
+TPS_DPP_CONFIG = REPO / "configs" / "TPS" / "cphmd" / "cphmd-dpp.yaml"
+BLA_CONFIG = REPO / "configs" / "BLA" / "cphmd" / "cphmd.yaml"
 
 
 class CpHMDTitrPrepTests(unittest.TestCase):
@@ -47,6 +56,72 @@ class CpHMDTitrPrepTests(unittest.TestCase):
         self.assertIn("ntstates=5", cpin)
         self.assertIn("PROTCNT=0,1,1,1,1,", cpin)
         self.assertEqual(cpin.count(f"{dgref:.6f}"), 4)
+
+    def test_tps_configs_select_only_the_calibrated_tautomer(self):
+        expected = {
+            TPS_BPP_CONFIG: ("bpp", 28.633604, 4.5),
+            TPS_CPP_CONFIG: ("cpp", 36.241073, 4.5),
+            TPS_DPP_CONFIG: ("dpp", 40.366656, 5.0),
+        }
+        for config, (tautomer, dgref, pka) in expected.items():
+            with self.subTest(tautomer=tautomer):
+                cfg = load_titr_config(config)
+                charges = select_charge_states(
+                    read_charge_sets(cfg.charge_sets), cfg.states
+                )
+                topology = read_topology_info(
+                    REPO
+                    / "systems"
+                    / "TPS"
+                    / "solv_10.0"
+                    / "prep"
+                    / cfg.input_parm7,
+                    cfg.system,
+                )
+                cpin = render_titration_cpin(cfg, charges, topology, dgref)
+
+                self.assertEqual(cfg.states, ("ppp", tautomer))
+                self.assertEqual(cfg.pka_corr, (pka, 0.0))
+                self.assertEqual(charges.state_names, ("ppp", tautomer))
+                self.assertEqual(charges.proton_counts, (4, 3))
+                self.assertIn("ntstates=2", cpin)
+                self.assertIn("PROTCNT=4,3,", cpin)
+                self.assertIn(f"STATENE={dgref:.6f},0.0,", cpin)
+
+    def test_bla_composite_cpin_maps_three_topology_residues(self):
+        cfg = load_titr_config(BLA_CONFIG)
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            destination, dgref = prepare_titration(
+                cfg, REPO, Path(tmp) / "titr"
+            )
+            cpin = (destination / "replica-01.cpin").read_text()
+            provenance = (destination / "dgref-value.yaml").read_text()
+
+        self.assertIsNone(dgref)
+        self.assertEqual(len(cfg.sites), 3)
+        self.assertEqual(cfg.cntrl["nstlim"] * cfg.cntrl["numexchg"], 50000)
+        self.assertEqual(cfg.cntrl["dt"], 0.002)
+        self.assertIn("ntres=3, maxh=5, natchrg=304, ntstates=13", cpin)
+        self.assertIn("PROTCNT=4,3,3,0,1,1,1,1,0,1,1,1,1,", cpin)
+        self.assertIn(
+            "RESNAME='System: BLA','Residue: TPS 1','Residue: PRX 2',"
+            "'Residue: PRX 3',",
+            cpin,
+        )
+        self.assertIn(
+            "STATEINF(1)%FIRST_ATOM=59, STATEINF(1)%FIRST_CHARGE=174, "
+            "STATEINF(1)%FIRST_STATE=3,",
+            cpin,
+        )
+        self.assertIn(
+            "STATEINF(2)%FIRST_ATOM=72, STATEINF(2)%FIRST_CHARGE=239, "
+            "STATEINF(2)%FIRST_STATE=8,",
+            cpin,
+        )
+        self.assertIn("STATENE=0.000000,-28.633604,-36.241073", cpin)
+        self.assertIn("TRESCNT=3, CPHFIRST_SOL=85", cpin)
+        self.assertIn("multi-residue CPIN", provenance)
+        self.assertIn("multiplier: -1.0", provenance)
 
     def test_reads_only_successful_final_dgref(self):
         successful = """

@@ -12,12 +12,17 @@ from typing import Any, Callable
 import yaml
 
 from qmmd.cphmd_dgref import (
+    CpinResidue,
     ChargeSets,
     TopologyInfo,
     find_repo_root,
+    omit_invariant_zero_charge_atoms,
     read_charge_sets,
     read_topology_info,
+    read_topology_residue_info,
+    render_multi_residue_cpin,
     render_multistate_cpin,
+    select_charge_states,
 )
 
 
@@ -50,6 +55,25 @@ class TitrSlurmJobConfig:
 
 
 @dataclass(frozen=True)
+class TitrStateEnergy:
+    value: float
+    dgref_log: Path | None = None
+    source_dgref: float | None = None
+    multiplier: float = 1.0
+
+
+@dataclass(frozen=True)
+class TitrSiteConfig:
+    residue_number: int
+    residue_name: str
+    charge_sets: Path
+    states: tuple[str, ...] | None
+    omit_atoms: tuple[str, ...]
+    statene: tuple[TitrStateEnergy, ...]
+    pka_corr: tuple[float, ...]
+
+
+@dataclass(frozen=True)
 class TitrConfig:
     yaml_path: Path
     system: str
@@ -58,9 +82,11 @@ class TitrConfig:
     job_name: str
     input_parm7: str
     input_rst7: str
-    charge_sets: Path
-    dgref_job_name: str
+    charge_sets: Path | None
+    states: tuple[str, ...] | None
+    dgref_job_name: str | None
     pka_corr: tuple[float, ...]
+    sites: tuple[TitrSiteConfig, ...]
     cph_igb: int
     ph_values: tuple[float, ...]
     description: str
@@ -90,6 +116,100 @@ def _resolve_repo_path(value: object, field: str, repo_root: Path) -> Path:
     return resolved
 
 
+def _state_names(value: object, field: str) -> tuple[str, ...] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) and item.strip() for item in value
+    ):
+        raise ValueError(f"{field} must be a list of nonempty state names")
+    states = tuple(item.strip() for item in value)
+    if len(states) < 2:
+        raise ValueError(f"{field} must select at least two charge states")
+    if len(set(states)) != len(states):
+        raise ValueError(f"{field} must not contain duplicates")
+    return states
+
+
+def _pka_values(value: object, field: str) -> tuple[float, ...]:
+    if not isinstance(value, list) or len(value) < 2:
+        raise ValueError(f"{field} must contain at least two numeric values")
+    try:
+        return tuple(float(item) for item in value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field} must contain only numeric values") from exc
+
+
+def _site_energy(
+    value: object,
+    field: str,
+    repo_root: Path,
+) -> TitrStateEnergy:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return TitrStateEnergy(value=float(value))
+    item = _mapping(value, field)
+    log_path = _resolve_repo_path(item.get("dgref_log"), f"{field}.dgref_log", repo_root)
+    multiplier = float(item.get("multiplier", 1.0))
+    source_dgref = read_converged_dgref(log_path)
+    return TitrStateEnergy(
+        value=multiplier * source_dgref,
+        dgref_log=log_path,
+        source_dgref=source_dgref,
+        multiplier=multiplier,
+    )
+
+
+def _load_site(
+    value: object,
+    index: int,
+    repo_root: Path,
+) -> TitrSiteConfig:
+    field = f"cpin.sites[{index}]"
+    site = _mapping(value, field)
+    residue_number = int(site["residue_number"])
+    if residue_number <= 0:
+        raise ValueError(f"{field}.residue_number must be positive")
+    residue_name = _nonempty_string(site.get("residue_name"), f"{field}.residue_name")
+    charge_sets = _resolve_repo_path(
+        site.get("charge_sets"), f"{field}.charge_sets", repo_root
+    )
+    states = _state_names(site.get("states"), f"{field}.states")
+    omit_value = site.get("omit_atoms", [])
+    if not isinstance(omit_value, list) or not all(
+        isinstance(atom, str) and atom.strip() for atom in omit_value
+    ):
+        raise ValueError(f"{field}.omit_atoms must be a list of atom names")
+    omit_atoms = tuple(atom.strip() for atom in omit_value)
+    if len(set(omit_atoms)) != len(omit_atoms):
+        raise ValueError(f"{field}.omit_atoms must not contain duplicates")
+
+    charges = select_charge_states(read_charge_sets(charge_sets), states)
+    charges = omit_invariant_zero_charge_atoms(charges, omit_atoms)
+    state_count = len(charges.state_charges)
+    pka_corr = _pka_values(site.get("pka_corr"), f"{field}.pka_corr")
+    raw_statene = site.get("statene")
+    if not isinstance(raw_statene, list):
+        raise ValueError(f"{field}.statene must be a list")
+    statene = tuple(
+        _site_energy(item, f"{field}.statene[{state_index}]", repo_root)
+        for state_index, item in enumerate(raw_statene)
+    )
+    if len(statene) != state_count or len(pka_corr) != state_count:
+        raise ValueError(
+            f"{field}.statene and {field}.pka_corr must contain one value per "
+            f"selected charge state ({state_count})"
+        )
+    return TitrSiteConfig(
+        residue_number=residue_number,
+        residue_name=residue_name,
+        charge_sets=charge_sets,
+        states=states,
+        omit_atoms=omit_atoms,
+        statene=statene,
+        pka_corr=pka_corr,
+    )
+
+
 def load_titr_config(yaml_path: Path) -> TitrConfig:
     resolved = yaml_path.resolve()
     data = yaml.safe_load(resolved.read_text())
@@ -102,25 +222,47 @@ def load_titr_config(yaml_path: Path) -> TitrConfig:
     job_name = _nonempty_string(data.get("job_name"), "job_name")
     input_parm7 = _nonempty_string(data.get("input_parm7"), "input_parm7")
     input_rst7 = _nonempty_string(data.get("input_rst7"), "input_rst7")
-    dgref_job_name = _nonempty_string(data.get("dgref_job_name"), "dgref_job_name")
-    if job_name == dgref_job_name:
-        raise ValueError("job_name must differ from dgref_job_name")
     buffer = float(data["buffer"])
     if buffer <= 0:
         raise ValueError("buffer must be positive")
 
     cpin = _mapping(data.get("cpin"), "cpin")
-    charge_sets = _resolve_repo_path(cpin.get("charge_sets"), "cpin.charge_sets", repo_root)
-    pka_values = cpin.get("pka_corr")
-    if not isinstance(pka_values, list) or len(pka_values) < 2:
-        raise ValueError("cpin.pka_corr must contain at least two numeric values")
-    pka_corr = tuple(float(value) for value in pka_values)
-    state_count = len(read_charge_sets(charge_sets).state_charges)
-    if len(pka_corr) != state_count:
-        raise ValueError(
-            "cpin.pka_corr must contain one value per charge state "
-            f"({state_count})"
+    raw_sites = cpin.get("sites")
+    if raw_sites is None:
+        sites: tuple[TitrSiteConfig, ...] = ()
+        dgref_job_name = _nonempty_string(
+            data.get("dgref_job_name"), "dgref_job_name"
         )
+        if job_name == dgref_job_name:
+            raise ValueError("job_name must differ from dgref_job_name")
+        charge_sets = _resolve_repo_path(
+            cpin.get("charge_sets"), "cpin.charge_sets", repo_root
+        )
+        states = _state_names(cpin.get("states"), "cpin.states")
+        pka_corr = _pka_values(cpin.get("pka_corr"), "cpin.pka_corr")
+        selected_charges = select_charge_states(read_charge_sets(charge_sets), states)
+        state_count = len(selected_charges.state_charges)
+        if len(pka_corr) != state_count:
+            raise ValueError(
+                "cpin.pka_corr must contain one value per charge state "
+                f"({state_count})"
+            )
+    else:
+        if not isinstance(raw_sites, list) or not raw_sites:
+            raise ValueError("cpin.sites must be a nonempty list")
+        sites = tuple(
+            _load_site(value, index, repo_root)
+            for index, value in enumerate(raw_sites)
+        )
+        residue_numbers = [site.residue_number for site in sites]
+        if len(set(residue_numbers)) != len(residue_numbers):
+            raise ValueError("cpin.sites residue_number values must be unique")
+        if residue_numbers != sorted(residue_numbers):
+            raise ValueError("cpin.sites must be ordered by residue_number")
+        dgref_job_name = None
+        charge_sets = None
+        states = None
+        pka_corr = ()
     cph_igb = int(cpin["cph_igb"])
     if cph_igb not in {1, 2, 5, 7, 8}:
         raise ValueError("cpin.cph_igb must be one of 1, 2, 5, 7, or 8")
@@ -207,8 +349,10 @@ def load_titr_config(yaml_path: Path) -> TitrConfig:
         input_parm7=input_parm7,
         input_rst7=input_rst7,
         charge_sets=charge_sets,
+        states=states,
         dgref_job_name=dgref_job_name,
         pka_corr=pka_corr,
+        sites=sites,
         cph_igb=cph_igb,
         ph_values=ph_values,
         description=description,
@@ -331,6 +475,46 @@ def render_dgref_provenance(dgref: float, dgref_log: Path, repo_root: Path) -> s
     )
 
 
+def render_site_provenance(cfg: TitrConfig, repo_root: Path) -> str:
+    sites: list[dict[str, Any]] = []
+    for site in cfg.sites:
+        energies: list[dict[str, Any]] = []
+        for state_name, energy in zip(
+            select_charge_states(
+                read_charge_sets(site.charge_sets), site.states
+            ).state_names,
+            site.statene,
+        ):
+            item: dict[str, Any] = {
+                "state": state_name,
+                "statene_kcal_mol": energy.value,
+            }
+            if energy.dgref_log is not None:
+                item.update(
+                    {
+                        "source": str(energy.dgref_log.relative_to(repo_root)),
+                        "source_dgref_kcal_mol": energy.source_dgref,
+                        "multiplier": energy.multiplier,
+                    }
+                )
+            energies.append(item)
+        sites.append(
+            {
+                "residue_number": site.residue_number,
+                "residue_name": site.residue_name,
+                "states": energies,
+                "pka_corr": list(site.pka_corr),
+            }
+        )
+    return yaml.safe_dump(
+        {
+            "method": "multi-residue CPIN assembled from successful DGref calibrations",
+            "sites": sites,
+        },
+        sort_keys=False,
+    )
+
+
 def render_titration_cpin(
     cfg: TitrConfig,
     charges: ChargeSets,
@@ -360,23 +544,76 @@ def render_titration_cpin(
     )
 
 
+def render_configured_cpin(
+    cfg: TitrConfig,
+    topology_path: Path,
+    repo_root: Path,
+) -> tuple[str, str, tuple[float, ...]]:
+    """Render legacy one-site or explicit multi-site CPIN and its provenance."""
+    if cfg.sites:
+        residues: list[CpinResidue] = []
+        source_values: list[float] = []
+        for site in cfg.sites:
+            charges = select_charge_states(
+                read_charge_sets(site.charge_sets), site.states
+            )
+            charges = omit_invariant_zero_charge_atoms(charges, site.omit_atoms)
+            topology = read_topology_residue_info(
+                topology_path, site.residue_number, site.residue_name
+            )
+            residues.append(
+                CpinResidue(
+                    residue_name=site.residue_name,
+                    charges=charges,
+                    topology=topology,
+                    statene=tuple(f"{energy.value:.6f}" for energy in site.statene),
+                    pka_corr=site.pka_corr,
+                )
+            )
+            source_values.extend(
+                energy.source_dgref
+                for energy in site.statene
+                if energy.source_dgref is not None
+            )
+        return (
+            render_multi_residue_cpin(cfg.system, tuple(residues), cfg.cph_igb),
+            render_site_provenance(cfg, repo_root),
+            tuple(source_values),
+        )
+
+    if cfg.dgref_job_name is None or cfg.charge_sets is None:
+        raise ValueError("Single-site CPIN requires dgref_job_name and charge_sets")
+    dgref_log = (
+        system_base_dir(cfg, repo_root)
+        / "cphmd"
+        / cfg.dgref_job_name
+        / "dgref.log"
+    )
+    dgref = read_converged_dgref(dgref_log)
+    charges = select_charge_states(read_charge_sets(cfg.charge_sets), cfg.states)
+    topology = read_topology_info(topology_path, cfg.system)
+    return (
+        render_titration_cpin(cfg, charges, topology, dgref),
+        render_dgref_provenance(dgref, dgref_log, repo_root),
+        (dgref,),
+    )
+
+
 def prepare_titration(
     cfg: TitrConfig,
     repo_root: Path,
     output_dir: Path | None = None,
-) -> tuple[Path, float]:
+) -> tuple[Path, float | None]:
     base = system_base_dir(cfg, repo_root)
     parm7_source = base / "prep" / cfg.input_parm7
     rst7_source = base / "mdequil" / cfg.input_rst7
-    dgref_log = base / "cphmd" / cfg.dgref_job_name / "dgref.log"
     for label, path in (("parm7", parm7_source), ("rst7", rst7_source)):
         if not path.is_file() or path.stat().st_size == 0:
             raise FileNotFoundError(f"Missing/empty {label} input: {path}")
 
-    dgref = read_converged_dgref(dgref_log)
-    charges = read_charge_sets(cfg.charge_sets)
-    topology = read_topology_info(parm7_source, cfg.system)
-    cpin_text = render_titration_cpin(cfg, charges, topology, dgref)
+    cpin_text, provenance, dgrefs = render_configured_cpin(
+        cfg, parm7_source, repo_root
+    )
 
     destination = output_dir.resolve() if output_dir else titr_dir(cfg, repo_root)
     destination.mkdir(parents=True, exist_ok=True)
@@ -392,9 +629,7 @@ def prepare_titration(
 
     (destination / "groupfile").write_text(render_groupfile(cfg))
     (destination / "ph-ladder.csv").write_text(render_ladder_csv(cfg))
-    (destination / "dgref-value.yaml").write_text(
-        render_dgref_provenance(dgref, dgref_log, repo_root)
-    )
+    (destination / "dgref-value.yaml").write_text(provenance)
     run_script = destination / "run.sh"
     run_script.write_text(render_run_script(cfg))
     run_script.chmod(0o755)
@@ -402,7 +637,7 @@ def prepare_titration(
     slurm_script.write_text(render_slurm_script(cfg))
     slurm_script.chmod(0o755)
     (destination / "cphmd_spec.yaml").write_text(cfg.yaml_path.read_text())
-    return destination, dgref
+    return destination, dgrefs[0] if len(dgrefs) == 1 else None
 
 
 def run_cphmd_titr_prep(yaml_path: Path) -> None:
@@ -411,7 +646,10 @@ def run_cphmd_titr_prep(yaml_path: Path) -> None:
     destination, dgref = prepare_titration(cfg, find_repo_root(resolved))
     print(f"OK: wrote RECpHMD titration inputs in {destination}")
     print(f"OK: {len(cfg.ph_values)} replicas spanning pH {cfg.ph_values[0]:g}-{cfg.ph_values[-1]:g}")
-    print(f"OK: CPIN uses converged DGref = {dgref:+.6f} kcal/mol")
+    if dgref is None:
+        print(f"OK: CPIN contains {len(cfg.sites)} calibrated titratable residues")
+    else:
+        print(f"OK: CPIN uses converged DGref = {dgref:+.6f} kcal/mol")
     print("NOTE: preparation only; no Amber job was run or submitted")
 
 
@@ -470,16 +708,14 @@ def submit_titration(
             print(f"SKIP: prepared {label} differs from {source}")
             return False
 
-    dgref_log = base / "cphmd" / cfg.dgref_job_name / "dgref.log"
-    dgref = read_converged_dgref(dgref_log)
-    charges = read_charge_sets(cfg.charge_sets)
-    topology = read_topology_info(prepared_parm7, cfg.system)
-    cpin_text = render_titration_cpin(cfg, charges, topology, dgref)
+    cpin_text, provenance, _dgrefs = render_configured_cpin(
+        cfg, prepared_parm7, repo_root
+    )
 
     expected_text = {
         "groupfile": render_groupfile(cfg),
         "ph-ladder.csv": render_ladder_csv(cfg),
-        "dgref-value.yaml": render_dgref_provenance(dgref, dgref_log, repo_root),
+        "dgref-value.yaml": provenance,
         "run.sh": render_run_script(cfg),
         "slurm.sh": render_slurm_script(cfg),
     }

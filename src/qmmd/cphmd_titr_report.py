@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from qmmd.cphmd_dgref import find_repo_root, read_charge_sets
+from qmmd.cphmd_dgref import find_repo_root, read_charge_sets, select_charge_states
 from qmmd.cphmd_titr_post import (
     TitrPostConfig,
     load_titr_post_config,
@@ -39,6 +39,7 @@ class TitrReportConfig:
     slope_window_exchanges: int
     style: Path
     syn_anti: SynAntiConfig | None
+    composite: CompositeReportConfig | None
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,36 @@ class SynAntiConfig:
     anti_names: tuple[str, ...]
     syn_states: tuple[int, ...]
     anti_states: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class TpsDecompositionConfig:
+    residue_id: int
+    residue_name: str
+    protonated_name: str
+    bpp_name: str
+    cpp_name: str
+    protonated_state: int
+    bpp_state: int
+    cpp_state: int
+
+
+@dataclass(frozen=True)
+class PrxDecompositionConfig:
+    residue_ids: tuple[int, int]
+    residue_name: str
+    deprotonated_name: str
+    syn_names: tuple[str, ...]
+    anti_names: tuple[str, ...]
+    deprotonated_state: int
+    syn_states: tuple[int, ...]
+    anti_states: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class CompositeReportConfig:
+    tps: TpsDecompositionConfig | None
+    prx: PrxDecompositionConfig | None
 
 
 @dataclass(frozen=True)
@@ -92,6 +123,145 @@ def _child_path(value: object, field: str, default: str) -> str:
     if not text or path.is_absolute() or ".." in path.parts or path == Path("."):
         raise ValueError(f"{field} must be a child path")
     return text
+
+
+def _name_list(value: object, field: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{field} must be a nonempty list of state names")
+    names = tuple(str(item).strip() for item in value)
+    if any(not name for name in names) or len(set(names)) != len(names):
+        raise ValueError(f"{field} must contain unique nonempty state names")
+    return names
+
+
+def _site_state_lookup(
+    post: TitrPostConfig,
+    residue_id: int,
+    expected_name: str,
+    field: str,
+) -> tuple[dict[str, int], tuple[int, ...]]:
+    matches = [site for site in post.titr.sites if site.residue_number == residue_id]
+    if len(matches) != 1:
+        raise ValueError(f"{field}.residue_id must identify exactly one cpin.sites entry")
+    site = matches[0]
+    if site.residue_name != expected_name:
+        raise ValueError(
+            f"{field} expects residue {expected_name}:{residue_id}, "
+            f"but cpin.sites defines {site.residue_name}:{residue_id}"
+        )
+    charges = select_charge_states(read_charge_sets(site.charge_sets), site.states)
+    return (
+        {name: index for index, name in enumerate(charges.state_names)},
+        charges.proton_counts,
+    )
+
+
+def _load_composite_report(
+    value: object,
+    post: TitrPostConfig,
+) -> CompositeReportConfig | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("titration_report.composite must be a YAML mapping")
+    if not post.titr.sites:
+        raise ValueError("titration_report.composite requires cpin.sites")
+
+    tps: TpsDecompositionConfig | None = None
+    tps_raw = value.get("tps")
+    if tps_raw is not None:
+        if not isinstance(tps_raw, dict):
+            raise ValueError("titration_report.composite.tps must be a YAML mapping")
+        tps_id = int(tps_raw["residue_id"])
+        tps_name = str(tps_raw.get("residue_name", "TPS")).strip()
+        protonated_name = str(tps_raw.get("protonated_state", "ppp")).strip()
+        bpp_name = str(tps_raw.get("bpp_state", "bpp")).strip()
+        cpp_name = str(tps_raw.get("cpp_state", "cpp")).strip()
+        tps_lookup, tps_counts = _site_state_lookup(
+            post, tps_id, tps_name, "titration_report.composite.tps"
+        )
+        tps_names = {protonated_name, bpp_name, cpp_name}
+        unknown = sorted(tps_names - tps_lookup.keys())
+        if unknown:
+            raise ValueError("Unknown TPS decomposition states: " + ", ".join(unknown))
+        if tps_names != set(tps_lookup):
+            raise ValueError("TPS decomposition must account for every selected TPS state")
+        if not (
+            tps_counts[tps_lookup[protonated_name]]
+            > tps_counts[tps_lookup[bpp_name]]
+            == tps_counts[tps_lookup[cpp_name]]
+        ):
+            raise ValueError(
+                "TPS decomposition requires PPP protonated and BPP/CPP deprotonated"
+            )
+        tps = TpsDecompositionConfig(
+            residue_id=tps_id,
+            residue_name=tps_name,
+            protonated_name=protonated_name,
+            bpp_name=bpp_name,
+            cpp_name=cpp_name,
+            protonated_state=tps_lookup[protonated_name],
+            bpp_state=tps_lookup[bpp_name],
+            cpp_state=tps_lookup[cpp_name],
+        )
+
+    prx: PrxDecompositionConfig | None = None
+    prx_raw = value.get("prx")
+    if prx_raw is not None:
+        if not isinstance(prx_raw, dict):
+            raise ValueError("titration_report.composite.prx must be a YAML mapping")
+        raw_ids = prx_raw.get("residue_ids")
+        if not isinstance(raw_ids, list) or len(raw_ids) != 2:
+            raise ValueError(
+                "titration_report.composite.prx.residue_ids must contain two IDs"
+            )
+        prx_ids = (int(raw_ids[0]), int(raw_ids[1]))
+        if prx_ids[0] == prx_ids[1] or min(prx_ids) < 1:
+            raise ValueError("PRX residue IDs must be distinct and one-based")
+        prx_name = str(prx_raw.get("residue_name", "PRX")).strip()
+        deprot_name = str(prx_raw.get("deprotonated_state", "deprot")).strip()
+        syn_names = _name_list(prx_raw.get("syn_states"), "composite.prx.syn_states")
+        anti_names = _name_list(prx_raw.get("anti_states"), "composite.prx.anti_states")
+        if set(syn_names) & set(anti_names):
+            raise ValueError("PRX syn and anti state groups must not overlap")
+        lookups: list[dict[str, int]] = []
+        counts_list: list[tuple[int, ...]] = []
+        for residue_id in prx_ids:
+            lookup, counts = _site_state_lookup(
+                post, residue_id, prx_name, "titration_report.composite.prx"
+            )
+            lookups.append(lookup)
+            counts_list.append(counts)
+        if lookups[0] != lookups[1] or counts_list[0] != counts_list[1]:
+            raise ValueError("Both PRX sites must use identical selected state definitions")
+        prx_lookup = lookups[0]
+        configured = {deprot_name, *syn_names, *anti_names}
+        unknown = sorted(configured - prx_lookup.keys())
+        if unknown:
+            raise ValueError("Unknown PRX decomposition states: " + ", ".join(unknown))
+        if configured != set(prx_lookup):
+            raise ValueError("PRX decomposition must account for every selected PRX state")
+        counts = counts_list[0]
+        deprot_state = prx_lookup[deprot_name]
+        protonated = {prx_lookup[name] for name in (*syn_names, *anti_names)}
+        if counts[deprot_state] != min(counts) or protonated != {
+            index for index, count in enumerate(counts) if count == max(counts)
+        }:
+            raise ValueError("PRX syn/anti groups must partition all protonated states")
+        prx = PrxDecompositionConfig(
+            residue_ids=prx_ids,
+            residue_name=prx_name,
+            deprotonated_name=deprot_name,
+            syn_names=syn_names,
+            anti_names=anti_names,
+            deprotonated_state=deprot_state,
+            syn_states=tuple(prx_lookup[name] for name in syn_names),
+            anti_states=tuple(prx_lookup[name] for name in anti_names),
+        )
+
+    if tps is None and prx is None:
+        raise ValueError("titration_report.composite must define tps, prx, or both")
+    return CompositeReportConfig(tps=tps, prx=prx)
 
 
 def load_titr_report_config(yaml_path: Path) -> TitrReportConfig:
@@ -180,6 +350,8 @@ def load_titr_report_config(yaml_path: Path) -> TitrReportConfig:
             anti_states=tuple(state_lookup[name] for name in anti_names),
         )
 
+    composite = _load_composite_report(raw.get("composite"), post)
+
     return TitrReportConfig(
         post=post,
         output_dir=output_dir,
@@ -192,6 +364,7 @@ def load_titr_report_config(yaml_path: Path) -> TitrReportConfig:
         slope_window_exchanges=slope_window,
         style=style,
         syn_anti=syn_anti,
+        composite=composite,
     )
 
 
@@ -902,6 +1075,361 @@ def _plot_syn_anti_populations(
     plt.close(fig)
 
 
+def _group_residue_records(
+    cfg: TitrReportConfig,
+    records: list[ProtonationRecord],
+    residue_name: str,
+    residue_id: int,
+) -> dict[float, list[ProtonationRecord]]:
+    grouped: dict[float, list[ProtonationRecord]] = {}
+    dt = float(cfg.post.titr.cntrl["dt"])
+    for record in records:
+        if record.residue == residue_name and record.residue_id == residue_id:
+            if record.md_step * dt > cfg.discard_time_ps + 1.0e-12:
+                grouped.setdefault(record.ph, []).append(record)
+    if sorted(grouped) != list(cfg.post.titr.ph_values):
+        raise ValueError(
+            f"Filtered records for {residue_name}:{residue_id} do not cover the pH ladder"
+        )
+    for values in grouped.values():
+        values.sort(key=lambda record: record.record)
+    return grouped
+
+
+def _mean_block_sem(values: np.ndarray, block_count: int) -> tuple[float, float]:
+    if len(values) < block_count:
+        raise ValueError(
+            f"Only {len(values)} records remain; cannot form {block_count} blocks"
+        )
+    blocks = np.asarray(
+        [float(values[index].mean()) for index in np.array_split(np.arange(len(values)), block_count)]
+    )
+    return float(values.mean()), float(blocks.std(ddof=1) / math.sqrt(block_count))
+
+
+def _plot_bla_tps(
+    cfg: TitrReportConfig,
+    path: Path,
+    rows: list[dict[str, float]],
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.style.use(cfg.style)
+    ph = np.asarray([row["pH"] for row in rows])
+    fig, (titr_ax, taut_ax) = plt.subplots(
+        2, 1, figsize=(8.0, 7.8), sharex=True,
+        height_ratios=[1.25, 1.0], constrained_layout=True,
+    )
+    titr_ax.errorbar(
+        ph, [row["ppp_fraction"] for row in rows],
+        yerr=[row["ppp_sem"] for row in rows], marker="o", capsize=3,
+        label="Protonated PPP",
+    )
+    titr_ax.errorbar(
+        ph, [row["deprotonated_fraction"] for row in rows],
+        yerr=[row["deprotonated_sem"] for row in rows], marker="s", capsize=3,
+        label="Deprotonated BPP + CPP",
+    )
+    titr_ax.axhline(0.5, color="0.55", ls="--", lw=0.9)
+    titr_ax.set(ylabel="Molar fraction", ylim=(-0.03, 1.03), title="TPS protonation equilibrium")
+    titr_ax.legend()
+
+    taut_ax.plot(ph, [row["bpp_fraction_of_deprotonated"] for row in rows], marker="o", label="BPP / (BPP + CPP)")
+    taut_ax.plot(ph, [row["cpp_fraction_of_deprotonated"] for row in rows], marker="s", label="CPP / (BPP + CPP)")
+    taut_ax.axhline(0.5, color="0.55", ls="--", lw=0.9)
+    taut_ax.set(xlabel="pH", ylabel="Conditional fraction", ylim=(-0.03, 1.03), title="Deprotonated TPS tautomer balance")
+    taut_ax.set_xticks(ph)
+    taut_ax.legend()
+    fig.suptitle("BLA TPS: PPP ⇌ (BPP + CPP)", fontsize=15)
+    fig.savefig(path, dpi=300)
+    plt.close(fig)
+
+
+def _plot_bla_prx_titration(
+    cfg: TitrReportConfig,
+    path: Path,
+    rows: list[dict[str, float]],
+    residue_ids: tuple[int, int],
+    residue_name: str,
+) -> list[HHFit | None]:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.style.use(cfg.style)
+    ph = np.asarray([row["pH"] for row in rows])
+    fig, ax = plt.subplots(figsize=(8.0, 5.4), constrained_layout=True)
+    fits: list[HHFit | None] = []
+    dense = np.linspace(ph.min() - 0.2, ph.max() + 0.2, 400)
+    for index, residue_id in enumerate(residue_ids, start=1):
+        fraction = np.asarray([row[f"prx{index}_protonated_fraction"] for row in rows])
+        sem = np.asarray([row[f"prx{index}_sem"] for row in rows])
+        fit: HHFit | None
+        try:
+            fit = fit_henderson_hasselbalch(ph, fraction, cfg.fit_hill)
+        except ValueError:
+            fit = None
+        fits.append(fit)
+        label = f"{residue_name} tail {index} (residue {residue_id})"
+        ax.errorbar(ph, fraction, yerr=sem, marker="o" if index == 1 else "s", capsize=3, ls="none", label=label)
+        if fit is not None:
+            ax.plot(dense, hh_fraction(dense, fit), label=f"{label} HH fit: pKa={fit.pka:.2f}")
+    ax.axhline(0.5, color="0.55", ls="--", lw=0.9)
+    ax.set(
+        xlabel="pH",
+        ylabel="Protonated fraction",
+        ylim=(-0.03, 1.03),
+        title=f"Individual {residue_name} tail titration curves",
+    )
+    ax.set_xticks(ph)
+    ax.legend()
+    fig.savefig(path, dpi=300)
+    plt.close(fig)
+    return fits
+
+
+def _plot_bla_prx_syn_anti(
+    cfg: TitrReportConfig,
+    path: Path,
+    rows: list[dict[str, float]],
+    residue_ids: tuple[int, int],
+    residue_name: str,
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.style.use(cfg.style)
+    ph = np.asarray([row["pH"] for row in rows])
+    fig, axes = plt.subplots(2, 1, figsize=(8.0, 7.4), sharex=True, constrained_layout=True)
+    for index, (ax, residue_id) in enumerate(zip(axes, residue_ids), start=1):
+        ax.plot(ph, [row[f"prx{index}_syn_fraction"] for row in rows], marker="o", label="Syn / protonated")
+        ax.plot(ph, [row[f"prx{index}_anti_fraction"] for row in rows], marker="s", label="Anti / protonated")
+        ax.axhline(0.5, color="0.55", ls="--", lw=0.9)
+        ax.set(
+            ylabel="Conditional fraction", ylim=(-0.03, 1.03),
+            title=f"{residue_name} tail {index} (residue {residue_id}) syn/anti balance",
+        )
+        ax.legend()
+    axes[-1].set_xlabel("pH")
+    axes[-1].set_xticks(ph)
+    fig.suptitle(
+        f"{residue_name} conformers within each protonated tail ensemble", fontsize=15
+    )
+    fig.savefig(path, dpi=300)
+    plt.close(fig)
+
+
+def _plot_bla_joint_tails(
+    cfg: TitrReportConfig,
+    path: Path,
+    rows: list[dict[str, float]],
+    residue_name: str,
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.style.use(cfg.style)
+    ph = np.asarray([row["pH"] for row in rows])
+    fig, ax = plt.subplots(figsize=(8.0, 5.4), constrained_layout=True)
+    for count, marker in zip(range(3), ("o", "s", "^")):
+        ax.errorbar(
+            ph,
+            [row[f"fraction_{count}H"] for row in rows],
+            yerr=[row[f"sem_{count}H"] for row in rows],
+            marker=marker, capsize=3, label=f"{count} protonated tail{'s' if count != 1 else ''}",
+        )
+    ax.set(
+        xlabel="pH",
+        ylabel="Joint molar fraction",
+        ylim=(-0.03, 1.03),
+        title=f"Joint protonation of both {residue_name} tails",
+    )
+    ax.set_xticks(ph)
+    ax.legend()
+    fig.savefig(path, dpi=300)
+    plt.close(fig)
+
+
+def _write_composite_report(
+    cfg: TitrReportConfig,
+    work: Path,
+    records: list[ProtonationRecord],
+) -> dict[str, object]:
+    assert cfg.composite is not None
+    composite = cfg.composite
+    ph_values = np.asarray(cfg.post.titr.ph_values, dtype=float)
+    tps_grouped = (
+        _group_residue_records(
+            cfg, records, composite.tps.residue_name, composite.tps.residue_id
+        )
+        if composite.tps is not None
+        else None
+    )
+    prx_grouped = (
+        [
+            _group_residue_records(
+                cfg, records, composite.prx.residue_name, residue_id
+            )
+            for residue_id in composite.prx.residue_ids
+        ]
+        if composite.prx is not None
+        else None
+    )
+
+    tps_rows: list[dict[str, float]] = []
+    prx_rows: list[dict[str, float]] = []
+    syn_rows: list[dict[str, float]] = []
+    joint_rows: list[dict[str, float]] = []
+    syn_set = set(composite.prx.syn_states) if composite.prx is not None else set()
+    anti_set = set(composite.prx.anti_states) if composite.prx is not None else set()
+    protonated_set = syn_set | anti_set
+
+    for ph in ph_values:
+        if composite.tps is not None and tps_grouped is not None:
+            tps_records = tps_grouped[float(ph)]
+            tps_states = np.asarray([record.state for record in tps_records])
+            ppp = tps_states == composite.tps.protonated_state
+            bpp = tps_states == composite.tps.bpp_state
+            cpp = tps_states == composite.tps.cpp_state
+            deprot = bpp | cpp
+            ppp_mean, ppp_sem = _mean_block_sem(ppp.astype(float), cfg.block_count)
+            deprot_mean, deprot_sem = _mean_block_sem(
+                deprot.astype(float), cfg.block_count
+            )
+            denominator = int(deprot.sum())
+            tps_rows.append(
+                {
+                    "pH": float(ph),
+                    "records": float(len(tps_records)),
+                    "ppp_fraction": ppp_mean,
+                    "ppp_sem": ppp_sem,
+                    "deprotonated_fraction": deprot_mean,
+                    "deprotonated_sem": deprot_sem,
+                    "bpp_fraction_total": float(bpp.mean()),
+                    "cpp_fraction_total": float(cpp.mean()),
+                    "bpp_fraction_of_deprotonated": (
+                        float(bpp.sum() / denominator) if denominator else math.nan
+                    ),
+                    "cpp_fraction_of_deprotonated": (
+                        float(cpp.sum() / denominator) if denominator else math.nan
+                    ),
+                    "deprotonated_samples": float(denominator),
+                }
+            )
+
+        if composite.prx is not None and prx_grouped is not None:
+            prx_row: dict[str, float] = {"pH": float(ph)}
+            syn_row: dict[str, float] = {"pH": float(ph)}
+            aligned: list[dict[int, ProtonationRecord]] = []
+            for index, grouped in enumerate(prx_grouped, start=1):
+                tail_records = grouped[float(ph)]
+                aligned.append({record.record: record for record in tail_records})
+                protonated = np.asarray(
+                    [record.state in protonated_set for record in tail_records]
+                )
+                mean, sem = _mean_block_sem(
+                    protonated.astype(float), cfg.block_count
+                )
+                syn_count = sum(record.state in syn_set for record in tail_records)
+                anti_count = sum(record.state in anti_set for record in tail_records)
+                total = syn_count + anti_count
+                prx_row[f"prx{index}_protonated_fraction"] = mean
+                prx_row[f"prx{index}_sem"] = sem
+                syn_row[f"prx{index}_syn_fraction"] = (
+                    syn_count / total if total else math.nan
+                )
+                syn_row[f"prx{index}_anti_fraction"] = (
+                    anti_count / total if total else math.nan
+                )
+                syn_row[f"prx{index}_protonated_samples"] = float(total)
+            prx_rows.append(prx_row)
+            syn_rows.append(syn_row)
+
+            if set(aligned[0]) != set(aligned[1]):
+                raise ValueError(f"PRX tail records are not aligned at pH {ph:g}")
+            proton_counts = np.asarray(
+                [
+                    int(aligned[0][record].state in protonated_set)
+                    + int(aligned[1][record].state in protonated_set)
+                    for record in sorted(aligned[0])
+                ]
+            )
+            joint_row: dict[str, float] = {
+                "pH": float(ph),
+                "records": float(len(proton_counts)),
+            }
+            for count in range(3):
+                fraction, sem = _mean_block_sem(
+                    (proton_counts == count).astype(float), cfg.block_count
+                )
+                joint_row[f"fraction_{count}H"] = fraction
+                joint_row[f"sem_{count}H"] = sem
+            joint_rows.append(joint_row)
+
+    def write_dict_csv(name: str, rows: list[dict[str, float]]) -> None:
+        with (work / name).open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+
+    output_tables: list[str] = []
+    summary: dict[str, object] = {}
+    if composite.tps is not None:
+        write_dict_csv("tps-titration-tautomers.csv", tps_rows)
+        _plot_bla_tps(cfg, work / "tps-titration-tautomers.png", tps_rows)
+        output_tables.append("tps-titration-tautomers.csv")
+        summary["tps_residue_id"] = composite.tps.residue_id
+
+    if composite.prx is not None:
+        write_dict_csv("prx-titration.csv", prx_rows)
+        write_dict_csv("prx-syn-anti.csv", syn_rows)
+        write_dict_csv("prx-joint-protonation.csv", joint_rows)
+        fits = _plot_bla_prx_titration(
+            cfg,
+            work / "prx-titration.png",
+            prx_rows,
+            composite.prx.residue_ids,
+            composite.prx.residue_name,
+        )
+        _plot_bla_prx_syn_anti(
+            cfg,
+            work / "prx-syn-anti.png",
+            syn_rows,
+            composite.prx.residue_ids,
+            composite.prx.residue_name,
+        )
+        _plot_bla_joint_tails(
+            cfg,
+            work / "prx-joint-protonation.png",
+            joint_rows,
+            composite.prx.residue_name,
+        )
+        output_tables.extend(
+            ["prx-titration.csv", "prx-syn-anti.csv", "prx-joint-protonation.csv"]
+        )
+        summary["prx_residue_ids"] = list(composite.prx.residue_ids)
+        summary["prx_fitted_pKa"] = [
+            None if fit is None else fit.pka for fit in fits
+        ]
+
+    included = [
+        name
+        for name, configured in (("TPS", composite.tps), ("two joint tails", composite.prx))
+        if configured is not None
+    ]
+    summary["definition"] = "Composite analysis of " + " and ".join(included)
+    summary["output_tables"] = output_tables
+    return summary
+
+
 def build_titration_report(cfg: TitrReportConfig, repo_root: Path) -> Path:
     post = _validate_postprocessed_data(cfg, repo_root)
     destination = report_dir(cfg, repo_root)
@@ -960,6 +1488,11 @@ def build_titration_report(cfg: TitrReportConfig, repo_root: Path) -> Path:
         _plot_titration_curve(cfg, work / "titration-curve.png", ph, fraction, sem, fit, block_fits)
         _plot_protonation_timeseries(cfg, work / "protonation-timeseries.png", grouped, max_protons)
         _plot_state_overlap(cfg, work / "protonation-state-overlap.png", ph, overlap, edges)
+        composite_summary = (
+            _write_composite_report(cfg, work, records)
+            if cfg.composite is not None
+            else None
+        )
         if syn_anti_rows is not None:
             _write_csv(
                 work / "syn-anti-populations.csv",
@@ -1047,6 +1580,8 @@ def build_titration_report(cfg: TitrReportConfig, repo_root: Path) -> Path:
                     for row in syn_anti_rows
                 ],
             }
+        if composite_summary is not None:
+            summary["composite"] = composite_summary
         (work / "report-summary.yaml").write_text(yaml.safe_dump(summary, sort_keys=False))
 
         destination.mkdir(parents=True, exist_ok=True)

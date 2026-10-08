@@ -6,6 +6,9 @@ from pathlib import Path
 
 from qmmd.cphmd_prep import (
     AcidPrepConfig,
+    MultiStatePrepConfig,
+    build_acid_charge_states,
+    build_acid_master,
     load_config,
     map_charges,
     read_full_mol2,
@@ -18,6 +21,82 @@ CONFIG = ROOT / "configs/MEA/cphmd/prep.yaml"
 
 
 class CpHMDPrepTests(unittest.TestCase):
+    def test_multistate_base_prints_all_charge_columns(self):
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            root = Path(tmp)
+            (root / "pyproject.toml").write_text("")
+            states = {
+                "ppp": (0.6, 0.4, 2),
+                "app": (0.0, 0.0, 1),
+                "bpp": (0.1, -0.1, 1),
+                "cpp": (0.2, -0.2, 1),
+                "dpp": (0.3, -0.3, 1),
+            }
+            for name, (carbon_charge, hydrogen_charge, _) in states.items():
+                (root / f"{name}.mol2").write_text(
+                    "@<TRIPOS>MOLECULE\n"
+                    "TPS\n"
+                    "    2     1     1     0     0\n"
+                    "SMALL\n"
+                    "USER_CHARGES\n\n"
+                    "@<TRIPOS>ATOM\n"
+                    f"1 C1 0 0 0 c3 1 TPS {carbon_charge}\n"
+                    f"2 H1 1 0 0 hc 1 TPS {hydrogen_charge}\n"
+                    "@<TRIPOS>BOND\n"
+                    "1 1 2 1\n"
+                    "@<TRIPOS>SUBSTRUCTURE\n"
+                    "1 TPS 1 TEMP 0 **** **** 0 ROOT\n"
+                )
+            output_file = root / "charge_sets.csv"
+            config = root / "prep.yaml"
+            config.write_text(
+                "system: TPS\n"
+                "chemistry: multistate_base\n"
+                "master_mol2: ppp.mol2\n"
+                "states:\n"
+                + "".join(
+                    f"  - name: {name}\n"
+                    f"    mol2: {name}.mol2\n"
+                    f"    proton_count: {proton_count}\n"
+                    for name, (_, _, proton_count) in states.items()
+                )
+                + f"output_file: {output_file}\n"
+            )
+
+            cfg = load_config(config)
+            self.assertIsInstance(cfg, MultiStatePrepConfig)
+            output = StringIO()
+            with redirect_stdout(output):
+                run_cphmd_prep(config)
+
+            self.assertIn("atom_master", output.getvalue())
+            self.assertIn("ppp        app", output.getvalue())
+            self.assertIn("PROTON_COUNT  2", output.getvalue())
+            rows = [line.split(",") for line in output_file.read_text().splitlines()]
+            self.assertEqual(
+                rows[0],
+                [
+                    "atom_master",
+                    "charge_ppp",
+                    "charge_app",
+                    "charge_bpp",
+                    "charge_cpp",
+                    "charge_dpp",
+                ],
+            )
+            self.assertEqual(
+                rows[-2],
+                [
+                    "TOTAL",
+                    "+1.000000000000",
+                    "+0.000000000000",
+                    "+0.000000000000",
+                    "+0.000000000000",
+                    "+0.000000000000",
+                ],
+            )
+            self.assertEqual(rows[-1], ["PROTON_COUNT", "2", "1", "1", "1", "1"])
+
     def test_real_mea_mapping(self):
         cfg = load_config(CONFIG)
         mapping = map_charges(cfg)
@@ -170,6 +249,27 @@ class CpHMDPrepTests(unittest.TestCase):
             self.assertNotIn("c3-oh-c -oh    0", frcmod_text)
             self.assertIn(f"OK: wrote acid master MOL2 to {master}", output.getvalue())
             self.assertEqual(deprotonated.read_text(), original_deprotonated)
+
+    def test_prx_transferable_residue_excludes_reference_cap(self):
+        cfg = load_config(ROOT / "configs/PRX/cphmd/prep.yaml")
+        self.assertIsInstance(cfg, AcidPrepConfig)
+        deprotonated = read_full_mol2(cfg.deprotonated_mol2)
+        protonated = read_full_mol2(cfg.protonated_mol2)
+        master = build_acid_master(cfg, deprotonated)
+        states = build_acid_charge_states(cfg, deprotonated, protonated, master)
+
+        self.assertEqual(
+            states.atom_names,
+            (
+                "CA", "HA1", "HA2", "CB", "HB1", "HB2", "CG",
+                "O1", "O2", "H11", "H12", "H21", "H22",
+            ),
+        )
+        self.assertNotIn("HA3", states.atom_names)
+        self.assertEqual(len(master.atoms), 13)
+        self.assertAlmostEqual(sum(states.charges[0]), -1.0, places=12)
+        for protonated_state in states.charges[1:]:
+            self.assertAlmostEqual(sum(protonated_state), 0.0, places=12)
 
 
 if __name__ == "__main__":
