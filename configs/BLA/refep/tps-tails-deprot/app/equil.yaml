@@ -1,0 +1,44 @@
+prep_yaml: prep.yaml
+stage_dirname: equil
+restraint: null
+
+equil_mdin:
+  nvt:
+    description: Conditional BLA PPP-to-APP REFEP lambda-window equilibration at 300 K
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 100000
+      dt: 0.002
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ig: -1
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 8.0
+      ntpr: 500
+      ntwx: 1000
+      ntwr: 5000
+      ioutfm: 1
+
+runtime:
+  module: amber/26
+  executable: pmemd
+  launcher: srun
+  strict_mode: true
+
+slurm:
+  job:
+    name: bla-app-refep-equil
+    partition: small
+    nodes: 2
+    ntasks: 16
+    tasks_per_node: 8
+    time: "2:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"

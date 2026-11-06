@@ -1,0 +1,27 @@
+# Two manually appended single15 umbrella windows. Existing windows 000-018
+# remain mapped to 0, 10, ..., 180 degrees by prod-dih.yaml.
+base_prod_yaml: prod-dih.yaml
+source:
+  window_index: 0
+  stage_dirname: prod-dih
+  trajectory_name: traject
+  frame: last_complete
+
+windows:
+  - {window_index: 19, center_deg: -10.0}
+  - {window_index: 20, center_deg: -20.0}
+
+stage_dirname: prod-dih
+duration_ps: 40.0
+timestep_fs: 1.0
+fresh_velocities: true
+temperature_k: 300.0
+
+# Same DCDFTBMD V=kappa*(phi-phi0)^2 restraint as the existing production.
+wall:
+  coefficient: 0.05
+  exponent: 2
+
+# Inherit DFTB, runtime, and Slurm settings from base_prod_yaml, overriding the
+# cumulative-restart fields to NSTEP=40000, RESTART=FALSE, READVELOCITY=FALSE.
+# Resources remain 48 tasks, 3 days, highpri.

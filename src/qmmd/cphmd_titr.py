@@ -380,6 +380,36 @@ def titr_dir(cfg: TitrConfig, repo_root: Path) -> Path:
     return system_base_dir(cfg, repo_root) / "cphmd" / cfg.job_name
 
 
+def _resolve_system_input(
+    base: Path,
+    configured: str,
+    legacy_directory: str,
+    label: str,
+) -> Path:
+    relative = Path(configured)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError(f"{label} must be a filename or path within the system directory")
+    candidate = base / legacy_directory / relative if len(relative.parts) == 1 else base / relative
+    resolved = candidate.resolve()
+    try:
+        resolved.relative_to(base.resolve())
+    except ValueError as exc:
+        raise ValueError(f"{label} resolves outside the system directory") from exc
+    return resolved
+
+
+def titration_input_paths(cfg: TitrConfig, repo_root: Path) -> tuple[Path, Path]:
+    base = system_base_dir(cfg, repo_root)
+    return (
+        _resolve_system_input(base, cfg.input_parm7, "prep", "input_parm7"),
+        _resolve_system_input(base, cfg.input_rst7, "mdequil", "input_rst7"),
+    )
+
+
+def prepared_input_names(cfg: TitrConfig) -> tuple[str, str]:
+    return Path(cfg.input_parm7).name, Path(cfg.input_rst7).name
+
+
 def render_replica_mdin(cfg: TitrConfig, replica: int, ph: float) -> str:
     lines = [f"{cfg.description}; replica {replica} at pH {ph:g}", "&cntrl"]
     lines.extend(f"  {key}={value}," for key, value in cfg.cntrl.items())
@@ -395,11 +425,12 @@ def _replica_stem(replica: int, count: int) -> str:
 
 def render_groupfile(cfg: TitrConfig) -> str:
     lines: list[str] = []
+    parm7_name, rst7_name = prepared_input_names(cfg)
     for replica, _ph in enumerate(cfg.ph_values, start=1):
         stem = _replica_stem(replica, len(cfg.ph_values))
         lines.append(
-            f"-O -i {stem}.mdin -o {stem}.mdout -p {cfg.input_parm7} "
-            f"-c {cfg.input_rst7} -r {stem}.rst7 -x {stem}.nc -inf {stem}.mdinfo "
+            f"-O -i {stem}.mdin -o {stem}.mdout -p {parm7_name} "
+            f"-c {rst7_name} -r {stem}.rst7 -x {stem}.nc -inf {stem}.mdinfo "
             f"-cpin {stem}.cpin -cpout {stem}.cpout -cprestrt {stem}.cprestrt"
         )
     return "\n".join(lines) + "\n"
@@ -604,9 +635,8 @@ def prepare_titration(
     repo_root: Path,
     output_dir: Path | None = None,
 ) -> tuple[Path, float | None]:
-    base = system_base_dir(cfg, repo_root)
-    parm7_source = base / "prep" / cfg.input_parm7
-    rst7_source = base / "mdequil" / cfg.input_rst7
+    parm7_source, rst7_source = titration_input_paths(cfg, repo_root)
+    parm7_name, rst7_name = prepared_input_names(cfg)
     for label, path in (("parm7", parm7_source), ("rst7", rst7_source)):
         if not path.is_file() or path.stat().st_size == 0:
             raise FileNotFoundError(f"Missing/empty {label} input: {path}")
@@ -617,8 +647,8 @@ def prepare_titration(
 
     destination = output_dir.resolve() if output_dir else titr_dir(cfg, repo_root)
     destination.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(parm7_source, destination / cfg.input_parm7)
-    shutil.copy2(rst7_source, destination / cfg.input_rst7)
+    shutil.copy2(parm7_source, destination / parm7_name)
+    shutil.copy2(rst7_source, destination / rst7_name)
 
     for replica, ph in enumerate(cfg.ph_values, start=1):
         stem = _replica_stem(replica, len(cfg.ph_values))
@@ -692,11 +722,10 @@ def submit_titration(
         print(f"SKIP: {spec} does not exactly match the supplied config")
         return False
 
-    base = system_base_dir(cfg, repo_root)
-    parm7_source = base / "prep" / cfg.input_parm7
-    rst7_source = base / "mdequil" / cfg.input_rst7
-    prepared_parm7 = destination / cfg.input_parm7
-    prepared_rst7 = destination / cfg.input_rst7
+    parm7_source, rst7_source = titration_input_paths(cfg, repo_root)
+    parm7_name, rst7_name = prepared_input_names(cfg)
+    prepared_parm7 = destination / parm7_name
+    prepared_rst7 = destination / rst7_name
     for label, source, prepared in (
         ("topology", parm7_source, prepared_parm7),
         ("restart", rst7_source, prepared_rst7),

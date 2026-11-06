@@ -9,6 +9,7 @@ from qmmd.mdequil import (
     render_dihedral_restraints,
     write_mdin_files,
     write_run_sh,
+    write_slurm_sh,
 )
 
 
@@ -55,3 +56,12 @@ class RestraintTests(unittest.TestCase):
                                         ([5, 3, 4, 11], 0, -1)]:
             with self.assertRaises(ValueError):
                 render_dihedral_restraints([dict(atoms=atoms, target_deg=target, force_constant=strength)])
+
+    def test_optional_slurm_task_count(self):
+        root = Path(__file__).resolve().parents[1]
+        cfg = load_config(root / "configs/BLA/mdequil/packmol-tetramer.yaml")
+        self.assertEqual(cfg.slurm.job.ntasks, 2)
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            script = write_slurm_sh(cfg, Path(tmp)).read_text()
+        self.assertIn("#SBATCH -N 1", script)
+        self.assertIn("#SBATCH --ntasks=2", script)

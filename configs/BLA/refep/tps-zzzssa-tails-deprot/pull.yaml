@@ -1,0 +1,63 @@
+system: BLA
+buffer: 10.0
+prefix: solv
+output_dirname: refep-zzzssa-seed
+
+# Generate a ZZZssa seed in the same split TPS+PRX topology and equilibrated
+# explicit-solvent box used by the conditional BLA REFEP calculations.
+source:
+  topology_dirname: prep
+  topology_name: solv_prx_mbondi2.parm7
+  restart_dirname: mdequil
+  restart_name: equil-npt.rst7
+  output_name: equil-npt.out
+
+# The equilibrated BLA source is ZZZsss (psi_CD approximately 0 degrees).
+# Pull progressively to the open ZZZssa basin at 180 degrees.
+windows:
+  start_deg: 0.0
+  stop_deg: 180.0
+  spacing_deg: 10.0
+
+# psi_CD = NC-C4C-C15-C1D; one-based IDs in solv_prx_mbondi2.parm7.
+restraint:
+  atoms: [31, 36, 41, 45]
+  force_constant: 50.0  # kcal/mol/rad^2
+
+md:
+  description: "BLA ZZZsss-to-ZZZssa psi_CD restrained pull for REFEP seed"
+  cntrl:
+    iwrap: 1
+    imin: 0
+    irest: 1
+    ntx: 5
+    nstlim: 1000
+    dt: 0.001
+    temp0: 300.0
+    ntt: 3
+    gamma_ln: 2.0
+    ntb: 2
+    ntp: 1
+    taup: 2.0
+    pres0: 1.0
+    ntc: 2
+    ntf: 2
+    cut: 8.0
+    ntpr: 100
+    ntwx: 100
+    ntwe: 0
+
+runtime:
+  module: amber/26
+  executable: sander
+  env: {TEMP: 300, PRESS: 1.0}
+  strict_mode: true
+
+slurm:
+  job:
+    name: bla-zzzssa-refep-seed
+    partition: small
+    nodes: 2
+    time: "01:00:00"
+    stdout: slurm.%j.out
+    stderr: slurm.%j.err

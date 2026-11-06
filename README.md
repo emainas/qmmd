@@ -49,6 +49,57 @@ The additional component remains a distinct topology residue. This allows a
 reference-only cap to complete the model compound without adding the cap atoms
 to the titratable residue or its CPIN charge arrays.
 
+An optional `packing` block uses the Packmol executable bundled with
+AmberTools to position multiple rigid solute copies before LEaP solvation. The
+short form replicates the primary `mol2`:
+
+```yaml
+mol2: systems/BLA/init/bla.mol2
+frcmod:
+  - systems/BLA/init/tps.frcmod
+  - systems/BLA/init/prx.frcmod
+
+packing:
+  copies: 4
+  tolerance: 2.0       # Angstrom minimum target separation
+  seed: 2026
+  box: [60.0, 60.0, 60.0]  # solute-placement region in Angstrom
+
+water_model: TIP3PBOX
+buffer: 10.0
+counterion: Na+
+counterion_num: 4
+```
+
+For mixtures, replace `copies` with an ordered `structures` list. Every source
+MOL2 must be a complete bonded component, and all required frcmods remain in
+the top-level ordered `frcmod` list:
+
+```yaml
+packing:
+  tolerance: 2.0
+  seed: 2026
+  box: [-30.0, -30.0, -30.0, 30.0, 30.0, 30.0]
+  structures:
+    - {name: bla, mol2: systems/BLA/init/bla.mol2, number: 4}
+    - {name: cosolute, mol2: systems/MIX/init/cosolute.mol2, number: 2}
+```
+
+Packmol changes coordinates only. `qmmd` transfers those coordinates into one
+copy of each original MOL2, preserving its atom names, types, charges, bonds,
+and residue definitions; LEaP then combines the copies, adds water and ions,
+and writes the usual topology and restart. The packing box is therefore the
+initial *solute-placement region*, not the final periodic box: `buffer` is
+subsequently added by `solvatebox`. Packing cannot be combined with
+`additional_mol2` or `inter_residue_bonds`; first make one complete bonded MOL2
+for each packed component.
+
+The prep directory retains `packmol.inp`, `packmol.out`, `packed.pdb`, each
+transformed MOL2 copy, and `packing-map.csv`. The mapping records one-based
+solute atom and residue ranges before water and ions, making repeated CpHMD
+sites reproducible. Load AmberTools (for example `module load amber/26`) so
+both `packmol` and `tleap` are available.
+
 **Run**
 
 ```bash
@@ -134,9 +185,17 @@ ensemble required by Amber CpHMD and prepares files only.
 For a pairwise calibration drawn from a multistate charge table, optional
 `cpin.states` selects the ordered states written to that CPIN; unselected
 states are absent and cannot participate in the calibration.
+For an embedded titratable residue, or when a residue name occurs more than
+once, set one-based `cpin.residue_number` together with `cpin.residue_name`.
+Only that topology residue is written to the DGref CPIN; identically named
+residues omitted from the CPIN remain fixed at their topology charges.
 For `input_parm7`, a bare filename retains the legacy `prep/` lookup; a staged
 path such as `mdequil/solv_modradii.parm7` is resolved from the system directory
 and copied into the DGref directory under its basename.
+An optional `search.dgref_estimate` passes Amber's `-dgrefest` option to start
+directly in the accurate-estimate phase. This is useful after a wall-time
+termination when a previous run has already bracketed the solution; use a new
+`job_name` to preserve the earlier raw outputs.
 
 ```bash
 qmmd cphmd-dgref-prep configs/<molecule>/cphmd/dgref.yaml
@@ -181,6 +240,11 @@ DGref log and apply a multiplier, allowing independent pairwise calibrations
 to be placed on one common energy gauge. `omit_atoms` is restricted to atoms
 whose charge is zero in every selected state; this supports zero-charge model
 caps that disappear when residues are bonded into the full molecule.
+Bare `input_parm7` and `input_rst7` filenames retain the historical `prep/`
+and `mdequil/` lookup locations. A relative path containing a directory is
+resolved from the system directory and copied into the prepared titration
+directory under its basename, permitting a staged topology such as
+`mdequil/solv_mbondi2.parm7` without changing existing configurations.
 
 ```bash
 qmmd cphmd-titr-prep configs/<molecule>/cphmd/cphmd.yaml
@@ -214,10 +278,24 @@ the fixed-pH postprocessing outputs:
 
 For a composite molecule, optional `titration_report.composite` definitions
 map selected state names onto chemically meaningful observables. The report can
-separate a TPS protonated/deprotonated equilibrium from its conditional BPP/CPP
-tautomer balance, report each PRX tail's titration and conditional syn/anti
-balance, and calculate the joint zero-, one-, and two-proton tail populations.
-Each composite figure has a corresponding aligned CSV table.
+separate a TPS protonated/deprotonated equilibrium from the conditional balance
+of any configured deprotonated-tautomer list, report each PRX tail's titration
+and conditional syn/anti balance, and calculate the joint zero-, one-, and
+two-proton tail populations. The legacy `bpp_state`/`cpp_state` fields remain
+supported; new configurations may use `deprotonated_states`. Each composite
+figure has a corresponding aligned CSV table.
+
+For a two-tail PRX composite, the report also reproduces the coupled-site
+microstate treatment used by the legacy Figure 1 analysis. It simultaneously
+fits `p00`, `p10`, `p01`, and `p11` to the Ullmann two-site model, plots the
+three observable populations and total tail proton count, and records the two
+microscopic pKas, interaction `W`, and derived macroscopic pKas in YAML.
+
+For a TPS composite with one protonated state and multiple deprotonated
+tautomers, the report simultaneously fits every state to the one-proton
+partition model. It writes `tps-titration-curves.png`, microscopic and
+macroscopic pKa values in `tps-microstate-fit.yaml`, and a dense normalized
+`tps-titration-curves.csv` suitable for weighting state-resolved spectra.
 
 ```bash
 qmmd cphmd-titr-report configs/<molecule>/cphmd/cphmd.yaml
@@ -254,6 +332,12 @@ plots every ligand charge against lambda:
 ```bash
 qmmd refep-prep configs/<molecule>/refep/prep.yaml
 ```
+
+If the endpoint MOL2 is a capped charge model but the selected topology residue
+does not contain those cap atoms, list them explicitly under
+`ligand.endpoint_omit_atoms`. The omitted names must exist in the endpoint MOL2
+and must be absent from the topology residue; all topology atoms still require
+an endpoint charge or an explicit entry in `ligand.dummy_atoms`.
 
 Prepare one independent constant-volume equilibration for every REFEP lambda
 topology. All windows start from the common density-equilibrated restart made
@@ -541,6 +625,11 @@ qmmd us-wham-report configs/<molecule>/us/wham.yaml
 This reads the complete branch-aligned production series written by
 `us-prod-report`, writes uniquely named WHAM input series and metadata, runs the
 configured Grossfield WHAM executable, and constructs the original-data PMF.
+For an explicitly exploratory PMF before production, `equil_yaml` may replace
+`prod_yaml`; in that mode the command reads the live series written by
+`us-equil-report`. An optional `window_map` list of `window_index`/`center_deg`
+pairs includes manually appended windows while preserving their on-disk
+indices. Existing production-only configurations remain unchanged.
 For the DCDFTBMD restraint `V=kappa*(s-s0)^2`, `kappa` is interpreted in
 kJ/mol/CV². The metadata coefficient is written as `K=2*kappa/4.184` in
 kcal/mol/CV², matching Grossfield WHAM's `V=(1/2)*K*(s-s0)^2` convention.

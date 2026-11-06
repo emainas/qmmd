@@ -15,6 +15,10 @@ from qmmd.refep_prep import (
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "MEA" / "refep" / "prep.yaml"
+TPS_APP_CONFIG = REPO / "configs" / "TPS" / "refep" / "app" / "prep.yaml"
+BLA_APP_CONFIG = (
+    REPO / "configs" / "BLA" / "refep" / "tps-tails-deprot" / "app" / "prep.yaml"
+)
 
 
 class RefepPrepTests(unittest.TestCase):
@@ -55,6 +59,35 @@ class RefepPrepTests(unittest.TestCase):
         self.assertIn("parm lambda-000.parm7", interpolation)
         self.assertIn("interpolate 14", interpolation)
         self.assertIn("eleconly", interpolation)
+
+    def test_retained_zero_charge_dummy_is_supported(self):
+        cfg = load_refep_prep_config(TPS_APP_CONFIG)
+        topology = read_amber_topology(cfg.input_parm7)
+        mapping = build_ligand_charge_map(
+            cfg,
+            topology,
+            read_mol2_atoms(cfg.deprot_mol2),
+        )
+        self.assertEqual(mapping.dummy_atoms, ("HA",))
+        dummy_index = mapping.atom_names.index("HA")
+        self.assertAlmostEqual(mapping.lambda1_charges[dummy_index], 0.0)
+        self.assertAlmostEqual(float(mapping.lambda0_charges.sum()), 1.0, places=5)
+        self.assertAlmostEqual(float(mapping.lambda1_charges.sum()), 0.0, places=5)
+
+    def test_endpoint_only_cap_atoms_can_be_explicitly_omitted(self):
+        cfg = load_refep_prep_config(BLA_APP_CONFIG)
+        topology = read_amber_topology(cfg.input_parm7)
+        mapping = build_ligand_charge_map(
+            cfg,
+            topology,
+            read_mol2_atoms(cfg.deprot_mol2),
+        )
+        self.assertEqual(cfg.endpoint_omit_atoms, ("H2C", "H3B"))
+        self.assertEqual(len(mapping.atom_names), 58)
+        self.assertNotIn("H2C", mapping.atom_names)
+        self.assertNotIn("H3B", mapping.atom_names)
+        self.assertAlmostEqual(float(mapping.lambda0_charges.sum()), 1.0, places=5)
+        self.assertAlmostEqual(float(mapping.lambda1_charges.sum()), 0.0, places=5)
 
     def test_charge_path_is_linear(self):
         lambdas = np.linspace(0.0, 1.0, self.cfg.windows)

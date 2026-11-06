@@ -25,12 +25,13 @@ from qmmd.us_equil import (
     render_run_sh,
     render_slurm_sh,
 )
-from qmmd.us_pull import find_repo_root, pull_dir, window_centers
+from qmmd.us_pull import find_repo_root, pull_dir
 
 
 @dataclass(frozen=True, slots=True)
 class USProdConfig:
     equil_yaml: Path
+    equil_stage_spec_yaml: Path
     equil: USEquilConfig
     run: USEquilConfig
     restart_name: str
@@ -237,6 +238,17 @@ def load_config(yaml_path: Path) -> USProdConfig:
     if not equil_yaml.is_file():
         raise RuntimeError(f"Missing equilibration configuration: {equil_yaml}")
 
+    stage_spec_value = Path(str(data.get("equil_stage_spec_yaml", equil_yaml)))
+    equil_stage_spec_yaml = (
+        stage_spec_value
+        if stage_spec_value.is_absolute()
+        else (resolved.parent / stage_spec_value).resolve()
+    )
+    if not equil_stage_spec_yaml.is_file():
+        raise RuntimeError(
+            f"Missing equilibration stage specification: {equil_stage_spec_yaml}"
+        )
+
     equil = load_equil_config(equil_yaml)
     run = load_equil_config(resolved)
     if run.pull_yaml != equil.pull_yaml:
@@ -268,11 +280,10 @@ def load_config(yaml_path: Path) -> USProdConfig:
         incomplete_windows = tuple(incomplete_windows_value)
         if len(set(incomplete_windows)) != len(incomplete_windows):
             raise ValueError("incomplete_equilibration_windows contains duplicates")
-        window_count = len(window_centers(run.pull.windows))
-        if any(index < 0 or index >= window_count for index in incomplete_windows):
+        selected_indices = {index for index, _ in run.window_targets}
+        if any(index not in selected_indices for index in incomplete_windows):
             raise ValueError(
-                f"incomplete_equilibration_windows indices must be between 0 and "
-                f"{window_count - 1}"
+                "incomplete_equilibration_windows must be selected by window_map"
             )
         if not allow_incomplete:
             raise ValueError(
@@ -289,6 +300,7 @@ def load_config(yaml_path: Path) -> USProdConfig:
 
     cfg = USProdConfig(
         equil_yaml=equil_yaml,
+        equil_stage_spec_yaml=equil_stage_spec_yaml,
         equil=equil,
         run=run,
         restart_name=_single_filename(data.get("restart_name", "restart"), "restart_name"),
@@ -309,16 +321,16 @@ def prepare_us_prod(
     repo_root: Path,
 ) -> list[Path]:
     root = pull_dir(cfg.run.pull, repo_root)
-    centers = window_centers(cfg.run.pull.windows)
+    targets = cfg.run.window_targets
     destinations = [
         root / f"window-{index:03d}" / cfg.run.stage_dirname
-        for index in range(len(centers))
+        for index, _ in targets
     ]
     existing = [destination for destination in destinations if destination.exists()]
     if existing:
         raise FileExistsError(f"US production directory already exists; not touching: {existing[0]}")
 
-    source_yaml_text = cfg.equil_yaml.read_text()
+    source_yaml_text = cfg.equil_stage_spec_yaml.read_text()
     sources: list[
         tuple[
             Path | None,
@@ -328,11 +340,13 @@ def prepare_us_prod(
             dict[str, object],
         ]
     ] = []
-    for index in range(len(centers)):
+    for index, _ in targets:
         equil_dir = root / f"window-{index:03d}" / cfg.equil.stage_dirname
         spec = equil_dir / "equil_spec.yaml"
         if not spec.is_file() or spec.read_text() != source_yaml_text:
-            raise RuntimeError(f"{spec} does not exactly match {cfg.equil_yaml}")
+            raise RuntimeError(
+                f"{spec} does not exactly match {cfg.equil_stage_spec_yaml}"
+            )
         output = equil_dir / "dftb.out"
         terminated_normally = dftb_terminated_normally(output)
         reference_xyz = equil_dir / "start.xyz"
@@ -433,7 +447,7 @@ def prepare_us_prod(
                 raise RuntimeError(f"Missing SKF file: {parameter}")
 
     rendered: list[tuple[str, str]] = []
-    for center, (_, vectors, coordinates, _, provenance) in zip(centers, sources):
+    for (_, center), (_, vectors, coordinates, _, provenance) in zip(targets, sources):
         natoms = len(coordinates)
         if max(cfg.run.pull.restraint.atoms) > natoms:
             raise ValueError(
@@ -448,8 +462,8 @@ def prepare_us_prod(
             )
         )
 
-    for index, (destination, source, files) in enumerate(
-        zip(destinations, sources, rendered)
+    for (index, _), destination, source, files in zip(
+        targets, destinations, sources, rendered
     ):
         restart, _, _, frame_xyz, provenance = source
         dftb_input, metacv = files
@@ -513,10 +527,10 @@ def submit_us_prod(
 ) -> bool:
     """Validate and submit the complete set of prepared production windows."""
     root = pull_dir(cfg.run.pull, repo_root)
-    centers = window_centers(cfg.run.pull.windows)
+    targets_with_centers = cfg.run.window_targets
     targets = [
         root / f"window-{index:03d}" / cfg.run.stage_dirname
-        for index in range(len(centers))
+        for index, _ in targets_with_centers
     ]
 
     problems: list[str] = []
@@ -547,7 +561,7 @@ def submit_us_prod(
         return False
 
     print("Will submit the following US production directories:")
-    for target, center in zip(targets, centers):
+    for target, (_, center) in zip(targets, targets_with_centers):
         print(f"  - {target} (center {center:g} degrees)")
     response = confirm(f"Proceed to submit {len(targets)} jobs? [y/N] ").strip().lower()
     if response not in ("y", "yes"):

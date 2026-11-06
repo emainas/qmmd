@@ -55,11 +55,10 @@ class TpsDecompositionConfig:
     residue_id: int
     residue_name: str
     protonated_name: str
-    bpp_name: str
-    cpp_name: str
+    deprotonated_names: tuple[str, ...]
     protonated_state: int
-    bpp_state: int
-    cpp_state: int
+    deprotonated_states: tuple[int, ...]
+    microstate_model_pkas: tuple[float, ...] | None
 
 
 @dataclass(frozen=True)
@@ -95,6 +94,22 @@ class ProtonationRecord:
 class HHFit:
     pka: float
     hill: float
+
+
+@dataclass(frozen=True)
+class TwoSiteFit:
+    pk10: float
+    pk01: float
+    interaction_w: float
+    macro_pka1: float
+    macro_pka2: float
+
+
+@dataclass(frozen=True)
+class TpsMicrostateFit:
+    microscopic_pkas: tuple[float, ...]
+    macroscopic_pka: float
+    rmse: float
 
 
 @dataclass(frozen=True)
@@ -175,34 +190,70 @@ def _load_composite_report(
         tps_id = int(tps_raw["residue_id"])
         tps_name = str(tps_raw.get("residue_name", "TPS")).strip()
         protonated_name = str(tps_raw.get("protonated_state", "ppp")).strip()
-        bpp_name = str(tps_raw.get("bpp_state", "bpp")).strip()
-        cpp_name = str(tps_raw.get("cpp_state", "cpp")).strip()
+        if "deprotonated_states" in tps_raw:
+            deprotonated_names = _name_list(
+                tps_raw.get("deprotonated_states"),
+                "composite.tps.deprotonated_states",
+            )
+        else:
+            # Backward compatibility with the original PPP/BPP/CPP report.
+            deprotonated_names = (
+                str(tps_raw.get("bpp_state", "bpp")).strip(),
+                str(tps_raw.get("cpp_state", "cpp")).strip(),
+            )
         tps_lookup, tps_counts = _site_state_lookup(
             post, tps_id, tps_name, "titration_report.composite.tps"
         )
-        tps_names = {protonated_name, bpp_name, cpp_name}
+        tps_names = {protonated_name, *deprotonated_names}
         unknown = sorted(tps_names - tps_lookup.keys())
         if unknown:
             raise ValueError("Unknown TPS decomposition states: " + ", ".join(unknown))
         if tps_names != set(tps_lookup):
             raise ValueError("TPS decomposition must account for every selected TPS state")
-        if not (
-            tps_counts[tps_lookup[protonated_name]]
-            > tps_counts[tps_lookup[bpp_name]]
-            == tps_counts[tps_lookup[cpp_name]]
+        protonated_count = tps_counts[tps_lookup[protonated_name]]
+        deprotonated_counts = {
+            tps_counts[tps_lookup[name]] for name in deprotonated_names
+        }
+        if len(deprotonated_counts) != 1 or protonated_count <= next(
+            iter(deprotonated_counts)
         ):
             raise ValueError(
-                "TPS decomposition requires PPP protonated and BPP/CPP deprotonated"
+                "TPS decomposition requires one protonated state and equally "
+                "deprotonated tautomer states"
             )
+        model_pkas_raw = tps_raw.get("microstate_model_pkas")
+        model_pkas: tuple[float, ...] | None = None
+        if model_pkas_raw is not None:
+            if not isinstance(model_pkas_raw, dict):
+                raise ValueError(
+                    "composite.tps.microstate_model_pkas must be a YAML mapping"
+                )
+            configured_names = {str(name).strip() for name in model_pkas_raw}
+            expected_names = set(deprotonated_names)
+            if configured_names != expected_names:
+                missing = sorted(expected_names - configured_names)
+                extra = sorted(configured_names - expected_names)
+                raise ValueError(
+                    "composite.tps.microstate_model_pkas must define exactly the "
+                    f"deprotonated TPS states; missing={missing}, extra={extra}"
+                )
+            model_pkas = tuple(
+                float(model_pkas_raw[name]) for name in deprotonated_names
+            )
+            if not all(math.isfinite(value) for value in model_pkas):
+                raise ValueError(
+                    "composite.tps.microstate_model_pkas values must be finite"
+                )
         tps = TpsDecompositionConfig(
             residue_id=tps_id,
             residue_name=tps_name,
             protonated_name=protonated_name,
-            bpp_name=bpp_name,
-            cpp_name=cpp_name,
+            deprotonated_names=deprotonated_names,
             protonated_state=tps_lookup[protonated_name],
-            bpp_state=tps_lookup[bpp_name],
-            cpp_state=tps_lookup[cpp_name],
+            deprotonated_states=tuple(
+                tps_lookup[name] for name in deprotonated_names
+            ),
+            microstate_model_pkas=model_pkas,
         )
 
     prx: PrxDecompositionConfig | None = None
@@ -1107,10 +1158,377 @@ def _mean_block_sem(values: np.ndarray, block_count: int) -> tuple[float, float]
     return float(values.mean()), float(blocks.std(ddof=1) / math.sqrt(block_count))
 
 
+def two_site_probabilities(
+    ph: np.ndarray,
+    pk10: float,
+    pk01: float,
+    interaction_w: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return Ullmann two-site p00, p10, p01 and p11 probabilities."""
+    term10 = 10.0 ** (pk10 - ph)
+    term01 = 10.0 ** (pk01 - ph)
+    term11 = 10.0 ** (pk10 + pk01 - interaction_w - 2.0 * ph)
+    normalization = 1.0 + term10 + term01 + term11
+    return (
+        1.0 / normalization,
+        term10 / normalization,
+        term01 / normalization,
+        term11 / normalization,
+    )
+
+
+def fit_two_site_model(rows: list[dict[str, float]]) -> TwoSiteFit:
+    """Fit all four coupled-tail microstate populations simultaneously."""
+    try:
+        from scipy.optimize import curve_fit
+    except ImportError as exc:
+        raise RuntimeError("Two-site tail fitting requires scipy") from exc
+
+    ph = np.asarray([row["pH"] for row in rows], dtype=float)
+    observed = np.concatenate(
+        [np.asarray([row[f"p{state}_fraction"] for row in rows]) for state in ("00", "10", "01", "11")]
+    )
+
+    def combined(
+        x: np.ndarray, pk10: float, pk01: float, interaction_w: float
+    ) -> np.ndarray:
+        return np.concatenate(two_site_probabilities(x, pk10, pk01, interaction_w))
+
+    parameters, _covariance = curve_fit(
+        combined,
+        ph,
+        observed,
+        p0=(5.0, 5.0, 0.0),
+        method="lm",
+        maxfev=20000,
+    )
+    pk10, pk01, interaction_w = (float(value) for value in parameters)
+    # Ullmann 2003, equations 7 and 8, evaluated without large powers of ten.
+    macro_pka2 = float(
+        np.logaddexp(pk10 * np.log(10.0), pk01 * np.log(10.0)) / np.log(10.0)
+    )
+    macro_pka1 = pk10 + pk01 - interaction_w - macro_pka2
+    return TwoSiteFit(
+        pk10=pk10,
+        pk01=pk01,
+        interaction_w=interaction_w,
+        macro_pka1=macro_pka1,
+        macro_pka2=macro_pka2,
+    )
+
+
+def tps_microstate_probabilities(
+    ph: np.ndarray,
+    microscopic_pkas: tuple[float, ...] | np.ndarray,
+) -> tuple[np.ndarray, ...]:
+    """Return PPP followed by each one-proton-loss tautomer probability.
+
+    Each deprotonated tautomer ``i`` has statistical weight
+    ``10**(pH - microscopic_pKa_i)`` relative to protonated PPP.
+    """
+    ph_values = np.asarray(ph, dtype=float)
+    pkas = np.asarray(microscopic_pkas, dtype=float)
+    if ph_values.ndim != 1 or pkas.ndim != 1 or pkas.size == 0:
+        raise ValueError("TPS pH and microscopic pKa arrays must be one-dimensional")
+    weights = np.power(10.0, ph_values[None, :] - pkas[:, None])
+    normalization = 1.0 + weights.sum(axis=0)
+    return (
+        1.0 / normalization,
+        *(weights[index] / normalization for index in range(len(pkas))),
+    )
+
+
+def fit_tps_microstate_model(
+    rows: list[dict[str, float]],
+    tps: TpsDecompositionConfig,
+) -> TpsMicrostateFit:
+    """Simultaneously fit PPP and all deprotonated TPS tautomer curves."""
+    try:
+        from scipy.optimize import curve_fit
+    except ImportError as exc:
+        raise RuntimeError("TPS microstate fitting requires scipy") from exc
+
+    if not rows:
+        raise ValueError("TPS microstate fitting requires at least one pH row")
+    ph = np.asarray([row["pH"] for row in rows], dtype=float)
+    observed_arrays = [
+        np.asarray([row["ppp_fraction"] for row in rows], dtype=float),
+        *[
+            np.asarray(
+                [row[f"{name}_fraction_total"] for row in rows], dtype=float
+            )
+            for name in tps.deprotonated_names
+        ],
+    ]
+    observed_matrix = np.vstack(observed_arrays)
+    if not np.all(np.isfinite(observed_matrix)):
+        raise ValueError("TPS microstate populations contain non-finite values")
+    if not np.allclose(observed_matrix.sum(axis=0), 1.0, atol=1.0e-8):
+        raise ValueError("TPS microstate populations must sum to one at every pH")
+
+    macro_guess = fit_henderson_hasselbalch(
+        ph, observed_arrays[0], fit_hill=False
+    ).pka
+    deprotonated_totals = observed_matrix[1:].sum(axis=1)
+    conditional = deprotonated_totals / deprotonated_totals.sum()
+    if np.any(conditional <= 0.0):
+        raise ValueError("Every TPS tautomer must have nonzero sampled population")
+    initial = macro_guess - np.log10(conditional)
+
+    def combined(x: np.ndarray, *pkas: float) -> np.ndarray:
+        return np.concatenate(tps_microstate_probabilities(x, np.asarray(pkas)))
+
+    parameters, _covariance = curve_fit(
+        combined,
+        ph,
+        np.concatenate(observed_arrays),
+        p0=initial,
+        method="lm",
+        maxfev=20000,
+    )
+    predicted = combined(ph, *parameters)
+    residual = predicted - np.concatenate(observed_arrays)
+    microscopic_pkas = tuple(float(value) for value in parameters)
+    macroscopic_pka = float(
+        -np.log10(np.power(10.0, -np.asarray(microscopic_pkas)).sum())
+    )
+    return TpsMicrostateFit(
+        microscopic_pkas=microscopic_pkas,
+        macroscopic_pka=macroscopic_pka,
+        rmse=float(np.sqrt(np.mean(np.square(residual)))),
+    )
+
+
 def _plot_bla_tps(
     cfg: TitrReportConfig,
     path: Path,
     rows: list[dict[str, float]],
+    tps: TpsDecompositionConfig,
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.style.use(cfg.style)
+    ph = np.asarray([row["pH"] for row in rows], dtype=float)
+    dense_ph = np.linspace(float(ph.min()), float(ph.max()), 901)
+    model_probabilities: tuple[np.ndarray, ...] | None = None
+    model_conditional: np.ndarray | None = None
+    if tps.microstate_model_pkas is not None:
+        model_probabilities = tps_microstate_probabilities(
+            dense_ph, tps.microstate_model_pkas
+        )
+        model_weights = np.power(
+            10.0, -np.asarray(tps.microstate_model_pkas, dtype=float)
+        )
+        model_conditional = model_weights / model_weights.sum()
+    fig, (titr_ax, taut_ax) = plt.subplots(
+        2, 1, figsize=(8.0, 7.8), sharex=True,
+        height_ratios=[1.25, 1.0], constrained_layout=True,
+    )
+    titr_ax.errorbar(
+        ph, [row["ppp_fraction"] for row in rows],
+        yerr=[row["ppp_sem"] for row in rows], marker="o", capsize=3,
+        color="#222222",
+        label="Protonated PPP",
+    )
+    titr_ax.errorbar(
+        ph, [row["deprotonated_fraction"] for row in rows],
+        yerr=[row["deprotonated_sem"] for row in rows], marker="s", capsize=3,
+        color="#777777",
+        label="Deprotonated "
+        + " + ".join(name.upper() for name in tps.deprotonated_names),
+    )
+    colors = ("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9")
+    markers = ("o", "s", "^", "D", "v", "P", "X")
+    for index, name in enumerate(tps.deprotonated_names):
+        titr_ax.plot(
+            ph,
+            [row[f"{name}_fraction_total"] for row in rows],
+            marker=markers[(index + 2) % len(markers)],
+            color=colors[index % len(colors)],
+            label=name.upper(),
+        )
+    if model_probabilities is not None:
+        titr_ax.plot(
+            dense_ph,
+            model_probabilities[0],
+            color="#222222",
+            ls="--",
+            lw=1.8,
+            label="Microstate model",
+        )
+        titr_ax.plot(
+            dense_ph,
+            1.0 - model_probabilities[0],
+            color="#777777",
+            ls="--",
+            lw=1.8,
+            label="_nolegend_",
+        )
+        for index, probability in enumerate(model_probabilities[1:]):
+            titr_ax.plot(
+                dense_ph,
+                probability,
+                color=colors[index % len(colors)],
+                ls="--",
+                lw=1.8,
+                label="_nolegend_",
+            )
+    titr_ax.axhline(0.5, color="0.55", ls="--", lw=0.9)
+    titr_ax.set(ylabel="Molar fraction", ylim=(-0.03, 1.03), title="TPS protonation equilibrium")
+    titr_ax.legend(
+        ncol=3,
+        fontsize=8.0,
+        loc="upper center",
+        columnspacing=0.9,
+        handlelength=2.4,
+    )
+
+    denominator_label = " + ".join(
+        name.upper() for name in tps.deprotonated_names
+    )
+    pooled_samples = sum(row["deprotonated_samples"] for row in rows)
+    for index, name in enumerate(tps.deprotonated_names):
+        pooled_fraction = (
+            sum(
+                row[f"{name}_fraction_total"] * row["records"]
+                for row in rows
+            )
+            / pooled_samples
+            if pooled_samples
+            else math.nan
+        )
+        if model_conditional is not None:
+            label = "_nolegend_"
+        elif math.isfinite(pooled_fraction):
+            label = f"{name.upper()} conditional; pooled {pooled_fraction:.1%}"
+        else:
+            label = f"{name.upper()}: not sampled"
+        taut_ax.plot(
+            ph,
+            [row[f"{name}_fraction_of_deprotonated"] for row in rows],
+            marker=markers[index % len(markers)],
+            color=colors[index % len(colors)],
+            label=label,
+        )
+        if model_conditional is None and math.isfinite(pooled_fraction):
+            taut_ax.axhline(
+                pooled_fraction,
+                color=colors[index % len(colors)],
+                ls="--",
+                lw=0.9,
+                alpha=0.7,
+            )
+        elif model_conditional is not None:
+            prediction = float(model_conditional[index])
+            taut_ax.axhline(
+                prediction,
+                color=colors[index % len(colors)],
+                ls="--",
+                lw=1.6,
+                alpha=0.9,
+                label=(
+                    f"{name.upper()}: "
+                    + (
+                        f"CpHMD pooled {pooled_fraction:.1%}; "
+                        if math.isfinite(pooled_fraction)
+                        else "CpHMD not sampled; "
+                    )
+                    +
+                    f"model {prediction:.1%}"
+                ),
+            )
+    if pooled_samples == 0:
+        taut_ax.text(
+            0.5,
+            0.52,
+            "No deprotonated TPS states sampled",
+            transform=taut_ax.transAxes,
+            ha="center",
+            va="center",
+            fontsize=11,
+            color="0.25",
+            bbox={"facecolor": "white", "edgecolor": "0.75", "alpha": 0.9},
+        )
+    taut_ax.set(xlabel="pH", ylabel="Conditional fraction", ylim=(-0.03, 1.03), title="Deprotonated TPS tautomer balance")
+    taut_ax.set_xticks(ph)
+    taut_ax.legend(ncol=2 if model_conditional is not None else 1, fontsize=8.5)
+    fig.suptitle(
+        f"BLA TPS: {tps.protonated_name.upper()} ⇌ ({denominator_label})",
+        fontsize=15,
+    )
+    fig.savefig(path, dpi=300)
+    plt.close(fig)
+
+
+def _plot_bla_tps_curves(
+    cfg: TitrReportConfig,
+    path: Path,
+    rows: list[dict[str, float]],
+    tps: TpsDecompositionConfig,
+    fit: TpsMicrostateFit,
+) -> None:
+    """Plot measured and jointly fitted TPS microstate populations."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.style.use(cfg.style)
+    ph = np.asarray([row["pH"] for row in rows], dtype=float)
+    dense_ph = np.linspace(float(ph.min()), float(ph.max()), 901)
+    fitted = tps_microstate_probabilities(dense_ph, fit.microscopic_pkas)
+    names = (tps.protonated_name, *tps.deprotonated_names)
+    colors = ("#222222", "#0072B2", "#D55E00", "#009E73", "#CC79A7")
+    markers = ("o", "^", "D", "v", "P")
+
+    fig, ax = plt.subplots(figsize=(8.2, 5.9), constrained_layout=True)
+    for index, name in enumerate(names):
+        if index == 0:
+            values = np.asarray([row["ppp_fraction"] for row in rows])
+            sem = np.asarray([row["ppp_sem"] for row in rows])
+            label = name.upper()
+        else:
+            values = np.asarray(
+                [row[f"{name}_fraction_total"] for row in rows]
+            )
+            sem = np.asarray([row[f"{name}_sem_total"] for row in rows])
+            label = f"{name.upper()} (microscopic pK$_a$={fit.microscopic_pkas[index - 1]:.2f})"
+        color = colors[index % len(colors)]
+        ax.errorbar(
+            ph,
+            values,
+            yerr=sem,
+            fmt=markers[index % len(markers)],
+            color=color,
+            capsize=3,
+            zorder=3,
+        )
+        ax.plot(dense_ph, fitted[index], color=color, lw=2.1, label=label)
+
+    ax.set(
+        xlabel="pH",
+        ylabel="Molar fraction",
+        xlim=(float(ph.min()) - 0.1, float(ph.max()) + 0.1),
+        ylim=(-0.03, 1.03),
+        title="BLA TPS five-state titration curves",
+    )
+    ax.set_xticks(ph)
+    ax.legend(
+        ncol=2,
+        title=rf"Simultaneous fit: macroscopic pK$_a$={fit.macroscopic_pka:.3f}",
+    )
+    fig.savefig(path, dpi=300)
+    plt.close(fig)
+
+
+def _plot_bla_prx_microstates(
+    cfg: TitrReportConfig,
+    path: Path,
+    rows: list[dict[str, float]],
+    fit: TwoSiteFit,
 ) -> None:
     import matplotlib
 
@@ -1119,31 +1537,111 @@ def _plot_bla_tps(
 
     plt.style.use(cfg.style)
     ph = np.asarray([row["pH"] for row in rows])
-    fig, (titr_ax, taut_ax) = plt.subplots(
-        2, 1, figsize=(8.0, 7.8), sharex=True,
-        height_ratios=[1.25, 1.0], constrained_layout=True,
+    dense = np.linspace(float(ph.min()), float(ph.max()), 500)
+    fitted = two_site_probabilities(
+        dense, fit.pk10, fit.pk01, fit.interaction_w
     )
-    titr_ax.errorbar(
-        ph, [row["ppp_fraction"] for row in rows],
-        yerr=[row["ppp_sem"] for row in rows], marker="o", capsize=3,
-        label="Protonated PPP",
+    measured = {
+        "Both deprotonated, $p_{00}$": (
+            np.asarray([row["p00_fraction"] for row in rows]),
+            np.asarray([row["p00_sem"] for row in rows]),
+            fitted[0],
+            "P",
+            "#0072B2",
+        ),
+        "One proton, $p_{10}+p_{01}$": (
+            np.asarray([row["fraction_1H"] for row in rows]),
+            np.asarray([row["sem_1H"] for row in rows]),
+            fitted[1] + fitted[2],
+            "s",
+            "#D55E00",
+        ),
+        "Both protonated, $p_{11}$": (
+            np.asarray([row["p11_fraction"] for row in rows]),
+            np.asarray([row["p11_sem"] for row in rows]),
+            fitted[3],
+            "v",
+            "#009E73",
+        ),
+    }
+    fig, ax = plt.subplots(figsize=(8.2, 5.8), constrained_layout=True)
+    for label, (values, sem, model, marker, color) in measured.items():
+        ax.errorbar(
+            ph,
+            values,
+            yerr=sem,
+            fmt=marker,
+            color=color,
+            capsize=3,
+            label=label,
+            zorder=3,
+        )
+        ax.plot(dense, model, color=color, lw=2.0, alpha=0.8)
+    ax.set(
+        xlabel="pH",
+        ylabel="Molar fraction",
+        ylim=(-0.03, 1.03),
+        title="BLA coupled propionic-tail microstates",
     )
-    titr_ax.errorbar(
-        ph, [row["deprotonated_fraction"] for row in rows],
-        yerr=[row["deprotonated_sem"] for row in rows], marker="s", capsize=3,
-        label="Deprotonated BPP + CPP",
+    ax.set_xticks(ph)
+    ax.legend(
+        title=(
+            rf"Fit: pK$_{{10}}$={fit.pk10:.2f}, pK$_{{01}}$={fit.pk01:.2f}, "
+            rf"W={fit.interaction_w:.2f}"
+        )
     )
-    titr_ax.axhline(0.5, color="0.55", ls="--", lw=0.9)
-    titr_ax.set(ylabel="Molar fraction", ylim=(-0.03, 1.03), title="TPS protonation equilibrium")
-    titr_ax.legend()
+    fig.savefig(path, dpi=300)
+    plt.close(fig)
 
-    taut_ax.plot(ph, [row["bpp_fraction_of_deprotonated"] for row in rows], marker="o", label="BPP / (BPP + CPP)")
-    taut_ax.plot(ph, [row["cpp_fraction_of_deprotonated"] for row in rows], marker="s", label="CPP / (BPP + CPP)")
-    taut_ax.axhline(0.5, color="0.55", ls="--", lw=0.9)
-    taut_ax.set(xlabel="pH", ylabel="Conditional fraction", ylim=(-0.03, 1.03), title="Deprotonated TPS tautomer balance")
-    taut_ax.set_xticks(ph)
-    taut_ax.legend()
-    fig.suptitle("BLA TPS: PPP ⇌ (BPP + CPP)", fontsize=15)
+
+def _plot_bla_prx_total_titration(
+    cfg: TitrReportConfig,
+    path: Path,
+    rows: list[dict[str, float]],
+    fit: TwoSiteFit,
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.style.use(cfg.style)
+    ph = np.asarray([row["pH"] for row in rows])
+    dense = np.linspace(float(ph.min()), float(ph.max()), 500)
+    _p00, p10, p01, p11 = two_site_probabilities(
+        dense, fit.pk10, fit.pk01, fit.interaction_w
+    )
+    fig, ax = plt.subplots(figsize=(7.0, 5.8), constrained_layout=True)
+    ax.errorbar(
+        ph,
+        [row["mean_tail_protons"] for row in rows],
+        yerr=[row["mean_tail_protons_sem"] for row in rows],
+        fmt="o",
+        color="#0072B2",
+        capsize=3,
+        label="RECpHMD",
+        zorder=3,
+    )
+    ax.plot(
+        dense,
+        p10 + p01 + 2.0 * p11,
+        color="#D55E00",
+        lw=2.2,
+        label="Coupled two-site fit",
+    )
+    ax.set(
+        xlabel="pH",
+        ylabel="Mean tail proton count",
+        ylim=(-0.05, 2.05),
+        title="BLA total propionic-tail titration",
+    )
+    ax.set_xticks(ph)
+    ax.legend(
+        title=(
+            rf"Macroscopic pK$_1$={fit.macro_pka1:.2f}; "
+            rf"pK$_2$={fit.macro_pka2:.2f}"
+        )
+    )
     fig.savefig(path, dpi=300)
     plt.close(fig)
 
@@ -1297,33 +1795,39 @@ def _write_composite_report(
             tps_records = tps_grouped[float(ph)]
             tps_states = np.asarray([record.state for record in tps_records])
             ppp = tps_states == composite.tps.protonated_state
-            bpp = tps_states == composite.tps.bpp_state
-            cpp = tps_states == composite.tps.cpp_state
-            deprot = bpp | cpp
+            tautomer_masks = {
+                name: tps_states == state
+                for name, state in zip(
+                    composite.tps.deprotonated_names,
+                    composite.tps.deprotonated_states,
+                    strict=True,
+                )
+            }
+            deprot = np.logical_or.reduce(tuple(tautomer_masks.values()))
             ppp_mean, ppp_sem = _mean_block_sem(ppp.astype(float), cfg.block_count)
             deprot_mean, deprot_sem = _mean_block_sem(
                 deprot.astype(float), cfg.block_count
             )
             denominator = int(deprot.sum())
-            tps_rows.append(
-                {
-                    "pH": float(ph),
-                    "records": float(len(tps_records)),
-                    "ppp_fraction": ppp_mean,
-                    "ppp_sem": ppp_sem,
-                    "deprotonated_fraction": deprot_mean,
-                    "deprotonated_sem": deprot_sem,
-                    "bpp_fraction_total": float(bpp.mean()),
-                    "cpp_fraction_total": float(cpp.mean()),
-                    "bpp_fraction_of_deprotonated": (
-                        float(bpp.sum() / denominator) if denominator else math.nan
-                    ),
-                    "cpp_fraction_of_deprotonated": (
-                        float(cpp.sum() / denominator) if denominator else math.nan
-                    ),
-                    "deprotonated_samples": float(denominator),
-                }
-            )
+            tps_row = {
+                "pH": float(ph),
+                "records": float(len(tps_records)),
+                "ppp_fraction": ppp_mean,
+                "ppp_sem": ppp_sem,
+                "deprotonated_fraction": deprot_mean,
+                "deprotonated_sem": deprot_sem,
+                "deprotonated_samples": float(denominator),
+            }
+            for name, mask in tautomer_masks.items():
+                tautomer_mean, tautomer_sem = _mean_block_sem(
+                    mask.astype(float), cfg.block_count
+                )
+                tps_row[f"{name}_fraction_total"] = tautomer_mean
+                tps_row[f"{name}_sem_total"] = tautomer_sem
+                tps_row[f"{name}_fraction_of_deprotonated"] = (
+                    float(mask.sum() / denominator) if denominator else math.nan
+                )
+            tps_rows.append(tps_row)
 
         if composite.prx is not None and prx_grouped is not None:
             prx_row: dict[str, float] = {"pH": float(ph)}
@@ -1355,23 +1859,47 @@ def _write_composite_report(
 
             if set(aligned[0]) != set(aligned[1]):
                 raise ValueError(f"PRX tail records are not aligned at pH {ph:g}")
-            proton_counts = np.asarray(
+            ordered_records = sorted(aligned[0])
+            tail1 = np.asarray(
                 [
-                    int(aligned[0][record].state in protonated_set)
-                    + int(aligned[1][record].state in protonated_set)
-                    for record in sorted(aligned[0])
+                    aligned[0][record].state in protonated_set
+                    for record in ordered_records
                 ]
             )
+            tail2 = np.asarray(
+                [
+                    aligned[1][record].state in protonated_set
+                    for record in ordered_records
+                ]
+            )
+            microstate_masks = {
+                "00": ~tail1 & ~tail2,
+                "10": tail1 & ~tail2,
+                "01": ~tail1 & tail2,
+                "11": tail1 & tail2,
+            }
+            proton_counts = tail1.astype(int) + tail2.astype(int)
             joint_row: dict[str, float] = {
                 "pH": float(ph),
                 "records": float(len(proton_counts)),
             }
+            for state, mask in microstate_masks.items():
+                fraction, sem = _mean_block_sem(
+                    mask.astype(float), cfg.block_count
+                )
+                joint_row[f"p{state}_fraction"] = fraction
+                joint_row[f"p{state}_sem"] = sem
             for count in range(3):
                 fraction, sem = _mean_block_sem(
                     (proton_counts == count).astype(float), cfg.block_count
                 )
                 joint_row[f"fraction_{count}H"] = fraction
                 joint_row[f"sem_{count}H"] = sem
+            mean_protons, mean_protons_sem = _mean_block_sem(
+                proton_counts.astype(float), cfg.block_count
+            )
+            joint_row["mean_tail_protons"] = mean_protons
+            joint_row["mean_tail_protons_sem"] = mean_protons_sem
             joint_rows.append(joint_row)
 
     def write_dict_csv(name: str, rows: list[dict[str, float]]) -> None:
@@ -1384,14 +1912,157 @@ def _write_composite_report(
     summary: dict[str, object] = {}
     if composite.tps is not None:
         write_dict_csv("tps-titration-tautomers.csv", tps_rows)
-        _plot_bla_tps(cfg, work / "tps-titration-tautomers.png", tps_rows)
-        output_tables.append("tps-titration-tautomers.csv")
+        tps_fit = fit_tps_microstate_model(tps_rows, composite.tps)
+        dense_ph = np.linspace(
+            float(ph_values.min()), float(ph_values.max()), 901
+        )
+        fitted_probabilities = tps_microstate_probabilities(
+            dense_ph, tps_fit.microscopic_pkas
+        )
+        fitted_names = (
+            composite.tps.protonated_name,
+            *composite.tps.deprotonated_names,
+        )
+        fitted_rows = [
+            {
+                "pH": float(ph),
+                **{
+                    f"{name}_fraction": float(fitted_probabilities[index][row])
+                    for index, name in enumerate(fitted_names)
+                },
+                "normalization_sum": float(
+                    sum(values[row] for values in fitted_probabilities)
+                ),
+            }
+            for row, ph in enumerate(dense_ph)
+        ]
+        write_dict_csv("tps-titration-curves.csv", fitted_rows)
+        model_pkas: dict[str, float] | None = None
+        model_macro_pka: float | None = None
+        if composite.tps.microstate_model_pkas is not None:
+            model_probabilities = tps_microstate_probabilities(
+                dense_ph, composite.tps.microstate_model_pkas
+            )
+            model_weights = np.power(
+                10.0,
+                -np.asarray(
+                    composite.tps.microstate_model_pkas, dtype=float
+                ),
+            )
+            model_conditional = model_weights / model_weights.sum()
+            model_rows = [
+                {
+                    "pH": float(ph),
+                    f"{composite.tps.protonated_name}_fraction": float(
+                        model_probabilities[0][row]
+                    ),
+                    "deprotonated_fraction": float(
+                        1.0 - model_probabilities[0][row]
+                    ),
+                    **{
+                        f"{name}_fraction": float(
+                            model_probabilities[index][row]
+                        )
+                        for index, name in enumerate(
+                            composite.tps.deprotonated_names, start=1
+                        )
+                    },
+                    **{
+                        f"{name}_conditional_fraction": float(
+                            model_conditional[index]
+                        )
+                        for index, name in enumerate(
+                            composite.tps.deprotonated_names
+                        )
+                    },
+                    "normalization_sum": float(
+                        sum(values[row] for values in model_probabilities)
+                    ),
+                }
+                for row, ph in enumerate(dense_ph)
+            ]
+            write_dict_csv("tps-microstate-model.csv", model_rows)
+            model_pkas = {
+                name: pka
+                for name, pka in zip(
+                    composite.tps.deprotonated_names,
+                    composite.tps.microstate_model_pkas,
+                    strict=True,
+                )
+            }
+            model_macro_pka = float(-np.log10(model_weights.sum()))
+        _plot_bla_tps(
+            cfg,
+            work / "tps-titration-tautomers.png",
+            tps_rows,
+            composite.tps,
+        )
+        _plot_bla_tps_curves(
+            cfg,
+            work / "tps-titration-curves.png",
+            tps_rows,
+            composite.tps,
+            tps_fit,
+        )
+        microscopic_pkas = {
+            name: pka
+            for name, pka in zip(
+                composite.tps.deprotonated_names,
+                tps_fit.microscopic_pkas,
+                strict=True,
+            )
+        }
+        (work / "tps-microstate-fit.yaml").write_text(
+            yaml.safe_dump(
+                {
+                    "model": "one-proton, multiple-deprotonated-tautomer partition model",
+                    "protonated_state": composite.tps.protonated_name,
+                    "deprotonated_states": list(composite.tps.deprotonated_names),
+                    "equations": {
+                        "normalization": "Z = 1 + sum_i 10**(pH - microscopic_pKa_i)",
+                        "protonated_probability": "P_prot = 1 / Z",
+                        "tautomer_probability": "P_i = 10**(pH - microscopic_pKa_i) / Z",
+                        "macroscopic_pKa": "-log10(sum_i 10**(-microscopic_pKa_i))",
+                    },
+                    "microscopic_pKa": microscopic_pkas,
+                    "macroscopic_pKa": tps_fit.macroscopic_pka,
+                    "population_rmse": tps_fit.rmse,
+                    "dense_curve_csv": "tps-titration-curves.csv",
+                    "configured_microstate_model": (
+                        None
+                        if model_pkas is None
+                        else {
+                            "microscopic_pKa": model_pkas,
+                            "macroscopic_pKa": model_macro_pka,
+                            "dense_curve_csv": "tps-microstate-model.csv",
+                        }
+                    ),
+                },
+                sort_keys=False,
+            )
+        )
+        output_tables.extend(
+            ["tps-titration-tautomers.csv", "tps-titration-curves.csv"]
+        )
+        if model_pkas is not None:
+            output_tables.append("tps-microstate-model.csv")
         summary["tps_residue_id"] = composite.tps.residue_id
+        summary["tps_microstate_fit"] = {
+            "microscopic_pKa": microscopic_pkas,
+            "macroscopic_pKa": tps_fit.macroscopic_pka,
+            "population_rmse": tps_fit.rmse,
+        }
+        if model_pkas is not None:
+            summary["tps_microstate_model"] = {
+                "microscopic_pKa": model_pkas,
+                "macroscopic_pKa": model_macro_pka,
+            }
 
     if composite.prx is not None:
         write_dict_csv("prx-titration.csv", prx_rows)
         write_dict_csv("prx-syn-anti.csv", syn_rows)
         write_dict_csv("prx-joint-protonation.csv", joint_rows)
+        two_site_fit = fit_two_site_model(joint_rows)
         fits = _plot_bla_prx_titration(
             cfg,
             work / "prx-titration.png",
@@ -1412,6 +2083,39 @@ def _write_composite_report(
             joint_rows,
             composite.prx.residue_name,
         )
+        _plot_bla_prx_microstates(
+            cfg,
+            work / "prx-tail-microstates.png",
+            joint_rows,
+            two_site_fit,
+        )
+        _plot_bla_prx_total_titration(
+            cfg,
+            work / "prx-tail-total-titration.png",
+            joint_rows,
+            two_site_fit,
+        )
+        (work / "prx-two-site-fit.yaml").write_text(
+            yaml.safe_dump(
+                {
+                    "model": "Ullmann coupled two-site microstate model",
+                    "tail_1_residue_id": composite.prx.residue_ids[0],
+                    "tail_2_residue_id": composite.prx.residue_ids[1],
+                    "pk10": two_site_fit.pk10,
+                    "pk01": two_site_fit.pk01,
+                    "interaction_W": two_site_fit.interaction_w,
+                    "macroscopic_pKa1": two_site_fit.macro_pka1,
+                    "macroscopic_pKa2": two_site_fit.macro_pka2,
+                    "definitions": {
+                        "p00": "both tails deprotonated",
+                        "p10": "tail 1 protonated, tail 2 deprotonated",
+                        "p01": "tail 1 deprotonated, tail 2 protonated",
+                        "p11": "both tails protonated",
+                    },
+                },
+                sort_keys=False,
+            )
+        )
         output_tables.extend(
             ["prx-titration.csv", "prx-syn-anti.csv", "prx-joint-protonation.csv"]
         )
@@ -1419,6 +2123,13 @@ def _write_composite_report(
         summary["prx_fitted_pKa"] = [
             None if fit is None else fit.pka for fit in fits
         ]
+        summary["prx_two_site_fit"] = {
+            "pk10": two_site_fit.pk10,
+            "pk01": two_site_fit.pk01,
+            "interaction_W": two_site_fit.interaction_w,
+            "macroscopic_pKa1": two_site_fit.macro_pka1,
+            "macroscopic_pKa2": two_site_fit.macro_pka2,
+        }
 
     included = [
         name

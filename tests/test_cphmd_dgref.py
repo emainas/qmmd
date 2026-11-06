@@ -10,9 +10,11 @@ from qmmd.cphmd_dgref import (
     prepared_parm7_name,
     prepare_dgref,
     read_charge_sets,
+    read_selected_topology_info,
     read_topology_info,
     render_cpin,
     render_mdin,
+    render_run_script,
     select_charge_states,
     submit_dgref,
 )
@@ -22,9 +24,28 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/MEA/cphmd/dgref.yaml"
 PR4_CONFIG = ROOT / "configs/PR4/cphmd/dgref.yaml"
 TPS_APP_CONFIG = ROOT / "configs/TPS/cphmd/dgref-app.yaml"
+BLA_PRX2_CONFIG = ROOT / "configs/BLA/cphmd/dgref-prx2-tail3-fixed.yaml"
 
 
 class CpHMDDgrefTests(unittest.TestCase):
+    def test_explicit_residue_selection_for_embedded_duplicate_residue(self):
+        cfg = load_config(BLA_PRX2_CONFIG)
+        topology = read_selected_topology_info(
+            cfg,
+            ROOT / "systems/BLA/solv_10.0/prep/solv_prx_mbondi2.parm7",
+        )
+        charges = read_charge_sets(cfg.charge_sets)
+
+        self.assertEqual(cfg.residue_number, 2)
+        self.assertEqual(cfg.residue_name, "PRX")
+        self.assertEqual(topology.residue_number, 2)
+        self.assertEqual(topology.first_atom, 59)
+        self.assertEqual(topology.atom_names, charges.atom_names)
+        cpin = render_cpin(cfg, charges, topology)
+        self.assertIn("ntres=1", cpin)
+        self.assertIn("'Residue: PRX 2'", cpin)
+        self.assertNotIn("'Residue: PRX 3'", cpin)
+
     def test_tps_pairwise_state_selection(self):
         cfg = load_config(TPS_APP_CONFIG)
         all_charges = read_charge_sets(cfg.charge_sets)
@@ -39,7 +60,9 @@ class CpHMDDgrefTests(unittest.TestCase):
         self.assertEqual(charges.state_names, ("ppp", "app"))
         self.assertEqual(charges.proton_counts, (4, 3))
         cpin = render_cpin(cfg, all_charges, topology)
-        self.assertIn("maxh=2", cpin)
+        # One disappearing ring proton plus two invariant zero-charge caps,
+        # with one additional Amber hindex pointer slot.
+        self.assertIn("maxh=4", cpin)
         self.assertIn("natchrg=120", cpin)
         self.assertIn("ntstates=2", cpin)
         self.assertIn("PROTCNT=4,3,", cpin)
@@ -133,6 +156,14 @@ class CpHMDDgrefTests(unittest.TestCase):
             ROOT / "systems/MEA/solv_5.5/mdequil/solv_modradii.parm7",
         )
         self.assertEqual(prepared_parm7_name(cfg), "solv_modradii.parm7")
+
+    def test_optional_dgref_estimate_skips_broad_search(self):
+        cfg = replace(load_config(CONFIG), dgref_estimate=27.556457)
+        script = render_run_script(cfg)
+        self.assertIn("-dgrefest 27.556457", script)
+
+    def test_default_run_script_does_not_force_an_estimate(self):
+        self.assertNotIn("-dgrefest", render_run_script(load_config(CONFIG)))
 
     def test_submit_requires_confirmation_and_uses_sbatch_script(self):
         cfg = load_config(CONFIG)

@@ -1,0 +1,20 @@
+name: GLY
+
+# Neutral capped glycine: ACE-GLY-NME, generated with Amber ff14SB by
+# systems/GLY/init/build-capped-glycine.in.
+leaprc_mol: leaprc.protein.ff14SB
+leaprc_sol: leaprc.water.tip3p
+frcmod_ion:
+frcmod:
+
+mol2: systems/GLY/init/capped-glycine.mol2
+
+water_model: TIP3PBOX
+buffer: 15.0
+
+# ACE-GLY-NME has net charge zero, so no counterions are required.
+counterion:
+counterion_num: 0
+
+input_dir: systems/GLY/init/
+prefix: solv

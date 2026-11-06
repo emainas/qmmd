@@ -1,0 +1,64 @@
+equil_yaml: equil-dih.yaml
+equil_stage_spec_yamls:
+  - extend-dih-right.yaml
+output_dirname: wham_extended
+
+window_map:
+  - {window_index: 0, center_deg: -20.0}
+  - {window_index: 1, center_deg: -10.0}
+  - {window_index: 2, center_deg: 0.0}
+  - {window_index: 3, center_deg: 10.0}
+  - {window_index: 4, center_deg: 20.0}
+  - {window_index: 5, center_deg: 30.0}
+  - {window_index: 6, center_deg: 40.0}
+  - {window_index: 7, center_deg: 50.0}
+  - {window_index: 8, center_deg: 60.0}
+  - {window_index: 9, center_deg: 70.0}
+  - {window_index: 10, center_deg: 80.0}
+  - {window_index: 11, center_deg: 90.0}
+  - {window_index: 12, center_deg: 100.0}
+  - {window_index: 13, center_deg: 110.0}
+  - {window_index: 14, center_deg: 120.0}
+  - {window_index: 15, center_deg: 130.0}
+  - {window_index: 16, center_deg: 140.0}
+  - {window_index: 17, center_deg: 150.0}
+  - {window_index: 18, center_deg: 160.0}
+  - {window_index: 19, center_deg: 170.0}
+  - {window_index: 20, center_deg: 180.0}
+  - {window_index: 21, center_deg: 190.0}
+  - {window_index: 22, center_deg: 200.0}
+  - {window_index: 23, center_deg: 210.0}
+
+discard_ps: 0.0
+
+coordinate:
+  minimum_deg: -30.0
+  maximum_deg: 230.0
+  bins: 130
+  periodic: false
+  report_minimum_deg: -20.0
+  report_maximum_deg: 210.0
+
+wham:
+  executable: /nas/sycamore/home/emainas/software/wham/wham/wham
+  tolerance: 1.0e-6
+  temperature_k: 300.0
+  padding: 0
+
+zero_reference_deg: [0.0, 5.0]
+
+thermodynamics:
+  syn_range_deg: [-20.0, 30.0]
+  anti_range_deg: [150.0, 210.0]
+  transition_range_deg: [60.0, 120.0]
+
+plot:
+  smoothing_penalty: 10.0
+
+bootstrap:
+  enabled: true
+  replicas: 500
+  block_length_ps: 2.0
+  seed: 20261027
+  confidence_level: 0.95
+  minimum_success_fraction: 0.90

@@ -1,0 +1,63 @@
+system: BLA
+buffer: 10.0
+prefix: solv
+job_name: dgref-prx2-tail3-fixed
+input_parm7: prep/solv_prx_mbondi2.parm7
+input_rst7: equil-npt.rst7
+
+# TPS 1 remains protonated PPP and PRX 3 remains deprotonated. Only PRX 2 is
+# present in the CPIN and therefore only PRX 2 can change protonation state.
+cpin:
+  residue_number: 2
+  residue_name: PRX
+  charge_sets: configs/PRX/cphmd/charge_sets.csv
+  states: [deprot, o1_syn, o1_anti, o2_syn, o2_anti]
+  statene: [0.0, DELTAGREF, DELTAGREF, DELTAGREF, DELTAGREF]
+  pka_corr: [0.0, 4.85, 4.85, 4.85, 4.85]
+  cph_igb: 2
+
+report:
+  discard_first: 8
+
+dgref_mdin:
+  dgref_nvt:
+    description: BLA conditional PRX 2 DGref with PPP fixed and PRX 3 deprotonated
+    cntrl:
+      iwrap: 1
+      imin: 0
+      irest: 1
+      ntx: 5
+      nstlim: 1000000
+      dt: 0.001
+      temp0: 300.0
+      ntt: 3
+      gamma_ln: 2.0
+      ntb: 1
+      ntp: 0
+      ntc: 2
+      ntf: 2
+      cut: 8.0
+      ntpr: 500
+      ntwx: 1000
+      ntwe: 0
+      icnstph: 2
+      ntcnstph: 100
+      solvph: 4.85
+      ntrelax: 100
+      saltcon: 0.1
+
+runtime:
+  module: amber/26
+  executable: sander
+  env:
+    TEMP: 300
+  strict_mode: true
+
+slurm:
+  job:
+    name: bla-prx2-dgref
+    partition: small
+    nodes: 2
+    time: "48:00:00"
+    stdout: "slurm.%j.out"
+    stderr: "slurm.%j.err"

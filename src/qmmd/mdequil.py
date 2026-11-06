@@ -17,6 +17,7 @@ class SlurmJobConfig:
     time: str
     stdout: str
     stderr: str
+    ntasks: Optional[int] = None
 
 
 @dataclass
@@ -216,7 +217,7 @@ module load {cfg.runtime.module}
 
 {env_lines}
 
-echo "==> Running min/heat/equil (serial {cfg.runtime.executable})"
+echo "==> Running min/heat/equil with {cfg.runtime.executable}"
 
 # Minimize
 if [[ ! -f min.out ]]; then
@@ -289,11 +290,13 @@ def write_slurm_sh(cfg: MDEquilConfig, out_dir: Path) -> Optional[Path]:
     job = cfg.slurm.job
     sh_path = out_dir / "slurm.sh"
 
+    ntasks_line = f"#SBATCH --ntasks={job.ntasks}\n" if job.ntasks is not None else ""
     text = f"""\
 #!/usr/bin/env bash
 #SBATCH -J {job.name}
 #SBATCH -p {job.partition}
 #SBATCH -N {job.nodes}
+{ntasks_line.rstrip()}
 #SBATCH -t {job.time}
 #SBATCH -o {job.stdout}
 #SBATCH -e {job.stderr}

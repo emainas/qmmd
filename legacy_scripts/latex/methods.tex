@@ -1,0 +1,205 @@
+% Methods restructured 2026-10-06 (EP comments on methods_EP.docx): overview first, one subsection per calculation,
+% technical details moved to SI.tex (Section S1). Red = to complete or check.
+
+We computed two kinds of free-energy differences between microstates and combined them in a thermodynamic network.
+Deprotonation free energies, which give microscopic \pka{} values, were obtained from DC-DFTB metadynamics in explicit water for the two imidazole nitrogens of histidine and the four nitrogens of the BV core.
+Free energies between microstates with the same net charge (tautomers and conformers) were obtained from DC-DFTB umbrella sampling, for the \textit{syn}--\textit{anti} rotation of propionic acid, the intramolecular proton transfer of malonaldehyde, and the proton transfers and ring rotation of BV.
+The network gives the microscopic and macroscopic \pka{} values.
+For BV, these free energies are also the reference values for constant-pH MD, which gives the population of each microstate as a function of pH; these populations weight the absorption spectra of the individual microstates to give the pH-dependent spectrum.
+
+We distinguish protonation macrostates, protonation or tautomeric microstates, and conformers.
+A protonation macrostate groups all species having the same total proton count and net charge, whereas a microstate additionally specifies the location of each titratable proton.
+Where useful, we use \emph{protomer} for microstates distinguished specifically by the protonated or deprotonated atomic site.
+Conformers share the same proton count, proton placement, and covalent connectivity but differ in molecular geometry.
+
+Histidine comprises three protonation microstates distributed between two protonation macrostates (Figure~\ref{fig:micro}).
+The cationic HIP state contains protons on both imidazole nitrogen atoms, whereas the neutral HID and HIE tautomers retain the proton on $N_{\delta}$ and $N_{\epsilon}$, respectively.
+Multiple side-chain dihedral conformers were considered within each microstate.
+Propionic acid introduces two neutral carboxylic-acid conformers, denoted PRS and PRA according to the orientation of the O--H bond relative to the carbonyl group.
+Malonaldehyde (3-hydroxy-2-propenal) is a prototype of intramolecular proton transfer: its enol proton moves between the two oxygen atoms through an internal O--H$\cdots$O hydrogen bond, without leaving the molecule.\cite{baughcumMicrowaveSpectroscopicStudy1981,wangFulldimensionalQuantumCalculations2008}
+The two tautomers connected by this transfer, denoted MAA and MAB according to whether the proton sits on oxygen O$_\mathrm{A}$ or O$_\mathrm{B}$, are equivalent by symmetry.
+
+\textcolor{red}{For BV, we considered 11 microstates of the tetrapyrrolic core expected to be relevant over the pH range examined here: seven cationic and four neutral states. These comprise the cationic, fully N-protonated diketo state; four neutral, mono-deprotonated diketo protomers; and six cationic keto--enol tautomers formed by redistribution of an N-bound proton to the carbonyl oxygen of ring A or D. [TO REVISIT once the BV results are final: keto--enol tautomers were not simulated directly. Update this list and the BV network in Figure~\ref{fig:micro} to match what was sampled.]}
+\textcolor{green}{\textbf{Response:} The current calculations do not support this 11-state claim. The reactive DC-DFTB work directly sampled PKK and the four mono-deprotonated diketo products, with occasional unconverged keto--enol endpoints; the configured full-chromophore CpHMD calculation currently includes only PPP, BPP, and CPP for the core. Keto--enol states were not included in CpHMD and have no converged populations. The text and Figure~\ref{fig:micro} should therefore be restricted to the states actually sampled, or the keto--enol structures should be shown separately as observed but unquantified products.}
+Each BV microstate is identified by a three-letter code.
+The first character specifies the nitrogen protonation pattern: P denotes the fully N-protonated core, whereas A, B, C, or D identifies the deprotonated pyrrolic nitrogen.
+The second and third characters specify whether terminal rings A and D, respectively, are in the keto (K) or enol (E) form.
+Thus, PKK denotes the fully N-protonated diketo state, BKK the B-ring-deprotonated diketo protomer, and BEK a tautomer in which the B-ring nitrogen is deprotonated and ring A is enolized.
+The two propionic acid side chains of BV were kept protonated in all microstates because their protonation state has a negligible effect on the calculated absorption properties.\cite{mainasBiliverdinsPropionicChains2024}
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/fig1.png}
+    \caption{Definition and connectivity of the microstates considered in this work. The microstate network distinguishes neutral (blue), cationic (teal) and anionic (purple) states; black lines indicate changes in protonation state associated with microscopic \pka{} values, whereas gray lines indicate tautomerization associated with tautomerization constants.}
+    \label{fig:micro}
+\end{figure}
+
+\subsection{System preparation}
+
+Each solute was placed in a cubic box of TIP3P water\cite{jorgensenComparisonSimplePotential1983} with a buffer distance of 5.5~\AA{} using AmberTools' \texttt{tleap},\cite{case_ambertools_2023} giving 506 atoms for histidine (HIP), \textcolor{red}{XXX for propionic acid (PRS?), XXX for malonaldehyde (MAA),}\textcolor{green}{\textbf{Response:} 428 atoms for propionic acid (PRS) and 372 atoms for malonaldehyde (MAA).} and 869 for BV (PKK, in the locked-helix \textit{ZZZsss} conformation\cite{tongManyRoadsSeam2026}). \textcolor{red}{[Lefteris's BV folders are named solv\_4.0 and the others solv\_5.5: was BV solvated with a 4.0~\AA{} buffer? If so, update this sentence.]}\textcolor{green}{\textbf{Response:} Yes. The saved preparation specification used for these BV runs records a 4.0~\AA{} buffer; histidine, propionic acid, and malonaldehyde used 5.5~\AA{}. The sentence should distinguish BV from the three validation systems.}
+The cationic systems (HIP and PKK) were neutralized by a hydroxide ion placed at the solvent position farthest from the solute.
+Histidine was described with ff19SB,\cite{tianFf19SBAminoAcidSpecificProtein2020} propionic acid and malonaldehyde with \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} GAFF2, using the supplied MOL2 charges and system-specific \texttt{frcmod} parameters. The repository does not record the upstream charge-fitting calculation for these two molecules, so that provenance must be recovered before making a more specific charge-method claim.}, and BV with a custom force field derived with ff-opt,\cite{curtisRobustAutomatedForce2026} with RESP\cite{baylyWellbehavedElectrostaticPotential1993} charges fitted to the B3LYP/6-31G* electrostatic potential.
+Each system was minimized, heated to 300~K, and equilibrated for 100~ps in the NVT ensemble and 100~ps in the NPT ensemble with Amber\cite{caseAmber20252025} (details in the SI, Section~S1).
+
+The equilibrated structures were the starting points for all quantum-mechanical simulations, in which both the solute and the water were described with the divide-and-conquer formulation\cite{nakai_divide-and-conquer_2023} of third-order self-consistent-charge density-functional tight binding (DC-DFTB3),\cite{gausDensityFunctionalTight2014} as implemented in DCDFTBMD.\cite{nishimura_dcdftbmd_2019}
+We used the 3OB Slater--Koster parameter set with the standard X--H damping correction ($\zeta=4.0$),\cite{gaus_parameterization_2014} periodic boundary conditions, and Ewald electrostatics.
+Each system was first relaxed at this level for 40~ps at 300~K in the NVT ensemble, with a time step of 1~fs. \textcolor{red}{[Thermostat? The old text said Andersen, 0.01~ps$^{-1}$ (now in the SI); confirm and name it here.]}
+\textcolor{green}{\textbf{Response:} Confirmed from the archived DCDFTBMD inputs: \texttt{NVTTYPE=5}, \texttt{BATHTEMP=300}, and \texttt{COLLISIONFREQ=0.01} were used, i.e., the Andersen thermostat with collision frequency 0.01~ps$^{-1}$.}
+
+\subsection{Deprotonation free energies from metadynamics}
+
+Microscopic \pka{} values were obtained from DC-DFTB metadynamics,\cite{barducciMetadynamics2011} following the strategy introduced by Nakai and co-workers for direct \pka{} prediction in explicit water.\cite{Sakti2018}
+The collective variable (CV) was the dimensionless coordination number of the titratable nitrogen with all hydrogen atoms,\cite{Tummanapelli2015Amino,Tummanapelli2015Polyprotic}
+\begin{equation}
+n_{\mathrm{NH}} = \sum_i
+\frac{1-\left(r_{\mathrm{N}H_i}/r_0\right)^6}
+{1-\left(r_{\mathrm{N}H_i}/r_0\right)^{12}},
+\label{eq:coordination-number}
+\end{equation}
+where the sum runs over all hydrogen atoms $i$ in the system, $r_{\mathrm{N}H_i}$ is the distance between the selected nitrogen and hydrogen atom $i$, and $r_0=1.6$~\AA{} sets the distance over which the coordination function decays.
+Because the sum includes every hydrogen atom, biasing $n_{\mathrm{NH}}$ promotes proton loss from the selected nitrogen without prescribing the proton acceptor or the transfer pathway.
+We biased each of the two nitrogens of HIP and each of the four nitrogens of PKK, adding Gaussian hills with a height of $5 \times 10^{-4}$~Hartree and a width of 0.1 every 40~fs.
+For each site, 200 independent trajectories were started from equilibrated configurations with different initial velocities and random seeds, to sample alternative proton-transfer pathways.
+Each trajectory was propagated until $n_{\mathrm{NH}}$ entered the diffusive regime (defined under Trajectory analysis below) and then for an additional 2~ps, giving total trajectory lengths of \textcolor{red}{XXX--YYY}~ps.
+\textcolor{green}{\textbf{Response:} This is not how the archived runs were controlled and the sentence should be corrected. The input files specify a fixed upper simulation length; completed runs were subsequently analyzed only through $t_{\mathrm{diff}}+1.75$~ps. The selected handoff trajectories have unequal available lengths (approximately 8.8--20~ps of metadynamics), so there is no defensible universal XXX--YYY range for all 200 trials without first auditing every run.}
+Each trajectory required approximately 18.5 computing hours for histidine and 3 days for BV, using 16 cores.
+The free-energy profile $F(s)$ along $s=n_{\mathrm{NH}}$ was reconstructed with the standard metadynamics estimator, $F(s,t)\simeq-V_{\mathrm{bias}}(s,t)+C(t)$, and the deprotonation free energy was taken as the difference between the minima of the deprotonated ($s\approx0$) and protonated ($s\approx1$) basins, averaged over ten equally spaced times in the 1.75~ps following the onset of diffusion. \textcolor{red}{[Taken from the old 3$\times$3 summary text; check, including 1.75 vs 2~ps and $T=313.15$~K there vs 300~K here.]}
+\textcolor{green}{\textbf{Response:} Confirmed for the final BV and histidine analyses: ten equally spaced samples over the 1.75~ps interval beginning at $t_{\mathrm{diff}}$, with \pka{} converted at 300~K. The old 313.15~K conversion was a legacy analysis setting and has been replaced. One PRN trajectory (syn-6) uses a 1.25~ps window because only that much post-diffusion data was available; it should be disclosed if the PRN metadynamics values remain in the paper.}
+Diffusion along $n_{\mathrm{NH}}$ was used only as a sampling and stopping criterion; whether the proton had actually left the solute was assessed separately for each trajectory, as described under Trajectory analysis below.
+
+\subsection{Tautomer and conformer free energies from umbrella sampling}
+
+To evaluate the free-energy differences between tautomers and between conformers, we used umbrella sampling\cite{kastnerUmbrellaSampling2011} with the same DC-DFTB setup as the metadynamics, for consistency.
+Intramolecular proton transfer was sampled along a linear combination of distances (LCOD),
+\begin{equation}
+d_{\mathrm{LCOD}} = d_{\mathrm{H}\cdots\mathrm{D}} - d_{\mathrm{H}\cdots\mathrm{A}},
+\label{eq:lcod}
+\end{equation}
+where $d_{\mathrm{H}\cdots\mathrm{D}}$ is the distance between the transferring proton and the site that holds it in the starting microstate (the donor) and $d_{\mathrm{H}\cdots\mathrm{A}}$ is its distance to the acceptor.
+$d_{\mathrm{LCOD}}$ is negative when the proton is bound to the donor, positive when it is bound to the acceptor, and close to zero at the midpoint of the transfer.
+This coordinate was used for the MAA$\rightarrow$MAB transfer in malonaldehyde (donor O$_\mathrm{A}$, acceptor O$_\mathrm{B}$) and for the proton transfers between adjacent rings of BV (AKK$\rightarrow$BKK, BKK$\rightarrow$CKK, and CKK$\rightarrow$DKK).
+The relative free energies of the four BV protomers were thus obtained in two independent ways, from the metadynamics deprotonation free energies (PKK$\rightarrow$XKK) and from umbrella sampling between adjacent rings, and the two were compared.
+Conformational changes were sampled along a dihedral angle: the O=C--O--H dihedral that converts PRS (0$^\circ$) into PRA (180$^\circ$), and the rotation of ring \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} ring D} about the \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} C4C--C15 bond, using the NC--C4C--C15--C1D (``single15'' or $\psi_{CD}$) dihedral} that converts \textit{ZZZsss} into \textit{ZZZssa} BV,\cite{tongManyRoadsSeam2026} starting from both PKK and CKK.
+The latter gives the deprotonation free energy of the \textit{ZZZssa} conformer through a thermodynamic cycle (see Thermodynamic analysis of the microstate network below).
+
+Windows were spaced by 0.1~\AA{} along $d_{\mathrm{LCOD}}$, from $-1.5$ to $+1.5$~\AA{} for malonaldehyde (31 windows), from $-2.0$ to $+2.0$~\AA{} for the APP$\leftrightarrow$BPP and CPP$\leftrightarrow$DPP transfers of BV (41 windows each), and from $-2.0$ to $+2.3$~\AA{} for the BPP$\leftrightarrow$CPP transfer (44 windows). Dihedral windows were spaced by 10$^\circ$: from 0 to 180$^\circ$ for propionic acid (19 windows) and from $-20$ to 180$^\circ$ for the BV ring-D rotation (21 windows).
+
+The LCOD restraints used the quadratic potential $V=\kappa(\Delta d)^2$ with $\kappa=500$~kJ~mol$^{-1}$~\AA$^{-2}$ (119.50~kcal~mol$^{-1}$~\AA$^{-2}$). Starting structures for the dihedral windows were generated by sequential restrained Amber MD, using 1~ps per window and a force constant of 50~kcal~mol$^{-1}$~rad$^{-2}$. The DC-DFTB dihedral restraints used coefficients of 0.01523087~kJ~mol$^{-1}$~deg$^{-2}$ during equilibration and 0.05~kJ~mol$^{-1}$~deg$^{-2}$ during production, corresponding to 11.95 and 39.23~kcal~mol$^{-1}$~rad$^{-2}$, respectively. Starting structures for the LCOD windows were selected as the frames with $d_{\mathrm{LCOD}}$ closest to each target value from completed DC-DFTB trajectories.
+
+All restrained DC-DFTB simulations were performed at 300~K with a time step of 1~fs. Propionic-acid windows comprised 40~ps of equilibration followed by 80~ps of production, whereas the BV torsional windows comprised 40~ps of equilibration followed by 40~ps of production. The exploratory LCOD profiles were constructed from the available restrained trajectories of nominally 40~ps per window, without a separate production stage. No frames were discarded from the trajectories used for WHAM.
+
+Free-energy profiles were reconstructed using the weighted histogram analysis method (WHAM),\cite{kumarMultidimensionalFreeenergyCalculations1995} and sampling uncertainties were estimated by independently applying circular moving-block bootstrap resampling to each window, using 500 replicas and 2~ps blocks. Overlap between neighboring windows is shown in the Supporting Information. Together, these umbrella-sampling calculations required approximately $2.3\times10^5$ core-hours, based on 16 MPI ranks per window and the recorded elapsed times.
+
+\subsection{Trajectory analysis}
+\label{sec:traj-analysis}
+
+Because the CV does not follow the released proton, each metadynamics trajectory was analyzed to identify the location and fate of the released proton.
+We followed the excess-proton charge defect through the Mulliken charges of the solute and solvent heteroatoms.
+In each frame, the defect was assigned to the solvent oxygen with the largest Mulliken charge within $-0.625\leq q_{\mathrm O}\leq-0.525\ e$, the range that identifies a hydronium-like species.
+Correlated charge changes at a donor and an acceptor atom identified intramolecular proton transfer, either direct or through intervening water molecules.
+A trajectory was considered to have sampled solute deprotonation only when the charge defect progressed beyond the contact-ion-pair region \textcolor{red}{[defined how? e.g., N--defect distance $>$ XXX~\AA{}]}, migrated away from the solute into the solvent, and did not recombine with either the deprotonated site or the hydroxide counterion.
+\textcolor{green}{\textbf{Response:} The implemented operational cutoff is 4.0~\AA{} from the assigned defect oxygen to the nearest solute atom, evaluated with periodic minimum-image distances; it is not specifically an N--defect distance. Passing the cutoff alone is insufficient: endpoint identity and recombination are checked separately.}
+
+The onset of the diffusive regime, $t_{\mathrm{diff}}$, was assigned as the time at which the proton had separated from the nitrogen ($s\leq0.05$ for at least \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} 50}~fs) and $s$ then recovered to $s\geq0.20$ for a sustained period. \textcolor{red}{[From the old 3$\times$3 summary text; check the persistence interval.]}\textcolor{green}{\textbf{Response:} The automated detector uses 0.05~ps for both persistence tests. However, several final selected BV/PRN $t_{\mathrm{diff}}$ values were manually adjudicated from the full defect diagnostics; the Methods should distinguish the automated candidate criterion from final manual selection.}
+To check that diffusion along $s$ after $t_{\mathrm{diff}}$ corresponds to a proton that has moved into the solvent, we also characterized the hydrogen-bonded water wire between the defect and the deprotonated nitrogen: its connectivity (the number of bridging water molecules, or no connection) and its orientation, measured by a conduction-readiness index $\xi$ that equals 1 when all hydrogen bonds along the wire point from the defect toward the nitrogen.
+Definitions of these quantities and per-trajectory diagnostic summaries are given in the SI (Section~S1).
+
+\subsection{Thermodynamic analysis of the microstate network}
+\label{sec:network}
+
+The sampled free-energy differences were assembled into a network in which each node is a microstate and each edge an equilibrium between two microstates.\cite{ullmannRelationsProtonationConstants2003,bombardaPHDependentPKaValues2010}
+Edges between microstates that differ by one proton give microscopic \pka{} values,
+\begin{equation}
+\mathrm{p}K_{\mathrm{a},\,i\rightarrow j}
+=
+\frac{\Delta G_{i\rightarrow j}^{\mathrm{deprot}}}{2.303\,RT},
+\label{eq:microscopic-pka}
+\end{equation}
+where $\Delta G_{i\rightarrow j}^{\mathrm{deprot}}$ is the free-energy difference between the protonated basin and the basin containing the deprotonated solute and the solvated excess proton.\cite{Sakti2018}
+The free energy of the excess-proton basin is referenced to the aqueous standard state (pH~0) following Tummanapelli and co-workers,\cite{Tummanapelli2014} so that Equation~\ref{eq:microscopic-pka} gives absolute \pka{} values and no experimental \pka{} enters as a calibration.
+Edges between microstates with the same net charge give tautomerization or conformational free energies, $\Delta G_{i\rightarrow j}^{\mathrm{taut}}=G_j-G_i$, and the corresponding equilibrium constants $\tau_{i\rightarrow j}=p_j/p_i=\exp(-\Delta G_{i\rightarrow j}^{\mathrm{taut}}/RT)$, where $p_i$ and $p_j$ are the populations of the two microstates.
+Because free energy is a state function, the free-energy changes around any closed cycle of the network sum to zero.
+Edges sampled in more than one way therefore test the internal consistency of the calculations, and edges that were not sampled follow from cycle closure.
+
+The macroscopic \pka{} combines all microstates of the protonated ($+$) and deprotonated ($0$) manifolds.
+Choosing reference microstates $i_0\in+$ and $j_0\in0$,
+\begin{equation}
+\mathrm{p}K_{\mathrm{a}}^{\mathrm{macro}}
+=
+\mathrm{p}K_{\mathrm{a},\,i_0\rightarrow j_0}
++
+\log_{10}\!\left(\frac{Z_{+}}{Z_{0}}\right),
+\qquad
+Z_{q}=\sum_{k\in q}\exp\left[-\frac{G_k-G_{k_0}}{RT}\right],
+\label{eq:macroscopic-pka}
+\end{equation}
+where $k_0$ is the reference microstate of manifold $q$.
+The macroscopic \pka{} therefore depends not only on the free energy of an individual deprotonation pathway, but also on the number and relative stability of all microstates in each manifold.
+The derivation and the general form of these relations are given in the SI (Section~S2).
+
+\subsection{Microstate populations from constant-pH molecular dynamics}
+\label{sec:cphmd}
+
+To obtain the population of each BV microstate as a function of pH, which is needed to weight the microstate spectra, we used constant-pH molecular dynamics (CpHMD) in explicit solvent with discrete protonation states,\cite{swailsConstantPHReplica2014,pieriCpHMDThenQMMMIdentification2019} as implemented in Amber,\cite{caseAmber20252025} following the protocol we previously used to titrate the propionic acid side chains of BV.\cite{mainasBiliverdinsPropionicChains2024}
+In CpHMD, the system evolves by classical MD, and at regular intervals a Monte Carlo step attempts to change the microstate of the solute, accepting or rejecting the change according to its free-energy cost at the chosen pH.
+\textcolor{red}{[Which microstates were included (the PKK and XKK protomers only, or also keto--enol tautomers), and in which conformer (\textit{ZZZsss} only)?]}
+\textcolor{green}{\textbf{Response:} No keto--enol tautomers are present in the configured CpHMD state sets. Pairwise capped-core tests include PPP with one of APP/BPP/CPP/DPP; the current full-chromophore BLA CpHMD configuration includes only PPP, BPP, and CPP for the tetrapyrrole core, plus the two titratable propionic tails. The source geometry is the locked-helical starting structure, but the CpHMD input does not restrain a named \textit{ZZZsss} conformer; that assignment should be confirmed from the full-system structure before stating it.}
+
+Setting up CpHMD for BV required three ingredients for each microstate.
+First, bonded parameters, taken from the ff-opt force fields described above.\cite{curtisRobustAutomatedForce2026}
+Second, atomic point charges.
+Atoms whose charge was assumed to change little between microstates were given common (backbone) charges, and only the remaining atoms carried microstate-specific charges.
+\textcolor{red}{[Details needed: how the charges were fitted (RESP on which geometries, at which level of theory) and which atoms were treated as backbone.]}
+\textcolor{green}{\textbf{Response:} The repository does not contain the original electronic-structure/RESP fitting record, so its geometry and level of theory cannot be recovered here. What is documented is that the capped TPS charge sets were projected from ``biliresp'' PPP/APP/BPP/CPP/DPP MOL2 charges; C3B and C2C were forced to the common PPP junction charge, cap atoms H2C/H3B were set to zero, and the residual needed for an integer state charge was distributed over 12 methyl hydrogens. Thus, the present text about generic ``backbone'' atoms is inaccurate and should be replaced by this explicit projection procedure once the original RESP provenance is supplied.}
+Third, a reference free energy for each change of microstate.
+We used the microscopic \pka{} values and tautomerization free energies from the DC-DFTB network described above as reference values, and obtained the corresponding reference energies by thermodynamic integration, so that CpHMD reproduces these values for BV in water.
+\textcolor{red}{[TI details: number of $\lambda$ windows, length per window, and how the reference energies were extracted.]}
+\textcolor{green}{\textbf{Response:} The CpHMD reference energies currently used were calibrated with Amber's \texttt{finddgref.py} workflow, not extracted by thermodynamic integration; the preceding sentence must therefore be corrected. A separate REFEP calculation uses 16 charge-interpolation replicas, 0.2~ns independent equilibration per replica, and 5~ns Hamiltonian replica-exchange production per replica, but that is a validation/comparison calculation and is not the source of the present CpHMD \texttt{DGREF} values.}
+
+After heating and equilibration as described above, CpHMD simulations were run at pH values from \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} 2.0 for the PPP/BPP and PPP/CPP capped-core tests; 2.5 for PPP/DPP and the current full-chromophore run} to \textcolor{red}{YYY}\textcolor{green}{\textbf{Response:} 6.5 for PPP/BPP and PPP/CPP; 7.0 for PPP/DPP and the full chromophore} in steps of \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} 0.5 pH unit}, each for \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} 1.0~ns per replica in the capped-core tests; the current full-chromophore configuration is only 0.10~ns per replica and is not a final production length}~ns.
+A change of microstate was attempted every \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} 200}~fs, and each accepted change was followed by \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} 0.2}~ps of solvent relaxation.
+\textcolor{red}{[Replica exchange between pH values? If so: number of replicas and exchange attempt frequency.]}
+\textcolor{green}{\textbf{Response:} Yes: ten pH replicas, with an exchange attempt after every 1000 MD steps = 2~ps.}
+From each simulation, we obtained the deprotonated fraction of BV and fitted it to the Hill equation,
+\begin{equation}
+f_{\mathrm{deprot}}(\mathrm{pH})
+=
+\frac{1}{1+10^{\,n\left(\mathrm{p}K_{\mathrm{a}}-\mathrm{pH}\right)}},
+\label{eq:hill}
+\end{equation}
+where $n$ is the Hill coefficient, to obtain the titration curve and the macroscopic \pka{}.
+The same simulations give the population $p_k(\mathrm{pH})$ of each microstate at each pH, which weights the microstate spectra (see Absorption spectra below).
+
+\subsection{Absorption spectra}
+\label{sec:spectra}
+
+An absorption spectrum was computed for each microstate of BV, each described by its own force field, optimized with the same ff-opt procedure as above.\cite{curtisRobustAutomatedForce2026}
+To sample solvent arrangements around BV, we ran classical MD for each microstate in a larger water box (15~\AA{} buffer, one chloride ion added to neutralize the cationic states), with BV kept in the locked-helix \textit{ZZZsss} conformation,\cite{tongManyRoadsSeam2026} and selected 199 equally spaced snapshots from XXX~ns of production MD (details in the SI, Section~S1). \textcolor{red}{[Production length to fill in.]}
+\textcolor{green}{\textbf{Response:} The spectra-production trajectories and their duration are not present in this repository or in the \texttt{elisa} handoff, so I cannot verify this value from the available files. It must be supplied from the spectroscopy workflow before the placeholder is replaced.}
+Each snapshot was the starting point for a 500-fs QM/MM trajectory (0.5~fs time step, 300~K) with TeraChem,\cite{ufimtsevQuantumChemistryGraphical2008,ufimtsevQuantumChemistryGraphical2009,ufimtsevQuantumChemistryGraphical2009a} with BV in the QM region, described at the CAM-B3LYP\cite{yanai_new_2004}-D3\cite{grimme_consistent_2010}/6-31G* level, and TIP3P water in the MM region, cut to a spherical droplet of about 27~\AA{} radius.
+This functional was chosen because it has proved to consistently produce accurate bilin geometries.\cite{wiebeler_qmmm_2019}
+Excitation energies $\Delta E$ and oscillator strengths $f$ of the lowest 10 singlet excited states were computed on the last frame of each trajectory at the CAM-B3LYP/cc-pVDZ level,\cite{wiebeler_qmmm_2019} and the spectrum of microstate $k$ was obtained by Gaussian broadening,
+\begin{equation}
+I_k(E)
+=
+\frac{1}{N}
+\sum_{s=1}^{N}
+\sum_{n=1}^{10}
+f_{k,sn}
+\exp\left[
+-\frac{\left(E-\Delta E_{k,sn}\right)^2}{2\sigma^2}
+\right],
+\label{eq:microstate-spectrum}
+\end{equation}
+where $s$ runs over the $N=199$ sampled geometries, $n$ runs over the excited states, $E$ is the photon energy, and $\sigma=0.10$~eV is the broadening, chosen to match the experimental spectral width of BV in methanol.\cite{liuUltrafastSpectroscopyBiliverdin2020}
+
+The calculated spectrum of an individual microstate is not directly comparable to the experimental spectrum, which reflects the equilibrium ensemble present at a given pH.
+The pH-dependent spectrum (calculated between pH~\textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} Not recoverable from the archived spectroscopy data; the configured CpHMD ladders begin at pH 2.0 or 2.5, but that does not establish the spectral grid.} and \textcolor{red}{YYY}\textcolor{green}{\textbf{Response:} Likewise pending the population-weighted spectral dataset.} at intervals of \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} Likewise pending; do not infer this interval from the 0.5-unit CpHMD replica spacing unless the spectra were actually evaluated only at replica pH values.}) was therefore constructed as the population-weighted sum of the microstate spectra,
+\begin{equation}
+I_{\mathrm{ens}}(E;\mathrm{pH})
+=
+\sum_k p_k(\mathrm{pH})\, I_k(E),
+\label{eq:ensemble-spectrum}
+\end{equation}
+where $p_k(\mathrm{pH})$ is the population of microstate $k$ from the CpHMD simulation at that pH.
+Spectral maxima were extracted from the population-weighted spectra.

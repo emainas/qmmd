@@ -1,0 +1,125 @@
+% Reworked 2026-10-07 from drafts/results_histidine.md (v4); red = notes for Lefteris.
+\subsection{Resolution of coupled deprotonation and tautomerization in histidine}
+
+Histidine is the smallest system that contains the first complication of BV: titratable sites competing for the same proton (two in histidine, four nitrogens in BV).
+Deprotonation of the cationic HIP state gives either the HID or the HIE tautomer, and the two microscopic equilibria and the HID--HIE tautomerization form a single closed cycle (Figure~\ref{fig:histidine}A).
+Any two of these three free energies therefore determine the third, and the macroscopic \pka{} follows from the two microscopic ones (Equation~\ref{eq:macroscopic-pka}, with a single protonated microstate).
+Because both microscopic \pka{} values are known experimentally,\cite{kyte_structure_2006} histidine tests the calculated microscopic free energies and the network built from them without any calibration.
+
+To remove the proton from HIP at either nitrogen, we biased the coordination number \emph{s} of that nitrogen in separate simulations.
+The free-energy profiles (Figure~\ref{fig:histidine}B) show a deep protonated well near \emph{s} $\approx$ 0.9, a single barrier near \emph{s} $\approx$ 0.65, where the proton is shared between the nitrogen and the accepting water, and the deprotonated basin near \emph{s} $\approx$ 0.
+A shallow shoulder at \emph{s} $\approx$ 0.2--0.3, just past the barrier, is consistent with a contact ion pair, in which the proton has moved to a first-shell water that is still hydrogen-bonded to the nitrogen.
+The coordination number alone cannot resolve this state as a separate minimum, because doing so would require a coordinate that follows the proton along the water wire.
+
+What a crossing of the barrier means at the molecular level is shown by the trajectory in Figure~\ref{fig:histidine}C, in which \emph{s} leaves the protonated basin once the bias has filled it and reaches the deprotonated basin.
+Because both the solute and the solvent are treated quantum mechanically, the released proton can move directly or through the hydrogen-bond network by a Grotthuss mechanism.
+Following the Mulliken charge of every water oxygen, five water molecules in turn carry the excess positive charge away from the imidazole (Figure~\ref{fig:histidine}D), while bulk waters stay near their baseline charge.
+The snapshots (Figure~\ref{fig:histidine}E) show this relay.
+The proton that left the imidazole (green) stays on the first water, while the excess charge moves on through the hydrogen-bond network, which is the signature of structural diffusion.\cite{agmonGrotthussMechanism1995,hassanaliProtonTransferWater2013}
+This crossing therefore runs through a conductive water wire and ends with the proton in bulk water.
+One crossing, however, is only one sample.
+A converged deprotonation free energy requires the trajectory to cross back and forth between the protonated and deprotonated basins many times, each time through a conductive wire, so that both basins are sampled at equilibrium. \textcolor{red}{[Lefteris: how many such crossings occur in the analysis window of the trajectories used for the \pka{} values?]}
+\textcolor{green}{\textbf{Response:} Zero complete protonated$\leftrightarrow$deprotonated recrossings occur within any of the three 1.75~ps analysis windows (HIE-20, HID-1, and HID-49) when the basins are defined by $s\geq0.8$ and $s\leq0.2$. The windows begin at the selected onset of diffusion and sample the evolving deprotonated-side free-energy estimate; they are not equilibrium forward-and-backward trajectories. The convergence claim and the statement in the Figure~\ref{fig:histidine}C caption that the coordinate ``recrosses reversibly'' must therefore be removed or substantially qualified.}
+
+The profiles give microscopic \pka{} values of 6.68 for HIP$\rightarrow$HID and 7.18 for HIP$\rightarrow$HIE \textcolor{red}{[$\pm$ XXX over NNN trajectories]}\textcolor{green}{\textbf{Response:} Each quoted endpoint value comes from one selected trajectory, so an across-trajectory uncertainty cannot be attached to either as currently written. The second N$\delta$1-biased trajectory gives 7.25; combining the two N$\delta$1-biased endpoints gives 6.96 $\pm$ 0.29 (population SD, $N=2$), but the two trajectories occupy different rotamers and should preferably be shown individually.}, within 0.2 units of the experimental values of 6.5 and 7.1.\cite{kyte_structure_2006} \textcolor{red}{[CHECK LABELS, Lefteris: the run directories are named after the biased nitrogen, not the product (HIST README).
+The ``meta-hid'' runs, which give 6.68, bias N10 = N$\delta$1, and removing the N$\delta$1 proton gives HIE, not HID.
+Experimentally, the N$\epsilon$2--H tautomer (HIE) is the major neutral form of histidine (about 4:1; Li and Hong call the N$\delta$1--H tautomer ``rare'' \textcolor{red}{[CITE: Li and Hong, J.
+Am.
+Chem.
+Soc. 2011, doi:10.1021/ja108943n, to add to Zotero; abstract checked]}\textcolor{green}{\textbf{Response:} Add Shenhui Li and Mei Hong, \emph{J. Am. Chem. Soc.} \textbf{2011}, 133, 1534--1544, DOI 10.1021/ja108943n. This solid-state NMR paper supports the $\tau$/HIE assignment and describes the $\pi$/HID form as rare, but Tanokura is the appropriate quantitative source for free aqueous L-histidine.}).
+If the labels are swapped, the calculations agree with experiment on the majority tautomer, and the text below and Figure~\ref{fig:histidine} (panels A and B) need the swap.]}\textcolor{green}{\textbf{Response:} Confirmed. Directory labels identify the biased nitrogen, not the neutral product: \texttt{meta-hid} biases N$\delta$1 and produces HIE; \texttt{meta-hie} biases N$\epsilon$2 and produces HID. Thus 6.68 (and the second value 7.25) belongs to HIP$\rightarrow$HIE, while 7.18 belongs to HIP$\rightarrow$HID. The text, network, profile labels, and tautomer ratio must all be swapped consistently.} Because the free-energy scale includes the standard state of the aqueous proton (Equation~\ref{eq:microscopic-pka}), each \pka{} is read directly from the height of the deprotonated basin above the protonated well.
+The two values give a tautomerization constant $\tau$ = 0.32, which places the neutral population at about 3.2:1 in favor of the majority tautomer, close to the experimental ratio of about 4:1.
+The macroscopic \pka{} is 6.56, compared with an experimental value of about 6.5. \textcolor{red}{[EXPERIMENTAL VALUES, Lefteris: where do the experimental values used here and in Figure~\ref{fig:histidine}A come from (6.5 and 7.1 for the two microscopic pKa values, about 6.5 for the macroscopic one, and the 4:1 ratio)?
+They differ from Tanokura's NMR titration of free L-histidine (Biochim.
+Biophys.
+Acta 1983, doi:10.1016/0167-4838(83)90276-5), which gives microscopic pKa values of 6.73 for the N1--H tautomer and 6.12 for the N3--H tautomer, a macroscopic pKa of 6.02 (6.03 measured), and a tautomer ratio of about 4:1 in favor of N3--H.
+Since N3--H is the majority tautomer, N3 should correspond to N$\epsilon$2 (HIE) in our naming; please confirm.
+We simulated uncapped histidine, so Tanokura's values for free L-histidine are the right comparison (he also reports capped, peptide-like forms).
+Note also that 6.5 and 7.1 combine to a macroscopic pKa of 6.4, not 6.5.
+If we switch to Tanokura, update the text and Figure~\ref{fig:histidine}A, and add the Tanokura reference if needed.]}
+\textcolor{green}{\textbf{Response:} We should switch the quantitative comparison to Tanokura because the simulations used free, uncapped L-histidine. In Tanokura's imidazole convention, N1 corresponds to N$\delta$1 and N3 to N$\epsilon$2; the N3--H/HIE tautomer is therefore the majority. The experimental microscopic values are 6.73 for N1--H/HID and 6.12 for N3--H/HIE, giving HIE:HID $\simeq4.1$:1 and a derived macroscopic \pka{} of 6.03, consistent with the reported 6.02--6.03. The 6.5/7.1 numbers and \texttt{kyte\_structure\_2006} comparison should not be retained for this free-histidine calculation unless their original experimental source and molecular form can be established.}
+
+We want to stress that these \pka{} values also depend on the side-chain conformation that each trajectory samples, which illustrates the difficulty of defining a single \pka{} per titratable site.
+The side-chain conformation is described by two dihedral angles, $\chi$\textsubscript{1} (N--C$\alpha$--C$\beta$--C$\gamma$) and $\chi$\textsubscript{2} (C$\alpha$--C$\beta$--C$\gamma$--N$\delta$1).
+Two trajectories that biased the same nitrogen (N$\delta$1) and both kept $\chi$\textsubscript{1} in the \emph{trans} range but differed in the sign of $\chi$\textsubscript{2}, which sets the orientation of the imidazole ring relative to the backbone, gave microscopic \pka{} values of 6.68 and 7.25.
+This spread of about 0.6 units is larger than the deviation from experiment, and it is large enough to change which neutral tautomer is predicted to dominate.
+A proper microscopic \pka{} would average over all side-chain conformers, weighted by their relative populations in water, which we did not determine here. \textcolor{red}{[Lefteris: list all trajectories with their $\chi$\textsubscript{1}/$\chi$\textsubscript{2} rotamer and \pka{}; if there are enough, this could be a small plot of \pka{} per rotamer, in Figure~\ref{fig:histidine} or the SI.]} Even for a molecule as small and only moderately flexible as histidine, a single \pka{} per site is therefore an approximation.
+\textcolor{green}{\textbf{Response:} The final report contains only three selected trajectories: HIE-20 (N$\epsilon$2-biased, product HID), dominant rotamer \texttt{gmm} at 73.7\%, endpoint \pka{} 7.18; HID-1 (N$\delta$1-biased, product HIE), \texttt{tp} at 100\%, endpoint \pka{} 7.25; and HID-49 (N$\delta$1-biased, product HIE), \texttt{tm} at 100\%, endpoint \pka{} 6.68. HIE-20 also samples minor \texttt{gmp}, \texttt{gpm}, \texttt{tm}, and \texttt{tp} populations, so its dominant label is not exclusive. This is enough for a three-point SI display but not for a statistically meaningful rotamer-resolved \pka{} distribution.}
+The problem is much larger in BV.
+Besides the dihedral angles of the methine bridges and the helicity of the tetrapyrrole, BV has propionic acid side chains that fluctuate and pyrrole nitrogens that can pyramidalize, and each of these motions can change the free energy of removing a proton.
+
+Histidine thus validates both the deprotonation free energies and the charge-defect analysis.
+The other two ingredients of the BV network do not involve proton release into water: the free energy of a proton transfer within the molecule and that of a conformational change.
+We test them next on malonaldehyde and propionic acid.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/fig2.png}
+    \caption{\textbf{(A)}~The three-microstate cycle, with edges annotated with the computed microscopic \pka{} values (experimental values in parentheses), the tautomerization constant $\tau$ and resulting HID:HIE population ratio, and the derived macroscopic \pka{}. \textbf{(B)}~Reconstructed free-energy profiles $F(s)$ along the N--H coordination number $s$ for the two deprotonation channels. The protonated well , the contact-ion-pair barrier, and the deprotonated basin are indicated. \textbf{(C)}~Representative HIP$\rightarrow$HIE trajectory. The biased coordinate $s(t)$ (grey, left axis) recrosses reversibly between the protonated ($s\!\approx\!0.9$) and deprotonated ($s\!\approx\!0$) basins throught the contact ion pair region ($s\!\approx\!0.65$), and the running \pka{} estimate (green, right axis) converges to the experimental value (dotted green line). \textbf{(D)}~Mulliken charge-defect analysis: net charge $q(t)$ of the water oxygens. Five successive waters (colored, numbered in order of arrival) transiently carry the migrating excess-proton defect; bulk waters remain near their baseline charge (grey). \textbf{(E)}~Structural snapshots of the same event, with the five tracked waters colored as in (D), showing the proton leaving the imidazole and traversing a transient water wire into bulk solvent.}
+    \label{fig:histidine}
+\end{figure}
+
+% Drafted 2026-10-08 from drafts/results_mal_prn.md (v2, after EP comments); red = notes for Lefteris.
+\subsection{Free energies of intramolecular proton transfer and conformational change}
+
+The BV network also needs free energies for two kinds of processes that do not release a proton into water: the transfer of a proton between two sites of the same molecule, which interconverts the BV protomers, and a conformational change, such as the rotation from \emph{ZZZsss} to \emph{ZZZssa}.
+We obtained both from umbrella sampling, and tested the protocol on two small molecules for which the answer is known: malonaldehyde for proton transfer and propionic acid for conformational change.
+
+Malonaldehyde tests the proton-transfer coordinate against an exact reference.
+Its two tautomers, MAA and MAB, differ only in which oxygen holds the enol proton and are equivalent by symmetry, so the free-energy difference between them must be zero.
+The free-energy profile along $d_{\mathrm{LCOD}}$ (Figure~\ref{fig:us-tests}A) has two minima at $d_{\mathrm{LCOD}}$ $\approx$ $-$0.77 and +0.75 Å, separated by $\Delta$G = $-$0.07 kcal/mol \textcolor{red}{[$\pm$ XXX: bootstrap needed]}, well below the thermal energy at 300 K (RT $\approx$ 0.6 kcal/mol).
+\textcolor{green}{\textbf{Response:} Bootstrap completed: the original gap is $-0.0749$~kcal~mol$^{-1}$; the bootstrap mean is $-0.0663$, SD 0.0962~kcal~mol$^{-1}$, with a 95\% percentile interval of $[-0.2445,+0.1354]$~kcal~mol$^{-1}$ (500 circular moving-block replicates, 2~ps blocks). Reporting $-0.07\pm0.10$~kcal~mol$^{-1}$ with the 95\% interval is supported.}
+The barrier between them is 0.8--0.9 kcal/mol.
+This is lower than the gas-phase CCSD(T) barrier of 4.1 kcal/mol,\cite{wangFulldimensionalQuantumCalculations2008} consistent with the faster transfer found in water than in vacuum,\cite{yamadaMolecularDynamicsStudy2014} \textcolor{red}{[Lefteris: add the reference with the \textasciitilde2 kcal/mol barrier]}.
+\textcolor{green}{\textbf{Response:} The intended reference is Mori and Okamoto, \emph{Phys. Rev. E} \textbf{2013}, 87, 023301, DOI 10.1103/PhysRevE.87.023301 (current key \texttt{Mori2013}), which reports an aqueous malonaldehyde PMF with an approximately 2~kcal~mol$^{-1}$ barrier. Our 0.83/0.90~kcal~mol$^{-1}$ directional barriers are lower by roughly 1.1~kcal~mol$^{-1}$, so the comparison should say that both predict solvent lowering relative to gas phase, not that the barrier heights quantitatively agree.}
+However, only the free-energy difference between the basins enters the microstate network, so neither the barrier height nor the accuracy of the level of theory in describing it affects the populations.
+
+Propionic acid tests the same protocol on a conformational change.
+Its \emph{syn} conformer (PRS), in which the O--H bond is \emph{cis} to the carbonyl group, is more stable than the \emph{anti} conformer (PRA) by 1.67 $\pm$ 0.16 kcal/mol (Figure~\ref{fig:us-tests}B), which corresponds to 93\% \emph{syn} at 300 K.
+The two are separated by a barrier of 7.5 kcal/mol at a dihedral angle near 90$^\circ$. \textcolor{red}{[EXPERIMENTAL COMPARISON: Ma\c{c}\^{o}as et al.\cite{macoas_internal_2005} observed only the \emph{syn} (Tt) conformer in solid argon at 8 K, but their abstract gives no \emph{syn}--\emph{anti} free-energy difference.
+Which experimental value do we compare with, and is there one in water?]}
+\textcolor{green}{\textbf{Response:} I did not find a quantitative experimental syn--anti free-energy difference for monomeric propionic acid in liquid water. Ma\c{c}\^{o}as et al. provide only a qualitative cryogenic-matrix check that syn is the observed ground-state conformer, under conditions not comparable to 300~K water. The defensible wording is therefore qualitative agreement in conformer ordering; the calculated 1.67~kcal~mol$^{-1}$ gap and 93.5\% syn fraction should be presented as predictions, not as matching an aqueous experimental number.}
+
+Both tests give free-energy differences between basins that match the reference values, for each of the two kinds of processes, which gives confidence that the protocol can reliably model the proton transfers between adjacent rings of BV and its ring rotation.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=3.3in]{figures/fig3.png}
+    \caption{Umbrella-sampling free-energy profiles. \textbf{(A)}~Malonaldehyde along $d_{\mathrm{LCOD}} = d_{\mathrm{H}\cdots\mathrm{O_A}} - d_{\mathrm{H}\cdots\mathrm{O_B}}$: negative values correspond to MAA (proton on O$_\mathrm{A}$), positive values to MAB (proton on O$_\mathrm{B}$). \textbf{(B)}~Propionic acid along the O=C--O--H dihedral, from \textit{syn} (PRS, 0$^\circ$) to \textit{anti} (PRA, 180$^\circ$). The profile was computed between 0 and 180$^\circ$; the dashed segments beyond these limits are its mirror image about 0 and 180$^\circ$, shown only to display the full basins. Lines: smoothed WHAM free energies; circles: minima; band in (B): 95\% bootstrap interval (500 replicates). \textcolor{red}{[Lefteris: (1) bootstrap the malonaldehyde profile so that panel A gets the same 95\% band as panel B; (2) how were the profiles smoothed (``penalized\_smooth'' for A, pmf\_smooth for B)? The caption should state it. Also compare barrier consistency with \cite{Mori2013}]}}
+    \textcolor{green}{\textbf{Response:} (1) Done: panel A now has 500-replicate pointwise 95\% intervals from the same 2~ps circular moving-block bootstrap protocol. (2) Both displayed guides use a second-difference penalized least-squares smoother, followed by shape-preserving cubic Hermite interpolation only to draw a dense curve; the penalty is 20 for malonaldehyde and 10 for propionic acid. Raw WHAM bins and bootstrap intervals remain the underlying data. The caption should state the smoother and clarify which reported features are extracted from raw versus smoothed PMFs. Relative to Mori and Okamoto's approximately 2~kcal~mol$^{-1}$ aqueous barrier, our 0.83--0.90~kcal~mol$^{-1}$ barrier is qualitatively consistent with solvent lowering but not quantitatively equal.}
+    \label{fig:us-tests}
+\end{figure}
+
+\subsection{Biliverdin: deprotonation of the tetrapyrrolic core}
+
+\begin{itemize}
+\item Only some trajectories sample a complete deprotonation. In others, $n_{\mathrm{NH}}$ diffuses although the hydronium recombines with the hydroxide counterion or stays far from the solute and uninvolved. The trajectory analysis separates the two cases, and only complete events enter the \pka{}. This is the BV counterpart of the histidine relay into bulk water. \textcolor{red}{[Fraction of the 200 trajectories per site that pass?]}
+\textcolor{green}{\textbf{Response:} The \texttt{elisa} handoff contains only the retained selected events (two B and three C) and explicitly excludes several candidates; it does not contain an audited pass/fail table for all 200 trials at each site. Therefore the fractions cannot be reconstructed reliably from the handoff and must not be inferred as 2/200 and 3/200. A complete four-site run audit is needed.}
+\item Microscopic \pka{} values of the four nitrogens: \textcolor{red}{XXX (A), XXX (B), XXX (C), XXX (D)}\textcolor{green}{\textbf{Response:} Only B and C are supported by the final handoff. Ring B: 3.23 and 4.25 in two trajectories, arithmetic mean 3.74. Ring C: 4.00, 4.54, and 3.75 in three trajectories, mean 4.10. No final A or D values are present, so a four-site list cannot yet be written. The ten-time-point within-window SDs are not independent trajectory uncertainties and should not be presented as such.}, with their spread over trajectories.
+\item Consistency check: protomer free energies from adjacent-ring LCOD umbrella sampling (AKK$\rightarrow$BKK, BKK$\rightarrow$CKK, CKK$\rightarrow$DKK) agree with the differences of the metadynamics values (PKK$\rightarrow$XKK) within \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} Only the B/C edge can presently be compared. The metadynamics arithmetic means give $\Delta G_C-\Delta G_B=+0.491$~kcal~mol$^{-1}$, whereas the BPP$\rightarrow$CPP LCOD gap is $+0.0026$~kcal~mol$^{-1}$ (95\% bootstrap interval $[-0.354,+0.314]$), a central-value discrepancy of 0.488~kcal~mol$^{-1}$. The A/B and C/D closures cannot be tested without final A and D metadynamics results.}~kcal~mol$^{-1}$.
+\item The core of the \textit{ZZZsss} conformer has a macroscopic \pka{} of \textcolor{red}{about 4.5 (provisional)}\textcolor{green}{\textbf{Response:} This cannot be finalized from the current handoff because rings A and D are missing; 4.5 remains an unsupported provisional placeholder.}; rotation to \textit{ZZZssa} (torsional umbrella sampling from PKK and CKK) shifts it by \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} The PKK/CKK torsional PMFs and their thermodynamic cycle are not included in \texttt{elisa}; no conformer-dependent \pka{} shift can yet be reported.}.
+\end{itemize}
+
+\noindent\textbf{Figure needed (Figure 4):} (A) one complete and one incomplete deprotonation trajectory side by side: $s(t)$, defect--solute distance, and number of bridging waters (from Lefteris's joint B/C summary); (B) microscopic \pka{} of rings A--D with the spread over trajectories; (C) the BV network with free energies from metadynamics and from umbrella sampling on the same edges, and the macroscopic \pka{} of the \textit{ZZZsss} and \textit{ZZZssa} conformers.
+
+\subsection{Biliverdin: protons that stay on the molecule (tentative)}
+\textcolor{red}{[May or may not be included, depending on the final results.]}
+\textcolor{green}{\textbf{Response:} Retain this only as a qualitative mechanistic observation, preferably in the SI. The trajectories establish that intramolecular keto--enol endpoints occur, but they do not provide converged free energies or populations and are not part of the present CpHMD state set.}
+
+\begin{itemize}
+\item In some metadynamics trajectories, the proton released from a nitrogen ends on the lactam oxygen of ring A or D, forming a keto--enol tautomer: the defect terminates on the solute instead of in bulk water.
+\item These events show that keto--enol tautomers are reachable from the cationic diketo form, but they are not converged and do not give populations.
+\end{itemize}
+
+\noindent\textbf{Figure needed (Figure 5, or SI):} charge-defect trace for one such trajectory, with snapshots of the water wire from the pyrrole nitrogen to the lactam oxygen.
+
+\subsection{Biliverdin: absorption spectra and the transition near pH 5.6}
+
+\begin{itemize}
+\item Deprotonation and keto--enol tautomerization change the spectrum in different ways. The diketo protomers keep a weak Q band (Q/Soret intensity 0.14--0.26), while the enol forms have a much stronger one (0.65--0.95 for AEK, BEK, and CEK; DKE has a Q band stronger than its Soret band). \textcolor{red}{[The computed Soret maxima (308--325~nm) lie well below the experimental band; add a sentence on the systematic shift.]}
+\textcolor{green}{\textbf{Response:} Proposed sentence: ``The calculated Soret maxima are systematically blue-shifted relative to experiment, so we interpret the spectra primarily through relative shifts and Q/Soret intensity ratios across microstates rather than through their absolute wavelengths.'' The magnitude should be added only after fixing the exact experimental spectrum and solvent used for comparison.}
+\item Populations of all microstates as a function of pH come from constant-pH MD of BV in water, with the DC-DFTB free energies as reference values (Lefteris, in progress). The CpHMD titration curve gives a second estimate of the macroscopic \pka{}, to compare with the network value.
+\item Population-weighted spectra between pH \textcolor{red}{XXX}\textcolor{green}{\textbf{Response:} The population-weighted spectral dataset is absent from this repository; the lower pH bound cannot be verified.} and \textcolor{red}{YYY}\textcolor{green}{\textbf{Response:} The upper pH bound likewise cannot be verified.} reproduce \textcolor{red}{(or not)}\textcolor{green}{\textbf{Response:} This conclusion is still open. CpHMD and population-weighted spectra are incomplete in the available handoff, so agreement with the experimental inflection near pH 5.6 cannot yet be claimed.} the experimental shift of the Soret band with an inflection near pH 5.6.\cite{shangBiliverdinAmidesReveal2010}
+\end{itemize}
+
+\noindent\textbf{Figure needed (Figure 6):} (A) computed spectra of the diketo protomers and of the keto--enol tautomers, normalized to the Soret band; (B) CpHMD populations of each microstate versus pH; (C) population-weighted spectra across pH compared with the experimental titration, with the Soret maximum versus pH as an inset.

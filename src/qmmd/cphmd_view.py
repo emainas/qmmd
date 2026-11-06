@@ -808,7 +808,7 @@ def prepare_cphmd_view(
     ph = _resolve_ph(float(requested_ph), cfg.post.titr.ph_values)
     source = titr_dir(cfg.post.titr, repo_root)
     post = post_dir(cfg.post, repo_root)
-    topology_path = source / cfg.post.titr.input_parm7
+    topology_path = source / Path(cfg.post.titr.input_parm7).name
     if not topology_path.is_file() or topology_path.stat().st_size == 0:
         raise FileNotFoundError(f"Missing/empty titration topology: {topology_path}")
 

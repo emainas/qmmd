@@ -36,6 +36,7 @@ class RefepPrepConfig:
     residue_id: int
     residue_name: str
     dummy_atoms: tuple[str, ...]
+    endpoint_omit_atoms: tuple[str, ...]
     expected_charge_lambda0: int
     expected_charge_lambda1: int
     charge_tolerance: float
@@ -135,6 +136,20 @@ def load_refep_prep_config(yaml_path: Path) -> RefepPrepConfig:
     dummy_atoms = tuple(value.strip() for value in raw_dummy)
     if len(set(dummy_atoms)) != len(dummy_atoms):
         raise ValueError("ligand.dummy_atoms contains duplicates")
+    raw_omit = ligand.get("endpoint_omit_atoms", [])
+    if not isinstance(raw_omit, list) or not all(
+        isinstance(value, str) and value.strip() for value in raw_omit
+    ):
+        raise ValueError("ligand.endpoint_omit_atoms must be a list of atom names")
+    endpoint_omit_atoms = tuple(value.strip() for value in raw_omit)
+    if len(set(endpoint_omit_atoms)) != len(endpoint_omit_atoms):
+        raise ValueError("ligand.endpoint_omit_atoms contains duplicates")
+    overlap = sorted(set(dummy_atoms) & set(endpoint_omit_atoms))
+    if overlap:
+        raise ValueError(
+            "ligand.dummy_atoms and ligand.endpoint_omit_atoms overlap: "
+            + ", ".join(overlap)
+        )
 
     charge_tolerance = float(ligand.get("charge_tolerance", 0.01))
     if charge_tolerance <= 0:
@@ -157,6 +172,7 @@ def load_refep_prep_config(yaml_path: Path) -> RefepPrepConfig:
         residue_id=residue_id,
         residue_name=_required_string(ligand.get("residue_name"), "ligand.residue_name"),
         dummy_atoms=dummy_atoms,
+        endpoint_omit_atoms=endpoint_omit_atoms,
         expected_charge_lambda0=int(ligand.get("expected_charge_lambda0")),
         expected_charge_lambda1=int(ligand.get("expected_charge_lambda1")),
         charge_tolerance=charge_tolerance,
@@ -268,21 +284,61 @@ def build_ligand_charge_map(
         raise ValueError(
             f"Residue {cfg.residue_id} contains duplicate atom names; name mapping is ambiguous"
         )
-    deprot_by_name = {atom.name: atom for atom in deprot_atoms}
+    all_endpoint_by_name = {atom.name: atom for atom in deprot_atoms}
+    missing_omit = sorted(set(cfg.endpoint_omit_atoms) - set(all_endpoint_by_name))
+    if missing_omit:
+        raise ValueError(
+            "Configured endpoint-omitted atoms absent from the endpoint MOL2: "
+            + ", ".join(missing_omit)
+        )
+    retained_omit = sorted(set(cfg.endpoint_omit_atoms) & set(atom_names))
+    if retained_omit:
+        raise ValueError(
+            "Endpoint-omitted atoms are present in the topology residue and cannot be ignored: "
+            + ", ".join(retained_omit)
+        )
+    deprot_by_name = {
+        name: atom
+        for name, atom in all_endpoint_by_name.items()
+        if name not in cfg.endpoint_omit_atoms
+    }
     extra = sorted(set(deprot_by_name) - set(atom_names))
     missing = tuple(name for name in atom_names if name not in deprot_by_name)
     if extra:
         raise ValueError(
             "Deprotonated MOL2 atoms absent from the topology residue: " + ", ".join(extra)
         )
-    if set(missing) != set(cfg.dummy_atoms):
+    unknown_dummy = sorted(set(cfg.dummy_atoms) - set(atom_names))
+    if unknown_dummy:
         raise ValueError(
-            f"Mapped missing atoms {list(missing)} do not match ligand.dummy_atoms "
-            f"{list(cfg.dummy_atoms)}"
+            "Configured dummy atoms absent from the topology residue: "
+            + ", ".join(unknown_dummy)
         )
-    invalid_dummy = [name for name in missing if not name.upper().startswith("H")]
+    missing_non_dummy = sorted(set(missing) - set(cfg.dummy_atoms))
+    if missing_non_dummy:
+        raise ValueError(
+            "Endpoint MOL2 atoms absent from the topology residue but not declared as "
+            "ligand.dummy_atoms: "
+            + ", ".join(missing_non_dummy)
+        )
+    invalid_dummy = [name for name in cfg.dummy_atoms if not name.upper().startswith("H")]
     if invalid_dummy:
         raise ValueError("Only hydrogen atoms may be zero-charge dummies: " + ", ".join(invalid_dummy))
+    charged_dummy = [
+        name
+        for name in cfg.dummy_atoms
+        if name in deprot_by_name
+        and abs(deprot_by_name[name].charge) > cfg.charge_tolerance
+    ]
+    if charged_dummy:
+        details = ", ".join(
+            f"{name}={deprot_by_name[name].charge:+.8f}"
+            for name in charged_dummy
+        )
+        raise ValueError(
+            "Dummy atoms retained in the endpoint MOL2 must have zero charge within "
+            f"{cfg.charge_tolerance:g} e: {details}"
+        )
 
     lambda0 = topology.charges[np.asarray(atom_indices)]
     lambda1 = np.asarray(
@@ -303,7 +359,7 @@ def build_ligand_charge_map(
         atom_names=atom_names,
         lambda0_charges=lambda0,
         lambda1_charges=lambda1,
-        dummy_atoms=missing,
+        dummy_atoms=cfg.dummy_atoms,
     )
 
 
@@ -617,6 +673,7 @@ def prepare_refep_topologies(cfg: RefepPrepConfig) -> Path:
                     "residue_id": cfg.residue_id,
                     "residue_name": cfg.residue_name,
                     "dummy_atoms": list(mapping.dummy_atoms),
+                    "endpoint_omit_atoms": list(cfg.endpoint_omit_atoms),
                     "windows": cfg.windows,
                     "lambda_formula": "window / (windows - 1)",
                     "charge_formula": "q(lambda) = (1-lambda)*q0 + lambda*q1",

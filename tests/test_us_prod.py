@@ -85,6 +85,16 @@ class USProdTests(unittest.TestCase):
         self.assertEqual(cfg.run.wall.coefficient_kcal_mol_deg2, 0.05)
         self.assertIn("MD=(RESTART=TRUE READVELOCITY=FALSE)", cfg.run.dftb.header_lines)
 
+    def test_cpp_right_extension_selects_only_three_stiff_windows(self):
+        cfg = load_config(ROOT / "configs/CPP/us/prod-dih-right.yaml")
+        self.assertEqual(
+            cfg.run.window_targets,
+            ((21, 190.0), (22, 200.0), (23, 210.0)),
+        )
+        self.assertEqual(cfg.equil_stage_spec_yaml.name, "extend-dih-right.yaml")
+        self.assertAlmostEqual(cfg.run.wall.coefficient_kcal_mol_deg2, 0.05)
+        self.assertAlmostEqual(production_duration_ps(cfg), 40.0)
+
     def test_prepares_all_windows_from_completed_equil_restarts(self):
         cfg = load_config(CONFIG)
         yaml_text = CONFIG.read_text()

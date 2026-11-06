@@ -52,6 +52,15 @@ def main() -> None:
     parser.add_argument("--charge-min", type=float, default=-0.625)
     parser.add_argument("--charge-max", type=float, default=-0.525)
     parser.add_argument("--temperature", type=float, default=300.0)
+    parser.add_argument(
+        "--bv-parm",
+        type=Path,
+        default=None,
+        help=(
+            "BV Amber topology used for ring/bridge analysis "
+            "(default: <runs-path>/../../salt/ready.parm7)"
+        ),
+    )
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
     if (
@@ -170,7 +179,13 @@ def main() -> None:
             f"N{args.nitrogen_id}_Odefect_distance_A"
         ),
     )
-    topology = ROOT / "systems/BV/solv_5.5/salt/ready.parm7"
+    topology = (
+        args.bv_parm.resolve()
+        if args.bv_parm is not None
+        else (args.runs_path.resolve().parents[1] / "salt/ready.parm7")
+    )
+    if not topology.is_file():
+        raise ValueError(f"Missing BV topology: {topology}")
     command = [
         sys.executable,
         str(ROOT / "plotting/acid_base_BV.py"),

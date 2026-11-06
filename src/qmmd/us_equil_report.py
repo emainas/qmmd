@@ -74,7 +74,7 @@ def collect_equil_samples(
     root = pull_dir(cfg.pull, repo_root)
     samples: list[EquilSample] = []
     missing: list[int] = []
-    for index, center in enumerate(window_centers(cfg.pull.windows)):
+    for index, center in cfg.window_targets:
         stage = root / f"window-{index:03d}" / cfg.stage_dirname
         spec = stage / "equil_spec.yaml"
         if not spec.is_file() or spec.read_text() != yaml_text:
@@ -188,7 +188,7 @@ def create_us_equil_report(
         figure_path,
         samples,
         cfg.pull.restraint.atoms,
-        len(window_centers(cfg.pull.windows)),
+        len(cfg.window_targets),
     )
     (destination / "equil_report_spec.yaml").write_text(yaml_text)
     return figure_path, csv_path, len(samples), missing

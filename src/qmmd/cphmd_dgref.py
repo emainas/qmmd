@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import re
 import shutil
 import subprocess
@@ -74,6 +75,8 @@ class DgrefConfig:
     input_parm7: str
     input_rst7: str
     charge_sets: Path
+    residue_number: int | None
+    residue_name: str
     states: tuple[str, ...] | None
     statene: tuple[str, ...]
     pka_corr: tuple[float, ...]
@@ -82,6 +85,7 @@ class DgrefConfig:
     cntrl: dict[str, Any]
     runtime: RuntimeConfig
     slurm: SlurmJobConfig
+    dgref_estimate: float | None = None
     report_discard_first: int = 0
 
 
@@ -136,6 +140,14 @@ def load_config(yaml_path: Path) -> DgrefConfig:
     charge_sets = charge_sets.resolve()
     if not charge_sets.is_file():
         raise FileNotFoundError(f"Missing charge_sets: {charge_sets}")
+
+    residue_value = cpin.get("residue_number")
+    residue_number = None if residue_value is None else int(residue_value)
+    if residue_number is not None and residue_number < 1:
+        raise ValueError("cpin.residue_number must be one-based and positive")
+    residue_name = _nonempty_string(
+        cpin.get("residue_name", system), "cpin.residue_name"
+    )
 
     state_value = cpin.get("states")
     states = (
@@ -224,6 +236,17 @@ def load_config(yaml_path: Path) -> DgrefConfig:
     if slurm.nodes <= 0:
         raise ValueError("slurm.job.nodes must be positive")
 
+    search_data = data.get("search", {})
+    if not isinstance(search_data, dict):
+        raise ValueError("search must be a YAML mapping")
+    unknown_search = sorted(set(search_data) - {"dgref_estimate"})
+    if unknown_search:
+        raise ValueError("Unknown search fields: " + ", ".join(unknown_search))
+    estimate_value = search_data.get("dgref_estimate")
+    dgref_estimate = None if estimate_value is None else float(estimate_value)
+    if dgref_estimate is not None and not math.isfinite(dgref_estimate):
+        raise ValueError("search.dgref_estimate must be finite")
+
     report_data = data.get("report", {})
     if not isinstance(report_data, dict):
         raise ValueError("report must be a YAML mapping")
@@ -240,6 +263,8 @@ def load_config(yaml_path: Path) -> DgrefConfig:
         input_parm7=input_parm7,
         input_rst7=input_rst7,
         charge_sets=charge_sets,
+        residue_number=residue_number,
+        residue_name=residue_name,
         states=states,
         statene=statene,
         pka_corr=pka_corr,
@@ -248,6 +273,7 @@ def load_config(yaml_path: Path) -> DgrefConfig:
         cntrl=cntrl,
         runtime=runtime,
         slurm=slurm,
+        dgref_estimate=dgref_estimate,
         report_discard_first=report_discard_first,
     )
 
@@ -483,6 +509,13 @@ def read_topology_info(path: Path, residue_name: str) -> TopologyInfo:
     return read_topology_residue_info(path, matches[0] + 1, residue_name)
 
 
+def read_selected_topology_info(cfg: DgrefConfig, path: Path) -> TopologyInfo:
+    """Resolve either an explicitly numbered residue or the legacy unique name."""
+    if cfg.residue_number is None:
+        return read_topology_info(path, cfg.residue_name)
+    return read_topology_residue_info(path, cfg.residue_number, cfg.residue_name)
+
+
 def _wrapped_field(prefix: str, values: list[str], width: int = 80) -> list[str]:
     lines: list[str] = []
     line = prefix
@@ -510,10 +543,12 @@ def render_two_state_cpin(
             "Charge-set atom ordering does not match the topology residue: "
             f"{charges.atom_names} != {topology.atom_names}"
         )
-    flattened = [*charges.prot_charges, *charges.deprot_charges]
+    state_charges = (charges.prot_charges, charges.deprot_charges)
+    flattened = [charge for state in state_charges for charge in state]
+    maxh = _cpin_maxh((state_charges,))
     lines = [
         "&CNSTPHE_LIMITS",
-        f" ntres=1, maxh=2, natchrg={len(flattened)}, ntstates=2,",
+        f" ntres=1, maxh={maxh}, natchrg={len(flattened)}, ntstates=2,",
         "/",
         "&CNSTPH",
     ]
@@ -557,12 +592,47 @@ def render_multistate_cpin(
     statene: tuple[str, ...],
     pka_corr: tuple[float, ...],
     cph_igb: int,
+    residue_name: str | None = None,
 ) -> str:
     return render_multi_residue_cpin(
         system,
-        (CpinResidue(system, charges, topology, statene, pka_corr),),
+        (
+            CpinResidue(
+                residue_name or system,
+                charges,
+                topology,
+                statene,
+                pka_corr,
+            ),
+        ),
         cph_igb,
     )
+
+
+def _cpin_maxh(
+    residue_state_charges: tuple[tuple[tuple[float, ...], ...], ...],
+) -> int:
+    """Return Amber's safe MAX_H_COUNT allocation for the selected states.
+
+    Amber indexes every atom whose six-decimal CPIN charge is zero in at least
+    one state. Its hindex array also needs a pointer slot, so ``maxh`` must be
+    one larger than the greatest such per-residue atom count. Counting states
+    is unsafe for residues that contain invariant zero-charge cap atoms.
+    """
+    zero_atom_counts: list[int] = []
+    for states in residue_state_charges:
+        atom_count = len(states[0])
+        if any(len(state) != atom_count for state in states):
+            raise ValueError(
+                "All charge states for a CPIN residue must have equal length"
+            )
+        zero_atom_counts.append(
+            sum(
+                any(float(f"{state[atom_index]:.6f}") == 0.0 for state in states)
+                for atom_index in range(atom_count)
+            )
+        )
+    return max(zero_atom_counts) + 1
 
 
 def render_multi_residue_cpin(
@@ -586,6 +656,7 @@ def render_multi_residue_cpin(
     statene_values: list[str] = []
     pka_values: list[float] = []
     state_counts: list[int] = []
+    residue_state_charges: list[tuple[tuple[float, ...], ...]] = []
     for item in ordered:
         if item.topology.atom_names != item.charges.atom_names:
             raise ValueError(
@@ -612,10 +683,12 @@ def render_multi_residue_cpin(
         statene_values.extend(item.statene)
         pka_values.extend(item.pka_corr)
         state_counts.append(len(state_charges))
+        residue_state_charges.append(tuple(state_charges))
 
+    maxh = _cpin_maxh(tuple(residue_state_charges))
     lines = [
         "&CNSTPHE_LIMITS",
-        f" ntres={len(ordered)}, maxh={max(state_counts)}, "
+        f" ntres={len(ordered)}, maxh={maxh}, "
         f"natchrg={len(flattened)}, ntstates={sum(state_counts)},",
         "/",
         "&CNSTPH",
@@ -664,6 +737,7 @@ def render_cpin(cfg: DgrefConfig, charges: ChargeSets, topology: TopologyInfo) -
         cfg.statene,
         cfg.pka_corr,
         cfg.cph_igb,
+        cfg.residue_name,
     )
 
 
@@ -678,6 +752,11 @@ def render_run_script(cfg: DgrefConfig) -> str:
     strict = "set -euo pipefail" if cfg.runtime.strict_mode else ""
     env_lines = "\n".join(
         f"export {key}={value}" for key, value in cfg.runtime.env.items()
+    )
+    estimate_line = (
+        f"  -dgrefest {cfg.dgref_estimate:.6f} \\\n"
+        if cfg.dgref_estimate is not None
+        else ""
     )
     return f"""#!/usr/bin/env bash
 {strict}
@@ -700,7 +779,7 @@ fi
 
 "$finddgref" \\
   -mdexec "$mdexec" \\
-  -i dgref.mdin \\
+{estimate_line}  -i dgref.mdin \\
   -o dgref.out \\
   -inf mdinfo \\
   -log dgref.log \\
@@ -764,7 +843,7 @@ def prepare_dgref(
             raise FileNotFoundError(f"Missing/empty {label} input: {path}")
 
     charges = read_charge_sets(cfg.charge_sets)
-    topology = read_topology_info(parm7_source, cfg.system)
+    topology = read_selected_topology_info(cfg, parm7_source)
     destination = output_dir.resolve() if output_dir else dgref_dir(cfg, repo_root)
     destination.mkdir(parents=True, exist_ok=True)
 
@@ -828,7 +907,7 @@ def submit_dgref(
             return False
 
     charges = read_charge_sets(cfg.charge_sets)
-    topology = read_topology_info(prepared_parm7, cfg.system)
+    topology = read_selected_topology_info(cfg, prepared_parm7)
     expected_text = {
         "dgref.cpin": render_cpin(cfg, charges, topology),
         "dgref.mdin": render_mdin(cfg),

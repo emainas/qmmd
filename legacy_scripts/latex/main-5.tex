@@ -1,0 +1,83 @@
+\documentclass[letterpaper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{margin = 1in}
+\usepackage{setspace}
+\usepackage[style = chem-acs]{biblatex}
+\addbibresource{references.bib}
+\usepackage{graphicx}
+\usepackage{float}
+\newfloat{scheme}{htbp}{los}
+\floatname{scheme}{Scheme}
+\floatname{chart}{Chart}
+\newfloat{graph}{htbp}{loh}
+\usepackage{chemformula} % Formulas using \ch{}
+\usepackage[version = 4]{mhchem} % Formulas using \ce{}
+\setcounter{secnumdepth}{-1}
+\newcommand*\mycommand[1]{\texttt{\emph{#1}}}
+\newcommand{\pka}{\ensuremath{\mathrm{p}K_{\mathrm{a}}}}
+\newcommand{\ka}{\ensuremath{K_{\mathrm{a}}}}
+\newcommand{\ang}{\AA}
+\usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+\usepackage{authblk}
+\author[1]{Eleftherios Mainas}
+\author[1]{Kaiyi Tong}
+\author[1]{Elisa Pieri*}
+\affil[1]{Department of Chemistry, University of North Carolina at Chapel Hill, Chapel Hill}
+
+%\title{Water-Wired Proton Transfer Reveals the Microscopic Speciation of Biliverdin}
+
+% Check out this suggestion for title:
+
+\title{Dissecting Protonation Landscapes with Enhanced-Sampling QM Molecular Dynamics: The Microstate Maze of Biliverdin}
+
+\date{*Email: elipieri@unc.edu}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\input{abstract}
+\end{abstract}
+
+\section{Introduction}
+\input{intro}
+
+\section{Methods}
+\input{methods}
+
+\section{Results and Discussion}
+\input{results_discussion}
+
+\section{Conclusions}
+\input{conclusions}
+
+\section*{Acknowledgments}
+
+The authors thank the University of North Carolina at Chapel Hill and the Research Computing group for providing computational resources and support that have contributed to these research results. The authors thank NCShare, which is supported by National Science Foundation (NSF) grants OAC-2201525, OAC-2201105, and OAC-2430141, for the computational resources provided.
+
+\section*{Supporting information}
+
+If the manuscript is accompanied by one or more Supporting Information files for publication, a brief description of each file is required. The descriptions should be placed at the end of the manuscript, before the list of references. ACS will add a sentence directing interested readers to the Supporting Information on the ACS Publications website via the paper’s DOI.
+
+The following files are available free of charge.
+\begin{itemize}
+  \item Filename-1: brief description
+  \item Filename-2: brief description
+\end{itemize}
+
+\printbibliography
+
+\newpage
+
+\section*{For Table of Contents Only}
+3.25 in by 1.75 in. Use a sans serif font type such as Helvetica, preferably at 8 pt. but no smaller than 6 pt. Do not make the reader strain to read it. The type should be of high quality in order to reproduce well. The graphic file should be saved as either:
+TIF at 300 dpi for color and at 1200 dpi for black and white.
+EPS in RGB document color mode with all fonts converted to outlines or embedded in the file.
+• Label the graphic “For Table of Contents Only” and provide it on the last page of the submitted
+manuscript. It can also be uploaded with the manuscript as “Graphics for manuscript” in
+addition to being included in the manuscript file
+
+\end{document}

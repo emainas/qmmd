@@ -1,0 +1,29 @@
+name: BLA4
+
+leaprc_mol: leaprc.gaff2
+leaprc_sol: leaprc.water.tip3p
+frcmod_ion: frcmod.ionsjc_tip3p
+
+# Each current BLA master is TPS(+1) + 2 PRX(-1), hence -1 overall.
+mol2: systems/BLA/init/bla.mol2
+frcmod:
+  - systems/BLA/init/tps.frcmod
+  - systems/BLA/init/prx.frcmod
+
+# Pack four complete, internally bonded BLA copies into a compact region.
+# LEaP subsequently adds the 10 A solvent buffer around the packed assembly.
+packing:
+  copies: 4
+  tolerance: 2.0
+  seed: 2026
+  box: [28.0, 28.0, 28.0]
+
+water_model: TIP3PBOX
+buffer: 10.0
+
+# Four -1 BLA copies require four sodium counterions.
+counterion: Na+
+counterion_num: 4
+
+input_dir: systems/BLA/init/
+prefix: agg4

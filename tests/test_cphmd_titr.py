@@ -27,6 +27,9 @@ TPS_BPP_CONFIG = REPO / "configs" / "TPS" / "cphmd" / "cphmd-bpp.yaml"
 TPS_CPP_CONFIG = REPO / "configs" / "TPS" / "cphmd" / "cphmd-cpp.yaml"
 TPS_DPP_CONFIG = REPO / "configs" / "TPS" / "cphmd" / "cphmd-dpp.yaml"
 BLA_CONFIG = REPO / "configs" / "BLA" / "cphmd" / "cphmd.yaml"
+TPS_FIVE_STATE_CONFIG = (
+    REPO / "configs" / "TPS" / "cphmd" / "cphmd-refep-5state.yaml"
+)
 
 
 class CpHMDTitrPrepTests(unittest.TestCase):
@@ -99,29 +102,52 @@ class CpHMDTitrPrepTests(unittest.TestCase):
 
         self.assertIsNone(dgref)
         self.assertEqual(len(cfg.sites), 3)
-        self.assertEqual(cfg.cntrl["nstlim"] * cfg.cntrl["numexchg"], 50000)
+        self.assertEqual(cfg.cntrl["nstlim"] * cfg.cntrl["numexchg"], 250000)
         self.assertEqual(cfg.cntrl["dt"], 0.002)
-        self.assertIn("ntres=3, maxh=5, natchrg=304, ntstates=13", cpin)
-        self.assertIn("PROTCNT=4,3,3,0,1,1,1,1,0,1,1,1,1,", cpin)
+        self.assertIn("ntres=3, maxh=5, natchrg=420, ntstates=15", cpin)
+        self.assertIn("PROTCNT=4,3,3,3,3,0,1,1,1,1,0,1,1,1,1,", cpin)
         self.assertIn(
             "RESNAME='System: BLA','Residue: TPS 1','Residue: PRX 2',"
             "'Residue: PRX 3',",
             cpin,
         )
         self.assertIn(
-            "STATEINF(1)%FIRST_ATOM=59, STATEINF(1)%FIRST_CHARGE=174, "
-            "STATEINF(1)%FIRST_STATE=3,",
+            "STATEINF(1)%FIRST_ATOM=59, STATEINF(1)%FIRST_CHARGE=290, "
+            "STATEINF(1)%FIRST_STATE=5,",
             cpin,
         )
         self.assertIn(
-            "STATEINF(2)%FIRST_ATOM=72, STATEINF(2)%FIRST_CHARGE=239, "
-            "STATEINF(2)%FIRST_STATE=8,",
+            "STATEINF(2)%FIRST_ATOM=72, STATEINF(2)%FIRST_CHARGE=355, "
+            "STATEINF(2)%FIRST_STATE=10,",
             cpin,
         )
-        self.assertIn("STATENE=0.000000,-28.633604,-36.241073", cpin)
+        self.assertIn(
+            "STATENE=0.000000,-80.674391,-27.596568,-35.046714,-39.308830",
+            cpin,
+        )
         self.assertIn("TRESCNT=3, CPHFIRST_SOL=85", cpin)
         self.assertIn("multi-residue CPIN", provenance)
-        self.assertIn("multiplier: -1.0", provenance)
+        self.assertIn("statene_kcal_mol: -80.67439123", provenance)
+
+    def test_tps_five_state_control_uses_staged_mbondi2_topology(self):
+        cfg = load_titr_config(TPS_FIVE_STATE_CONFIG)
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            destination, dgref = prepare_titration(
+                cfg, REPO, Path(tmp) / "titr-refep-5state-r6"
+            )
+            cpin = (destination / "replica-01.cpin").read_text()
+            groupfile = (destination / "groupfile").read_text()
+            self.assertTrue((destination / "solv_mbondi2.parm7").is_file())
+
+        self.assertIsNone(dgref)
+        self.assertEqual(cfg.input_parm7, "mdequil/solv_mbondi2.parm7")
+        self.assertIn("-p solv_mbondi2.parm7", groupfile)
+        self.assertIn("ntres=1, maxh=7, natchrg=300, ntstates=5", cpin)
+        self.assertIn("PROTCNT=4,3,3,3,3,", cpin)
+        self.assertIn(
+            "STATENE=80.674391,0.000000,53.077823,45.627677,41.365561",
+            cpin,
+        )
 
     def test_reads_only_successful_final_dgref(self):
         successful = """

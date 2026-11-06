@@ -1,0 +1,88 @@
+pull_yaml: pull-dih.yaml
+stage_dirname: equil
+
+# The original 0..180 windows occupy indices 000..018; the subsequently added
+# left extension occupies indices 019 (-10 deg) and 020 (-20 deg).
+window_map:
+  - {window_index: 0, center_deg: 0.0}
+  - {window_index: 1, center_deg: 10.0}
+  - {window_index: 2, center_deg: 20.0}
+  - {window_index: 3, center_deg: 30.0}
+  - {window_index: 4, center_deg: 40.0}
+  - {window_index: 5, center_deg: 50.0}
+  - {window_index: 6, center_deg: 60.0}
+  - {window_index: 7, center_deg: 70.0}
+  - {window_index: 8, center_deg: 80.0}
+  - {window_index: 9, center_deg: 90.0}
+  - {window_index: 10, center_deg: 100.0}
+  - {window_index: 11, center_deg: 110.0}
+  - {window_index: 12, center_deg: 120.0}
+  - {window_index: 13, center_deg: 130.0}
+  - {window_index: 14, center_deg: 140.0}
+  - {window_index: 15, center_deg: 150.0}
+  - {window_index: 16, center_deg: 160.0}
+  - {window_index: 17, center_deg: 170.0}
+  - {window_index: 18, center_deg: 180.0}
+  - {window_index: 19, center_deg: -10.0}
+  - {window_index: 20, center_deg: -20.0}
+
+conversion:
+  amber_module: amber/26
+
+cv:
+  gaussian_width_deg: 0.1
+
+# Stiff production-strength restraint: DCDFTBMD V=kappa*(psi_cd-center)^2.
+wall:
+  coefficient_kcal_mol_deg2: 0.05
+  exponent: 2
+
+dftb:
+  title: "BPP single15 (psi_cd) umbrella equilibration, DC-DFTB3/3ob, PBC (NVT)"
+  header_lines:
+    - "SCC=(THIRDFULL=TRUE DAMPXH=TRUE ALMIX=0.3)"
+    - "SCC=(READCHARGE=NONE)"
+    - "SCC=(MAXITER=1000)"
+    - "DC=(SUBTYPE=AUTO DELTARXYZ=3.0 BUFRAD=6.0)"
+    - "MD=(NSTEP=40000 DELTAT=1.0D-15)"
+    - "MD=(RESTART=FALSE READVELOCITY=FALSE)"
+    - "MD=(NVT=TRUE NVTTYPE=5 BATHTEMP=300.0 CALCPRESSURE=TRUE)"
+    - "MD=(COLLISIONFREQ=0.01)"
+    - "MD=(INITTEMP=300.0 ERRORTEMP=1000)"
+    - "MD=(LIMULLIKEN=TRUE LIDEGREE=10 LIMINDEG=TRUE)"
+    - "MD=(PRINT=10 SEEDTYPE=3 RANDOMSEED=0)"
+    - "MD=(METADYNAMICS=TRUE METAPRINTFES=FALSE METARESTART=FALSE)"
+    - "MD=(METAFREQ=100 METAHEIGHT=0.0 METAMAXGAUSS=400)"
+    - "MD=(METAWALL=TRUE)"
+    - "MISC=(PRINTLAPTIME=TRUE)"
+    - "MISC=(WRITECHRGFILE=FALSE)"
+    - "PBC=TRUE"
+    - "PBC=(STRESS=TRUE)"
+  charge: 0
+  multiplicity: 1
+  elements:
+    - {symbol: H, lmax: 1, hubbard: -0.1857}
+    - {symbol: O, lmax: 2, hubbard: -0.1575}
+    - {symbol: C, lmax: 2, hubbard: -0.1492}
+    - {symbol: N, lmax: 2, hubbard: -0.1535}
+  params_dir: params
+
+runtime:
+  module: openmpi_5.0.6/intel_2024.2.1
+  executable: /nas/sycamore/home/emainas/software/dcdftbmd.2.0/dr_nishimura/20260126_Dcdftbmd/bin/dftb_mpiomp.00.x
+  mpirun_np: 16
+  env:
+    PATH: /nas/sycamore/home/emainas/software/dcdftbmd.2.0/:$PATH
+  strict_mode: true
+
+slurm:
+  job:
+    name: BPP-us-single15-equil
+    partition: batch
+    nodes: 1
+    ntasks: 48
+    mem: 50G
+    cpus_per_task: 1
+    time: "3-00:00:00"
+    stdout: slurm.%j.out
+    stderr: slurm.%j.err

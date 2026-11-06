@@ -66,6 +66,7 @@ class USEquilConfig:
     dftb: DFTBConfig
     runtime: RuntimeConfig
     slurm: SlurmConfig
+    window_targets: tuple[tuple[int, float], ...]
 
 
 def _single_component(value: object, field: str) -> str:
@@ -142,6 +143,30 @@ def load_config(yaml_path: Path) -> USEquilConfig:
         raise RuntimeError(f"Missing pull configuration: {pull_yaml}")
     pull_cfg = load_pull_config(pull_yaml)
 
+    window_map = data.get("window_map")
+    if window_map is None:
+        targets = tuple(enumerate(window_centers(pull_cfg.windows)))
+    else:
+        if not isinstance(window_map, list) or not window_map:
+            raise ValueError("window_map must be a non-empty list")
+        parsed_targets: list[tuple[int, float]] = []
+        for position, item in enumerate(window_map):
+            if not isinstance(item, dict):
+                raise ValueError(f"window_map[{position}] must be a mapping")
+            index = item.get("window_index")
+            if type(index) is not int or index < 0:
+                raise ValueError(
+                    f"window_map[{position}].window_index must be a nonnegative integer"
+                )
+            center = float(item["center_deg"])
+            if not math.isfinite(center):
+                raise ValueError(f"window_map[{position}].center_deg must be finite")
+            parsed_targets.append((index, center))
+        indices = [index for index, _ in parsed_targets]
+        if len(set(indices)) != len(indices):
+            raise ValueError("window_map contains duplicate window indices")
+        targets = tuple(parsed_targets)
+
     dftb_data = data["dftb"]
     dftb = DFTBConfig(
         title=str(dftb_data["title"]),
@@ -196,6 +221,7 @@ def load_config(yaml_path: Path) -> USEquilConfig:
         dftb=dftb,
         runtime=RuntimeConfig(**data["runtime"]),
         slurm=SlurmConfig(job=SlurmJobConfig(**data["slurm"]["job"])),
+        window_targets=targets,
     )
 
 
@@ -268,13 +294,23 @@ def convert_amber_restart_to_xyz(
         raise RuntimeError(f"cpptraj did not create starting XYZ: {xyz_path}")
 
 
+def canonical_dihedral_deg(center_deg: float) -> float:
+    """Map an unwrapped dihedral center to DCDFTBMD's signed branch."""
+    if not math.isfinite(center_deg):
+        raise ValueError("Dihedral center must be finite")
+    if -180.0 <= center_deg <= 180.0:
+        return center_deg
+    return (center_deg + 180.0) % 360.0 - 180.0
+
+
 def render_metacv(cfg: USEquilConfig, center_deg: float) -> str:
     atoms = " ".join(str(atom) for atom in cfg.pull.restraint.atoms)
+    restraint_center = canonical_dihedral_deg(center_deg)
     return (
         f"BONDDIHEDRAL {cfg.cv.gaussian_width_deg:g} {atoms}\n"
         "\n"
-        f"L 1 {cfg.wall.coefficient_kcal_mol_deg2:.12g} {center_deg:g} {cfg.wall.exponent}\n"
-        f"U 1 {cfg.wall.coefficient_kcal_mol_deg2:.12g} {center_deg:g} {cfg.wall.exponent}\n"
+        f"L 1 {cfg.wall.coefficient_kcal_mol_deg2:.12g} {restraint_center:g} {cfg.wall.exponent}\n"
+        f"U 1 {cfg.wall.coefficient_kcal_mol_deg2:.12g} {restraint_center:g} {cfg.wall.exponent}\n"
     )
 
 
@@ -365,10 +401,10 @@ def prepare_us_equil(
         not topology.is_file() or topology.stat().st_size == 0
     ):
         raise RuntimeError(f"Missing/empty Amber topology: {topology}")
-    centers = window_centers(cfg.pull.windows)
+    targets = cfg.window_targets
     destinations = [
         pull_root / f"window-{index:03d}" / cfg.stage_dirname
-        for index in range(len(centers))
+        for index, _ in targets
     ]
     existing = [destination for destination in destinations if destination.exists()]
     if existing:
@@ -376,7 +412,7 @@ def prepare_us_equil(
 
     sources: list[Path] = []
     salt_spec_text: str | None = None
-    for index in range(len(centers)):
+    for index, _ in targets:
         pull_stage = pull_root / f"window-{index:03d}" / "pull"
         restart = pull_stage / "pull.rst7"
         amber_output = pull_stage / "pull.out"
@@ -423,7 +459,7 @@ def prepare_us_equil(
     with tempfile.TemporaryDirectory(dir="/tmp", prefix="qmmd-us-equil-") as tmp:
         temporary = Path(tmp)
         composition: tuple[int, tuple[str, ...]] | None = None
-        for index, (center, source) in enumerate(zip(centers, sources)):
+        for (index, center), source in zip(targets, sources, strict=True):
             if cfg.conversion.source_stage == "pull":
                 xyz = temporary / f"window-{index:03d}.xyz"
                 converter(topology, source, xyz, cfg.conversion.amber_module)
@@ -459,7 +495,9 @@ def prepare_us_equil(
             parameter = params / f"{left}-{right}.skf"
             if not parameter.is_file():
                 raise RuntimeError(f"Missing SKF file: {parameter}")
-    for index, (destination, files) in enumerate(zip(destinations, rendered)):
+    for (index, _), destination, files in zip(
+        targets, destinations, rendered, strict=True
+    ):
         dftb_input, metacv, starting_xyz = files
         destination.mkdir()
         (destination / "dftb.inp").write_text(dftb_input)
@@ -505,10 +543,10 @@ def submit_us_equil(
 ) -> bool:
     """Validate and submit the complete set of prepared equilibration windows."""
     root = pull_dir(cfg.pull, repo_root)
-    centers = window_centers(cfg.pull.windows)
+    targets_with_centers = cfg.window_targets
     targets = [
         root / f"window-{index:03d}" / cfg.stage_dirname
-        for index in range(len(centers))
+        for index, _ in targets_with_centers
     ]
 
     problems: list[str] = []
@@ -530,7 +568,7 @@ def submit_us_equil(
         return False
 
     print("Will submit the following US equilibration directories:")
-    for target, center in zip(targets, centers):
+    for target, (_, center) in zip(targets, targets_with_centers, strict=True):
         print(f"  - {target} (center {center:g} degrees)")
     response = confirm(f"Proceed to submit {len(targets)} jobs? [y/N] ").strip().lower()
     if response not in ("y", "yes"):

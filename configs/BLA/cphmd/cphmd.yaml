@@ -2,28 +2,32 @@ system: BLA
 buffer: 10.0
 prefix: solv
 job_name: titr
-input_parm7: solv_modradii.parm7
+input_parm7: solv_prx_mbondi2.parm7
 input_rst7: equil-npt.rst7
 
-# Composite CPIN: the TPS ring and the two independently titrating PRX tails.
-# TPS pairwise DGrefs are placed on one common energy gauge:
-#   E(PPP)=0, E(BPP)=-DGref(PPP/BPP), E(CPP)=-DGref(PPP/CPP).
+# Composite CPIN: all four deprotonated TPS tautomers and two independently
+# titrating PRX tails. TPS REFEP BAR estimates use
+#   deltaG = G(PPP) - G(tautomer),
+# so the common CPIN gauge is E(PPP)=0 and E(tautomer)=-deltaG.
 cpin:
   cph_igb: 2
   sites:
     - residue_number: 1
       residue_name: TPS
       charge_sets: configs/TPS/cphmd/charge_sets.csv
-      states: [ppp, bpp, cpp]
+      states: [ppp, app, bpp, cpp, dpp]
       # These zero-charge caps are absent after TPS is bonded to the PRX tails.
       omit_atoms: [H2C, H3B]
       statene:
         - 0.0
-        - dgref_log: systems/TPS/solv_10.0/cphmd/dgref/bpp/dgref.log
-          multiplier: -1.0
-        - dgref_log: systems/TPS/solv_10.0/cphmd/dgref/cpp/dgref.log
-          multiplier: -1.0
-      pka_corr: [4.5, 0.0, 0.0]
+        # BAR values from each prod-5ns/report-igb2/summary.yaml.
+        - -80.67439123  # APP
+        - -27.59656805  # BPP
+        - -35.04671408  # CPP
+        - -39.30883035  # DPP
+      # Effective pairwise pKa values: PPP/APP=5.0, PPP/BPP=4.5,
+      # PPP/CPP=4.5, and PPP/DPP=5.0.
+      pka_corr: [5.0, 0.0, 0.5, 0.5, 0.0]
 
     - residue_number: 2
       residue_name: PRX
@@ -31,10 +35,10 @@ cpin:
       states: [deprot, o1_syn, o1_anti, o2_syn, o2_anti]
       statene:
         - 0.0
-        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref/dgref.log
-        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref/dgref.log
-        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref/dgref.log
-        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref/dgref.log
+        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref-mbondi2/dgref.log
+        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref-mbondi2/dgref.log
+        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref-mbondi2/dgref.log
+        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref-mbondi2/dgref.log
       pka_corr: [0.0, 4.85, 4.85, 4.85, 4.85]
 
     - residue_number: 3
@@ -43,27 +47,27 @@ cpin:
       states: [deprot, o1_syn, o1_anti, o2_syn, o2_anti]
       statene:
         - 0.0
-        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref/dgref.log
-        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref/dgref.log
-        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref/dgref.log
-        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref/dgref.log
+        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref-mbondi2/dgref.log
+        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref-mbondi2/dgref.log
+        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref-mbondi2/dgref.log
+        - dgref_log: systems/PRX/solv_10.0/cphmd/dgref-mbondi2/dgref.log
       pka_corr: [0.0, 4.85, 4.85, 4.85, 4.85]
 
 # Ten replicas bracket both the 4.5 TPS and 4.85 PRX reference pKa values.
 ph_ladder:
   values: [2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0]
 
-# 50 exchanges x 1000 steps x 0.002 ps = 100 ps per replica.
+# 250 exchanges x 1000 steps x 0.002 ps = 500 ps per replica.
 remd_mdin:
   production:
-    description: Explicit-solvent replica-exchange constant-pH MD for BLA
+    description: BLA mbondi2 RECpHMD with four TPS tautomers and two PRX tails
     cntrl:
       iwrap: 1
       imin: 0
       irest: 1
       ntx: 5
       nstlim: 1000
-      numexchg: 50
+      numexchg: 250
       dt: 0.002
       tempi: 300.0
       temp0: 300.0
@@ -95,7 +99,7 @@ runtime:
 
 slurm:
   job:
-    name: bla-titr
+    name: bla-titr-refep
     partition: small
     nodes: 2
     ntasks: 20
@@ -123,8 +127,7 @@ titration_report:
       residue_id: 1
       residue_name: TPS
       protonated_state: ppp
-      bpp_state: bpp
-      cpp_state: cpp
+      deprotonated_states: [app, bpp, cpp, dpp]
     prx:
       residue_ids: [2, 3]
       residue_name: PRX

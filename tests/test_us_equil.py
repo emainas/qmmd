@@ -4,6 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from qmmd.us_equil import (
+    canonical_dihedral_deg,
     load_config,
     prepare_us_equil,
     render_metacv,
@@ -39,6 +40,15 @@ class USEquilTests(unittest.TestCase):
             "BONDDIHEDRAL 0.1 5 3 4 11\n\n"
             "L 1 0.015230870989 170 2\n"
             "U 1 0.015230870989 170 2\n",
+        )
+        self.assertEqual(canonical_dihedral_deg(190.0), -170.0)
+        self.assertEqual(canonical_dihedral_deg(200.0), -160.0)
+        self.assertEqual(canonical_dihedral_deg(210.0), -150.0)
+        self.assertEqual(
+            render_metacv(cfg, 190.0),
+            "BONDDIHEDRAL 0.1 5 3 4 11\n\n"
+            "L 1 0.015230870989 -170 2\n"
+            "U 1 0.015230870989 -170 2\n",
         )
 
     def test_metadynamics_hack_is_enforced(self):

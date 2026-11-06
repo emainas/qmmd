@@ -14,7 +14,13 @@ from typing import Callable
 import yaml
 
 from qmmd.cphmd_dgref import find_repo_root, read_charge_sets, select_charge_states
-from qmmd.cphmd_titr import TitrConfig, _replica_stem, load_titr_config, titr_dir
+from qmmd.cphmd_titr import (
+    TitrConfig,
+    _replica_stem,
+    load_titr_config,
+    prepared_input_names,
+    titr_dir,
+)
 
 
 _STATE_LABEL_RE = re.compile(r"^(?P<residue>.+):(?P<resid>\d+)%(?P<member>\d+)$")
@@ -110,9 +116,10 @@ def _cpptraj_replica_paths(cfg: TitrConfig, suffix: str) -> list[str]:
 
 def render_trajectory_cpptraj_input(cfg: TitrPostConfig) -> str:
     trajectories = _cpptraj_replica_paths(cfg.titr, "nc")
+    parm7_name, _ = prepared_input_names(cfg.titr)
     return "\n".join(
         [
-            f"parm ../{cfg.titr.input_parm7}",
+            f"parm ../{parm7_name}",
             f"ensemble {trajectories[0]} trajnames {','.join(trajectories[1:])}",
             "trajout fixed-ph.nc netcdf",
             "run",
@@ -199,7 +206,8 @@ def validate_completed_titration(cfg: TitrPostConfig, repo_root: Path) -> Path:
             "(excluding postprocess/report/view settings)"
         )
 
-    required = [source / cfg.titr.input_parm7, source / "rem.log"]
+    parm7_name, _ = prepared_input_names(cfg.titr)
+    required = [source / parm7_name, source / "rem.log"]
     for replica in range(1, len(cfg.titr.ph_values) + 1):
         stem = _replica_stem(replica, len(cfg.titr.ph_values))
         required.extend(
@@ -484,12 +492,13 @@ def _validate_trajectory_log(path: Path, expected_frames: int) -> None:
 
 
 def _render_manifest_csv(cfg: TitrPostConfig, coordinate_frames: int) -> str:
+    parm7_name, _ = prepared_input_names(cfg.titr)
     handle = io.StringIO(newline="")
     writer = csv.writer(handle, lineterminator="\n")
     writer.writerow(["pH_member", "pH", "trajectory", "coordinate_frames", "topology"])
     for member, ph in enumerate(cfg.titr.ph_values, start=1):
         writer.writerow(
-            [member, f"{ph:.6f}", f"ph-{_format_ph(ph)}.nc", coordinate_frames, f"../{cfg.titr.input_parm7}"]
+            [member, f"{ph:.6f}", f"ph-{_format_ph(ph)}.nc", coordinate_frames, f"../{parm7_name}"]
         )
     return handle.getvalue()
 

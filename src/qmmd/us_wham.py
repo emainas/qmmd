@@ -13,8 +13,10 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+from qmmd.us_equil import USEquilConfig, load_config as load_equil_config
+from qmmd.us_equil_report import read_biaspot_samples
 from qmmd.us_prod import USProdConfig, load_config as load_prod_config
-from qmmd.us_pull import find_repo_root, pull_dir, window_centers
+from qmmd.us_pull import find_repo_root, pull_dir
 
 
 KJ_PER_KCAL = 4.184
@@ -62,8 +64,14 @@ class PlotConfig:
 
 @dataclass(frozen=True, slots=True)
 class USWhamConfig:
-    prod_yaml: Path
-    prod: USProdConfig
+    source_yaml: Path
+    source_kind: str
+    run: USEquilConfig
+    prod_yaml: Path | None
+    prod: USProdConfig | None
+    equil_stage_spec_yamls: tuple[Path, ...]
+    production_stage_spec_yamls: tuple[Path, ...]
+    window_targets: tuple[tuple[int, float], ...]
     output_dirname: str
     discard_ps: float
     coordinate: CoordinateConfig
@@ -93,11 +101,80 @@ def load_config(path: Path) -> USWhamConfig:
     data = yaml.safe_load(resolved.read_text())
     if not isinstance(data, dict):
         raise ValueError("US WHAM configuration must be a YAML mapping")
-    prod_value = Path(str(data.get("prod_yaml", "prod.yaml")))
-    prod_yaml = prod_value if prod_value.is_absolute() else (resolved.parent / prod_value).resolve()
-    if not prod_yaml.is_file():
-        raise RuntimeError(f"Missing production configuration: {prod_yaml}")
-    prod = load_prod_config(prod_yaml)
+    has_prod = "prod_yaml" in data
+    has_equil = "equil_yaml" in data
+    if has_prod and has_equil:
+        raise ValueError("Specify only one of prod_yaml or equil_yaml")
+    if has_equil:
+        source_value = Path(str(data["equil_yaml"]))
+        source_yaml = source_value if source_value.is_absolute() else (resolved.parent / source_value).resolve()
+        if not source_yaml.is_file():
+            raise RuntimeError(f"Missing equilibration configuration: {source_yaml}")
+        prod = None
+        prod_yaml = None
+        run = load_equil_config(source_yaml)
+        source_kind = "equilibration"
+    else:
+        source_value = Path(str(data.get("prod_yaml", "prod.yaml")))
+        source_yaml = source_value if source_value.is_absolute() else (resolved.parent / source_value).resolve()
+        if not source_yaml.is_file():
+            raise RuntimeError(f"Missing production configuration: {source_yaml}")
+        prod_yaml = source_yaml
+        prod = load_prod_config(source_yaml)
+        run = prod.run
+        source_kind = "production"
+
+    stage_spec_values = data.get("equil_stage_spec_yamls", [])
+    if not isinstance(stage_spec_values, list):
+        raise ValueError("equil_stage_spec_yamls must be a YAML list")
+    if source_kind != "equilibration" and stage_spec_values:
+        raise ValueError("equil_stage_spec_yamls is only valid with equil_yaml")
+    stage_spec_yamls: list[Path] = []
+    for position, value in enumerate(stage_spec_values):
+        candidate = Path(str(value))
+        candidate = candidate.resolve() if candidate.is_absolute() else (resolved.parent / candidate).resolve()
+        if not candidate.is_file():
+            raise RuntimeError(
+                f"Missing equilibration stage specification "
+                f"equil_stage_spec_yamls[{position}]: {candidate}"
+            )
+        stage_spec_yamls.append(candidate)
+
+    production_spec_values = data.get("production_stage_spec_yamls", [])
+    if not isinstance(production_spec_values, list):
+        raise ValueError("production_stage_spec_yamls must be a YAML list")
+    if source_kind != "production" and production_spec_values:
+        raise ValueError("production_stage_spec_yamls is only valid with prod_yaml")
+    production_stage_spec_yamls: list[Path] = []
+    for position, value in enumerate(production_spec_values):
+        candidate = Path(str(value))
+        candidate = candidate.resolve() if candidate.is_absolute() else (resolved.parent / candidate).resolve()
+        if not candidate.is_file():
+            raise RuntimeError(
+                f"Missing production stage specification "
+                f"production_stage_spec_yamls[{position}]: {candidate}"
+            )
+        production_stage_spec_yamls.append(candidate)
+
+    window_map = data.get("window_map")
+    if window_map is None:
+        targets = run.window_targets
+    else:
+        if not isinstance(window_map, list) or not window_map:
+            raise ValueError("window_map must be a non-empty list")
+        parsed_targets: list[tuple[int, float]] = []
+        for position, item in enumerate(window_map):
+            if not isinstance(item, dict):
+                raise ValueError(f"window_map[{position}] must be a mapping")
+            index = item.get("window_index")
+            center = float(item["center_deg"])
+            if type(index) is not int or index < 0 or not math.isfinite(center):
+                raise ValueError(f"Invalid window_map[{position}]")
+            parsed_targets.append((index, center))
+        indices = [index for index, _ in parsed_targets]
+        if len(set(indices)) != len(indices):
+            raise ValueError("window_map contains duplicate window indices")
+        targets = tuple(parsed_targets)
 
     coordinate_data = _mapping(data.get("coordinate"), "coordinate")
     coordinate = CoordinateConfig(
@@ -142,8 +219,14 @@ def load_config(path: Path) -> USWhamConfig:
         return result
 
     cfg = USWhamConfig(
+        source_yaml=source_yaml,
+        source_kind=source_kind,
+        run=run,
         prod_yaml=prod_yaml,
         prod=prod,
+        equil_stage_spec_yamls=tuple(stage_spec_yamls),
+        production_stage_spec_yamls=tuple(production_stage_spec_yamls),
+        window_targets=targets,
         output_dirname=str(data.get("output_dirname", "wham")),
         discard_ps=float(data.get("discard_ps", 0.0)),
         coordinate=coordinate,
@@ -177,8 +260,8 @@ def load_config(path: Path) -> USWhamConfig:
         raise ValueError("zero_reference_deg bounds must increase")
     if cfg.plot.smoothing_penalty < 0:
         raise ValueError("plot.smoothing_penalty must be nonnegative")
-    if prod.run.wall.exponent != 2:
-        raise ValueError("WHAM currently requires a quadratic production METAWALL")
+    if run.wall.exponent != 2:
+        raise ValueError("WHAM currently requires a quadratic METAWALL")
     return cfg
 
 
@@ -195,11 +278,66 @@ def resolve_executable(value: str) -> Path:
 
 
 def read_window_series(cfg: USWhamConfig, yaml_text: str, repo_root: Path) -> list[WindowSeries]:
-    root = pull_dir(cfg.prod.run.pull, repo_root)
-    report_spec = root / "prod_report_spec.yaml"
-    if not report_spec.is_file() or report_spec.read_text() != cfg.prod_yaml.read_text():
-        raise RuntimeError(f"{report_spec} does not match {cfg.prod_yaml}; run us-prod-report first")
-    source = root / "prod_dihedral.csv"
+    root = pull_dir(cfg.run.pull, repo_root)
+    additional_specs = (
+        cfg.equil_stage_spec_yamls
+        if cfg.source_kind == "equilibration"
+        else cfg.production_stage_spec_yamls
+    )
+    if additional_specs:
+        accepted_specs = {
+            cfg.source_yaml.read_text(),
+            *(path.read_text() for path in additional_specs),
+        }
+        series: list[WindowSeries] = []
+        for index, center in cfg.window_targets:
+            stage = root / f"window-{index:03d}" / cfg.run.stage_dirname
+            spec_names = (
+                ("equil_spec.yaml",)
+                if cfg.source_kind == "equilibration"
+                else ("prod_spec.yaml", "extension_spec.yaml")
+            )
+            stage_specs = [stage / name for name in spec_names]
+            if not any(
+                spec.is_file() and spec.read_text() in accepted_specs
+                for spec in stage_specs
+            ):
+                raise RuntimeError(
+                    f"{cfg.source_kind.title()} specification for window-{index:03d} "
+                    "does not match the source YAML or additional stage specifications"
+                )
+            biaspot = stage / "biaspot"
+            if not biaspot.is_file() or biaspot.stat().st_size == 0:
+                raise RuntimeError(
+                    f"Missing/empty {cfg.source_kind} CV series: {biaspot}"
+                )
+            samples = [
+                sample
+                for sample in read_biaspot_samples(biaspot, index, center)
+                if sample.time_ps >= cfg.discard_ps - 1.0e-12
+            ]
+            if len(samples) < 2:
+                raise ValueError(
+                    f"Window {index} has fewer than two samples after discard"
+                )
+            times = np.asarray([sample.time_ps for sample in samples], dtype=float)
+            angles = np.asarray(
+                [sample.dihedral_branch_deg for sample in samples], dtype=float
+            )
+            deltas = np.diff(times)
+            if np.any(deltas <= 0) or not np.allclose(
+                deltas, deltas[0], rtol=1.0e-7, atol=1.0e-9
+            ):
+                raise ValueError(f"Sampling times are not uniform in window {index}")
+            series.append(WindowSeries(index, center, times, angles))
+        return series
+
+    prefix = "prod" if cfg.source_kind == "production" else "equil"
+    report_spec = root / f"{prefix}_report_spec.yaml"
+    if not report_spec.is_file() or report_spec.read_text() != cfg.source_yaml.read_text():
+        command = "us-prod-report" if cfg.source_kind == "production" else "us-equil-report"
+        raise RuntimeError(f"{report_spec} does not match {cfg.source_yaml}; run {command} first")
+    source = root / f"{prefix}_dihedral.csv"
     grouped: dict[int, list[tuple[float, float, float]]] = {}
     with source.open(newline="") as stream:
         reader = csv.DictReader(stream)
@@ -210,11 +348,16 @@ def read_window_series(cfg: USWhamConfig, yaml_text: str, repo_root: Path) -> li
             grouped.setdefault(int(row["window_index"]), []).append(
                 (float(row["time_ps"]), float(row["dihedral_branch_deg"]), float(row["target_deg"]))
             )
-    centers = window_centers(cfg.prod.run.pull.windows)
-    if sorted(grouped) != list(range(len(centers))):
-        raise RuntimeError("Production CSV does not contain the complete window set")
+    targets = cfg.window_targets
+    expected_indices = sorted(index for index, _ in targets)
+    missing_indices = [index for index in expected_indices if index not in grouped]
+    if missing_indices:
+        raise RuntimeError(
+            f"{cfg.source_kind.title()} CSV is missing requested windows: "
+            f"{missing_indices}"
+        )
     series: list[WindowSeries] = []
-    for index, center in enumerate(centers):
+    for index, center in targets:
         kept = [row for row in grouped[index] if row[0] >= cfg.discard_ps - 1.0e-12]
         if len(kept) < 2:
             raise ValueError(f"Window {index} has fewer than two samples after discard")
@@ -224,7 +367,7 @@ def read_window_series(cfg: USWhamConfig, yaml_text: str, repo_root: Path) -> li
         angles = np.asarray([row[1] for row in kept], dtype=float)
         deltas = np.diff(times)
         if np.any(deltas <= 0) or not np.allclose(deltas, deltas[0], rtol=1.0e-7, atol=1.0e-9):
-            raise ValueError(f"Production sampling times are not uniform in window {index}")
+            raise ValueError(f"Sampling times are not uniform in window {index}")
         series.append(WindowSeries(index, center, times, angles))
     return series
 
@@ -524,7 +667,7 @@ def plot_pmf(path: Path, grid: np.ndarray, original: np.ndarray, lower: np.ndarr
     ax.set_xlabel("Dihedral (degrees)")
     ax.set_ylabel("PMF (kcal mol⁻¹)")
     ax.set_title(
-        f"{cfg.prod.run.pull.system} torsional PMF "
+        f"{cfg.run.pull.system} torsional PMF "
         f"({successful} bootstrap replicas)"
     )
     ax.grid(alpha=0.24)
@@ -553,7 +696,7 @@ def plot_pmf(path: Path, grid: np.ndarray, original: np.ndarray, lower: np.ndarr
 def create_us_wham(cfg: USWhamConfig, yaml_text: str, repo_root: Path) -> tuple[Path, Path, int]:
     executable = resolve_executable(cfg.wham.executable)
     series = read_window_series(cfg, yaml_text, repo_root)
-    root = pull_dir(cfg.prod.run.pull, repo_root)
+    root = pull_dir(cfg.run.pull, repo_root)
     output = root / cfg.output_dirname
     output.mkdir(parents=True, exist_ok=True)
     for window in series:
@@ -564,7 +707,7 @@ def create_us_wham(cfg: USWhamConfig, yaml_text: str, repo_root: Path) -> tuple[
     # The legacy production-field name says kcal, but the completed input and
     # exact YAML snapshots must remain untouched; its numeric value is kJ/mol.
     wham_force = dcdftb_wall_to_wham_force(
-        cfg.prod.run.wall.coefficient_kcal_mol_deg2
+        cfg.run.wall.coefficient_kcal_mol_deg2
     )
     metadata = output / "metadata.dat"
     write_metadata(metadata, series, wham_force)

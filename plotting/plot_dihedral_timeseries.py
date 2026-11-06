@@ -115,11 +115,28 @@ def x_values(
     return (frames - frames[0]) * time_step_ps
 
 
-def display_angles(angles: np.ndarray, convention: str) -> np.ndarray:
+def display_angles(
+    angles: np.ndarray, convention: str, center_deg: float | None = None
+) -> np.ndarray:
     """Convert angles to the convention used in the rendered figure and CSV."""
+    if center_deg is not None:
+        return center_deg + (angles - center_deg + 180.0) % 360.0 - 180.0
     if convention == "signed":
         return (angles + 180.0) % 360.0 - 180.0
     return angles
+
+
+def parse_angle_centers(values: List[str] | None) -> dict[str, float]:
+    """Parse repeatable LABEL=CENTER circular plotting conventions."""
+    centers: dict[str, float] = {}
+    for value in values or []:
+        if "=" not in value:
+            raise ValueError(f"angle center must be LABEL=CENTER, got {value!r}")
+        label, raw_center = (part.strip() for part in value.split("=", maxsplit=1))
+        if not label or label in centers:
+            raise ValueError(f"invalid or duplicate angle-center label: {label!r}")
+        centers[label] = float(raw_center)
+    return centers
 
 
 def save_aligned_data(
@@ -129,6 +146,7 @@ def save_aligned_data(
     time_step_ps: float | None,
     trajectory_times: List[np.ndarray] | None,
     angle_convention: str,
+    angle_centers: dict[str, float],
     t_deprot: List[float] | None,
     t_diffuse: List[float] | None,
 ) -> None:
@@ -153,7 +171,9 @@ def save_aligned_data(
             diffuse_value = "" if t_diffuse is None else f"{t_diffuse[run_index]:g}"
             for label, series_path in zip(labels, paths):
                 frames, angles = read_series(series_path)
-                angles = display_angles(angles, angle_convention)
+                angles = display_angles(
+                    angles, angle_convention, angle_centers.get(label)
+                )
                 times = x_values(frames, time_step_ps, run_times)
                 for frame, time_value, angle in zip(frames, times, angles):
                     writer.writerow(
@@ -234,6 +254,16 @@ def main() -> None:
         help="Plot raw CPPTRAJ angles or map them to [-180, 180) (default: raw)",
     )
     ap.add_argument(
+        "--angle-center",
+        action="append",
+        default=None,
+        metavar="LABEL=CENTER",
+        help=(
+            "repeatable per-dihedral circular center in degrees; values are mapped "
+            "to [CENTER-180, CENTER+180), overriding --angle-convention for LABEL"
+        ),
+    )
+    ap.add_argument(
         "--t-deprot",
         nargs="+",
         type=float,
@@ -270,6 +300,13 @@ def main() -> None:
     labels = [x.strip() for x in args.labels.split(",") if x.strip()]
     if not labels:
         raise SystemExit("No labels provided")
+    try:
+        angle_centers = parse_angle_centers(args.angle_center)
+    except ValueError as exc:
+        ap.error(str(exc))
+    unknown_centers = sorted(set(angle_centers) - set(labels))
+    if unknown_centers:
+        ap.error(f"--angle-center labels are not selected: {', '.join(unknown_centers)}")
 
     if args.style.exists():
         plt.style.use(args.style)
@@ -326,7 +363,9 @@ def main() -> None:
             color = cmap(idx % cmap.N)
             for ax, label, path in zip(axes_list, labels, paths):
                 frames, series = read_series(path)
-                series = display_angles(series, args.angle_convention)
+                series = display_angles(
+                    series, args.angle_convention, angle_centers.get(label)
+                )
                 t = x_values(frames, args.time_step_ps, run_times)
                 if args.plot == "scatter":
                     ax.scatter(t, series, s=args.scatter_size, color=color, alpha=0.7, label=title)
@@ -354,7 +393,9 @@ def main() -> None:
             run_times = None if trajectory_times is None else trajectory_times[i]
             for label, path in zip(labels, paths):
                 frames, series = read_series(path)
-                series = display_angles(series, args.angle_convention)
+                series = display_angles(
+                    series, args.angle_convention, angle_centers.get(label)
+                )
                 t = x_values(frames, args.time_step_ps, run_times)
                 color = color_map[label]
                 if args.plot == "scatter":
@@ -413,6 +454,7 @@ def main() -> None:
         args.time_step_ps,
         trajectory_times,
         args.angle_convention,
+        angle_centers,
         args.t_deprot,
         args.t_diffuse,
     )

@@ -1,0 +1,21 @@
+# Append the unwrapped 190, 200, and 210 degree single15 windows without
+# modifying the completed -20..180 degree chain.
+base_pull_yaml: pull-dih.yaml
+base_equil_yaml: equil-dih.yaml
+source_window_index: 20
+
+windows:
+  - {window_index: 21, center_deg: 190.0}
+  - {window_index: 22, center_deg: 200.0}
+  - {window_index: 23, center_deg: 210.0}
+
+pull:
+  duration_ps: 1.0
+  timestep_fs: 1.0
+  slurm:
+    name: APP-us-single15-pull-right
+    partition: small
+    nodes: 2
+    time: "01:00:00"
+    stdout: slurm.right.%j.out
+    stderr: slurm.right.%j.err

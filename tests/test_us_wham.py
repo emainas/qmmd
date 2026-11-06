@@ -10,6 +10,7 @@ from qmmd.us_wham import (
     compute_thermodynamics,
     dcdftb_wall_to_wham_force,
     load_config,
+    read_window_series,
     read_wham_result,
     smooth_pmf,
     wham_command,
@@ -20,9 +21,44 @@ from qmmd.us_wham import (
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "configs/PRN-anti/us/wham.yaml"
+BPP_EQUIL_CONFIG = ROOT / "configs/BPP/us/wham-dih.yaml"
 
 
 class USWhamTests(unittest.TestCase):
+    def test_explicit_window_subset_ignores_unrequested_report_rows(self):
+        cfg = load_config(ROOT / "configs/DPP/us/wham-dih.yaml")
+        series = read_window_series(cfg, cfg.source_yaml.read_text(), ROOT)
+        self.assertEqual([window.index for window in series], list(range(1, 21)))
+
+    def test_equilibration_source_preserves_explicit_window_map(self):
+        cfg = load_config(BPP_EQUIL_CONFIG)
+        self.assertEqual(cfg.source_kind, "equilibration")
+        self.assertIsNone(cfg.prod)
+        self.assertEqual(cfg.window_targets[-2:], ((19, -10.0), (20, -20.0)))
+        self.assertEqual(len(cfg.window_targets), 21)
+
+    def test_extended_equilibration_accepts_additional_stage_spec(self):
+        cfg = load_config(ROOT / "configs/BV/us/wham-dih-extended.yaml")
+        self.assertEqual(cfg.source_kind, "equilibration")
+        self.assertEqual(cfg.output_dirname, "wham_extended")
+        self.assertEqual(
+            [path.name for path in cfg.equil_stage_spec_yamls],
+            ["extend-dih-right.yaml"],
+        )
+        self.assertEqual(cfg.window_targets[-3:], ((19, 190.0), (20, 200.0), (21, 210.0)))
+
+    def test_partial_cpp_production_accepts_extension_stage_specs(self):
+        cfg = load_config(
+            ROOT / "configs/CPP/us/wham-dih-prod-extended-partial.yaml"
+        )
+        self.assertEqual(cfg.source_kind, "production")
+        self.assertEqual(
+            [path.name for path in cfg.production_stage_spec_yamls],
+            ["prod-dih-left.yaml", "prod-dih-right.yaml"],
+        )
+        self.assertEqual(cfg.window_targets[0], (20, -20.0))
+        self.assertEqual(cfg.window_targets[-1], (23, 210.0))
+
     def test_config_uses_nonperiodic_path_and_correct_force_conversion(self):
         cfg = load_config(CONFIG)
         self.assertFalse(cfg.coordinate.periodic)

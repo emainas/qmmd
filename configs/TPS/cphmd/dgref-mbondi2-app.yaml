@@ -1,7 +1,7 @@
 system: TPS
 buffer: 10.0
 prefix: solv
-job_name: dgref-mbondi2/app
+job_name: dgref-mbondi2-pka4p9/app
 input_parm7: mdequil/solv_mbondi2.parm7
 input_rst7: equil-npt.rst7
 
@@ -9,15 +9,20 @@ cpin:
   charge_sets: configs/TPS/cphmd/charge_sets.csv
   states: [ppp, app]
   statene: DELTAGREF, 0.0
-  pka_corr: 5.0, 0.0
+  pka_corr: 4.9, 0.0
   cph_igb: 2
+
+# Seed the corrected search from the converged pKa=5.0 result, shifted by
+# -RT ln(10) * 0.1 at 300 K. finddgref.py still performs a fresh calibration.
+search:
+  dgref_estimate: 80.352231
 
 report:
   discard_first: 8
 
 dgref_mdin:
   dgref_nvt:
-    description: TPS PPP-to-APP mbondi2 reference-energy calibration at 300 K and constant volume
+    description: TPS PPP-to-APP pKa 4.9 mbondi2 reference-energy calibration at 300 K and constant volume
     cntrl:
       iwrap: 1
       imin: 0
@@ -38,7 +43,7 @@ dgref_mdin:
       ntwe: 0
       icnstph: 2
       ntcnstph: 100
-      solvph: 5.0
+      solvph: 4.9
       ntrelax: 100
       saltcon: 0.1
 
@@ -51,9 +56,9 @@ runtime:
 
 slurm:
   job:
-    name: tps-dgref-mb2-app
+    name: tps-dgref-mb2-app-p49
     partition: small
     nodes: 2
-    time: "24:00:00"
+    time: "48:00:00"
     stdout: "slurm.%j.out"
     stderr: "slurm.%j.err"

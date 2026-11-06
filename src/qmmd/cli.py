@@ -60,7 +60,9 @@ def main():
     p = argparse.ArgumentParser(prog="qmmd")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    prep = sub.add_parser("prep", help="Prepare solvated system with tleap")
+    prep = sub.add_parser(
+        "prep", help="Prepare a solvated system with optional Packmol packing"
+    )
     prep.add_argument("yaml", type=Path)
 
     mdequil = sub.add_parser("mdequil", help="Write MD equil inputs and run (slurm if provided, else local)")

@@ -1,0 +1,52 @@
+% Generated from active/2026-BV-protonation-microstates/drafts/intro.md by scripts/md2tex.py
+The placement of protons within a molecule is a fundamental determinant of charge, structure, reactivity, binding affinity, and optical response.\cite{manallackPKaDistributionDrugs2007,martinLetsNotForget2009,baxGettingChemistryRight2017,maBiomedicalApplicationsSupramolecular2015,muruganRoleProtonationState2014,handeRecentAdvancesSmall2022}
+For molecules containing multiple titratable and tautomerizable sites, however, a single ``protonation state'' is often an inadequate description.
+Their behavior in solution arises from an ensemble of coupled protonation and tautomerization microstates, whose populations depend on pH, solvent, conformation, and local environment.\cite{gunnerStandardStateFree2020,isikOverviewSAMPL6PKa2021,nagyTheoreticalCalculationsConformational2014}
+Because experimental observables reflect this ensemble, a measured \pka{}, absorption band, binding constant, or reactivity trend may combine contributions from several microscopic species.
+A measured \pka{} is therefore not, by itself, a microscopic assignment.
+It identifies a macroscopic change in proton occupancy or ensemble composition, but not necessarily which site changes protonation, which tautomer is formed, or which proton-transfer pathway produces the observed response.\cite{ullmannRelationsProtonationConstants2003,bombardaPHDependentPKaValues2010}
+
+Biliverdin (BV) is a longstanding example of this assignment problem.
+As the heme-derived parent of the bilin chromophore family, BV is a central intermediate in heme catabolism and the chromophore of far-red and near-infrared fluorescent proteins, photoswitches, and photoreceptors.\cite{tenhunen_microsomal_1969,chernovNearInfraredFluorescentProteins2017,tangRedEdgeBilinBinding2021}
+Its protonation state and hydrogen-bonding interactions are implicated in spectral tuning and in the initiation of photochemical signaling in bilin-binding proteins,\cite{modiProtonationBiliverdinIXa2019a,shankarUltrafastRemotecontrolledProtonation2025,songRedGreenCyanobacteriochrome2015,tohProtontransferHydrogenbondInteractions2010a,yangUltrafastProtoncoupledIsomerization2022a} so the microstate assigned to BV determines the structures used to model these proteins.
+\textcolor{red}{[To develop when refining scope and language: free BV in water adopts the locked-helix (\textit{ZZZsss}) conformation, while in proteins BV is typically in another isomer, often with the terminal ring that is not covalently bound to the protein flipped. We therefore also want to know whether, and how, the \pka{} of each ring changes with the isomer. Probably an important point for the introduction.]}
+\textcolor{green}{\textbf{Response:} Agreed; this should motivate the conformational arm of the thermodynamic cycle. The archived final handoff presently contains only \textit{ZZZsss} metadynamics results for rings B and C, while the ring-D \textit{ZZZsss}$\rightarrow$\textit{ZZZssa} torsional umbrella workflow is still being completed. I therefore cannot yet state an isomer-dependent ring \pka{} shift, but will add that quantitative comparison once the torsional PMFs are final.}
+Yet the acid--base chemistry of free BV remains unresolved.
+Its absorption spectrum undergoes a sigmoidal, pH-dependent shift of the Soret band, with an apparent inflection near pH 5.6--5.7.
+Chemical modification of the propionic acid side chains, together with comparison to amide derivatives, assigned this response to the tetrapyrrolic core, and the transition was subsequently interpreted as deprotonation of the tetrapyrrolic $\pi$ system.\cite{shangBiliverdinAmidesReveal2010}
+The spectroscopic measurement, however, shows only that the chromophore ensemble changes over this pH range.
+
+Which microstates, then, does BV populate in water across this pH range?
+The answer is hard to obtain because the candidates are many and their equilibria are coupled.
+The four nitrogen atoms and two lactam carbonyl groups of the core can carry protons in many arrangements, including keto--enol tautomers, and each arrangement can adopt several conformations.\cite{villegas-escobarKetoEnolTautomerism2021a,tongManyRoadsSeam2026}
+The free energy of removing a proton from one site depends on where the other protons sit and on the conformation, and a proton that leaves one site may end up either in bulk water or on another site of the same molecule.
+A microscopic description therefore requires more than a single macroscopic \pka{} or the energies of a predefined set of static structures.
+
+It also requires recognizing what a deprotonation is at the molecular level.
+A deprotonation is complete only when the excess proton reaches bulk water.
+In water, protons move by Grotthuss structural diffusion: an excess-proton defect migrates through the repeated formation and reorganization of transient hydrogen-bonded water wires, and no single identifiable proton travels the whole distance.\cite{agmonGrotthussMechanism1995,agmonProtonsHydroxideIons2016,cukiermanTuGrotthussOther2006,hassanaliProtonTransferWater2013,miyakeGrotthussMechanismsProton2016,popovSearchGrotthussMechanism2023}
+Whether a proton-transfer event changes the protonation state of the solute therefore depends on where this defect ends up.
+Migration into bulk water removes a proton from the molecule; transfer to another site on the same molecule produces a tautomer without changing its net charge.
+To sample a deprotonation free energy, a simulation must follow the defect beyond N--H cleavage and the contact ion pair, through increasingly solvent-separated states along reorganizing water wires, until it reaches a bulk-like diffusive regime.
+Along the way, the defect may instead return to its original site, remain trapped near the molecule, end at another solute site, or recombine with the counterion.
+These outcomes are different chemical processes, even when they look alike along a local coordination coordinate.
+
+Existing computational approaches each capture part of this picture.
+Empirical or machine-learning models, thermodynamic cycles, and continuum-electrostatics calculations estimate protonation free energies efficiently, but provide limited information on explicit solvent-mediated pathways or competing proton endpoints.\cite{navoComputerPredictionKa2021,pliegoThermodynamicCyclesCalculation2003,casasnovasTheoreticalKaCalculations2014}
+Reactive simulations in explicit water allow both proton exchange with the solvent and proton redistribution within the solute,\cite{Tummanapelli2014,Tummanapelli2015GSH,Sakti2018} although fully \emph{ab initio} approaches are often too costly for the extensive sampling that coupled protonation--tautomerization equilibria require.\cite{saktiRecentAdvancesQuantummechanical2020,yangUsingMetadynamicsBuild2022}
+Density functional tight binding (DFTB) offers a practical compromise between explicit reactivity and computational cost,\cite{gausDensityFunctionalTight2014,spiegelmanDensityfunctionalTightbindingBasic2020} but diffusion along a biased collective variable does not by itself show that the corresponding proton-transfer event has been sampled to completion.\cite{goyalMolecularSimulationWater2014}
+What is missing is a way to verify, trajectory by trajectory, where each proton ends up.
+
+In this work, we combine reactive divide-and-conquer DFTB (DC-DFTB) metadynamics in explicit water with a detailed defect-tracking analysis of the resulting proton-transfer trajectories.\cite{barducciMetadynamics2011,nishizawaThreePillarsAchieving2016,nakaiDivideandConquerTypeDensityFunctionalTightBinding2016,nishimuraHierarchicalParallelizationDivideandconquer2020}
+A coordination-number collective variable, previously used for direct \pka{} calculations in aqueous systems,\cite{Tummanapelli2015Polyprotic,Tummanapelli2015Amino,Sakti2018} promotes proton transfer without specifying its acceptor or endpoint, and gives the microscopic \pka{} of each titratable site.
+A Mulliken charge-defect analysis then follows the protonic defect through the solvent and determines the type of process observed.
+Two kinds of events that change the microstate without releasing a proton into water are sampled separately with DC-DFTB umbrella sampling: the transfer of a proton from one site of the molecule to another, and the conformational changes that alter a deprotonation free energy.
+Combined in a thermodynamic cycle, these free energies give the relative populations of the connected microstates.
+
+We validate this approach on three molecules, each isolating one of the complications present in BV, before applying it to the full chromophore.
+Histidine has two competing titratable sites with experimentally known microscopic \pka{} values,\cite{kyte_structure_2006} and tests whether the calculations resolve site-specific deprotonation and capture the influence of conformational heterogeneity.
+Propionic acid exists as two conformers, \emph{syn} and \emph{anti}, which differ in the orientation of the O--H bond; comparing their calculated free-energy difference with experiment\cite{macoas_internal_2005} tests the sampling of conformational change, which in BV converts one conformer into another.
+Malonaldehyde, a prototype of intramolecular proton transfer,\cite{baughcumMicrowaveSpectroscopicStudy1981,wangFulldimensionalQuantumCalculations2008} tests whether the approach captures proton transfer within a single molecule, the type of process that interconverts BV tautomers.
+Applied to BV, the microscopic \pka{} values of the four nitrogen sites combine into a macroscopic \pka{} of about 4.5 for the core of the \emph{ZZZsss} conformer.\cite{tongManyRoadsSeam2026}
+Combined with QM/MM calculations of microstate-specific and macroscopic absorption spectra,\cite{groenhofIntroductionQMMM2013} these populations indicate that the transition near pH 5.6 may arise either from deprotonation at rings A and D or from redistribution among cationic keto--enol tautomers, which have historically been considered minor relative to the lactam forms.\cite{nichol_tautomerism_1969,villegas-escobarKetoEnolTautomerism2021a,singer_femtosecond_2014}
+The same approach can now be used to revisit other longstanding protonation-state assignments that rest on a measured \pka{} alone.

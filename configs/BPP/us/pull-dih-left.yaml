@@ -1,0 +1,26 @@
+# Two additional BPP single15 pull windows. The completed 0-to-180 degree
+# chain remains untouched. This branch starts from the completed 0-degree
+# pull restart and proceeds sequentially 0 -> -10 -> -20 degrees.
+base_pull_yaml: pull-dih.yaml
+source:
+  window_index: 0
+  stage_dirname: pull
+  restart_name: pull.rst7
+
+windows:
+  - {window_index: 19, center_deg: -10.0}
+  - {window_index: 20, center_deg: -20.0}
+
+stage_dirname: pull
+duration_ps: 1.0
+timestep_fs: 1.0
+restraint_force_constant_kcal_mol_rad2: 50.0
+
+slurm:
+  job:
+    name: BPP-us-single15-pull-left
+    partition: small
+    nodes: 2
+    time: "01:00:00"
+    stdout: slurm.left.%j.out
+    stderr: slurm.left.%j.err

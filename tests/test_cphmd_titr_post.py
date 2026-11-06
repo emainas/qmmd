@@ -70,10 +70,10 @@ class CpHMDTitrPostTests(unittest.TestCase):
             StateColumn("TPS", 1, 1),
         ]
         counts = _column_proton_counts(cfg.titr, columns)
-        self.assertEqual(counts[0], (4, 3, 3))
+        self.assertEqual(counts[0], (4, 3, 3, 3, 3))
         self.assertEqual(counts[1], (0, 1, 1, 1, 1))
         self.assertEqual(counts[2], (0, 1, 1, 1, 1))
-        self.assertEqual(counts[3], (4, 3, 3))
+        self.assertEqual(counts[3], (4, 3, 3, 3, 3))
 
 
 if __name__ == "__main__":

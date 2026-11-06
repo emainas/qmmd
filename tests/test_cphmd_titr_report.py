@@ -9,10 +9,14 @@ from qmmd.cphmd_titr_report import (
     analyze_syn_anti,
     bhattacharyya_overlap,
     fit_henderson_hasselbalch,
+    fit_tps_microstate_model,
+    fit_two_site_model,
     load_titr_report_config,
     parse_edge_acceptance,
     parse_roundtrip_stats,
     render_remlog_cpptraj_input,
+    tps_microstate_probabilities,
+    two_site_probabilities,
 )
 
 
@@ -22,6 +26,9 @@ PR4_CONFIG = REPO / "configs" / "PR4" / "cphmd" / "cphmd.yaml"
 BLA_CONFIG = REPO / "configs" / "BLA" / "cphmd" / "cphmd.yaml"
 BLA_PRN_ONLY_CONFIG = (
     REPO / "configs" / "BLA" / "cphmd" / "cphmd-prn-tails-mbondi2.yaml"
+)
+BLA_TPS_ONLY_CONFIG = (
+    REPO / "configs" / "BLA" / "cphmd" / "cphmd-tps-ti-tails-deprot-1ns.yaml"
 )
 
 
@@ -58,10 +65,9 @@ class CpHMDTitrReportTests(unittest.TestCase):
         self.assertEqual(
             (
                 cfg.composite.tps.protonated_state,
-                cfg.composite.tps.bpp_state,
-                cfg.composite.tps.cpp_state,
+                cfg.composite.tps.deprotonated_states,
             ),
-            (0, 1, 2),
+            (0, (1, 2, 3, 4)),
         )
         self.assertEqual(cfg.composite.prx.residue_ids, (2, 3))
         self.assertEqual(cfg.composite.prx.deprotonated_state, 0)
@@ -80,6 +86,17 @@ class CpHMDTitrReportTests(unittest.TestCase):
         self.assertEqual(cfg.composite.prx.deprotonated_state, 0)
         self.assertEqual(cfg.composite.prx.syn_states, (1, 3))
         self.assertEqual(cfg.composite.prx.anti_states, (2, 4))
+
+    def test_bla_tps_report_loads_configured_microstate_model(self):
+        cfg = load_titr_report_config(BLA_TPS_ONLY_CONFIG)
+        self.assertIsNotNone(cfg.composite)
+        assert cfg.composite is not None
+        self.assertIsNotNone(cfg.composite.tps)
+        assert cfg.composite.tps is not None
+        self.assertEqual(
+            cfg.composite.tps.microstate_model_pkas,
+            (5.0, 4.5, 4.5, 5.0),
+        )
 
     def test_syn_anti_fractions_are_conditional_on_protonation(self):
         records = [
@@ -107,6 +124,55 @@ class CpHMDTitrReportTests(unittest.TestCase):
         fit = fit_henderson_hasselbalch(ph, fraction)
         self.assertAlmostEqual(fit.pka, expected_pka, places=10)
         self.assertAlmostEqual(fit.hill, expected_hill, places=10)
+
+    def test_coupled_two_site_fit_recovers_microstate_model(self):
+        ph = np.arange(2.5, 7.5, 0.5)
+        expected = (4.7, 5.2, 0.8)
+        probabilities = two_site_probabilities(ph, *expected)
+        rows = [
+            {
+                "pH": float(value),
+                **{
+                    f"p{state}_fraction": float(probabilities[index][row])
+                    for index, state in enumerate(("00", "10", "01", "11"))
+                },
+            }
+            for row, value in enumerate(ph)
+        ]
+        fit = fit_two_site_model(rows)
+        self.assertEqual(
+            tuple(round(value, 8) for value in sorted((fit.pk10, fit.pk01))),
+            tuple(round(value, 8) for value in sorted(expected[:2])),
+        )
+        self.assertAlmostEqual(fit.interaction_w, expected[2], places=8)
+        self.assertLess(fit.macro_pka1, fit.macro_pka2)
+
+    def test_tps_fit_recovers_five_state_microstate_model(self):
+        cfg = load_titr_report_config(BLA_CONFIG)
+        assert cfg.composite is not None
+        assert cfg.composite.tps is not None
+        tps = cfg.composite.tps
+        ph = np.arange(2.5, 7.5, 0.5)
+        expected = (4.7, 4.3, 4.5, 5.1)
+        probabilities = tps_microstate_probabilities(ph, expected)
+        rows = []
+        for row, value in enumerate(ph):
+            item = {
+                "pH": float(value),
+                "ppp_fraction": float(probabilities[0][row]),
+            }
+            for index, name in enumerate(tps.deprotonated_names, start=1):
+                item[f"{name}_fraction_total"] = float(probabilities[index][row])
+            rows.append(item)
+
+        fit = fit_tps_microstate_model(rows, tps)
+        np.testing.assert_allclose(fit.microscopic_pkas, expected, atol=1.0e-8)
+        self.assertAlmostEqual(
+            fit.macroscopic_pka,
+            -np.log10(np.power(10.0, -np.asarray(expected)).sum()),
+            places=8,
+        )
+        self.assertLess(fit.rmse, 1.0e-10)
 
     def test_state_overlap(self):
         self.assertAlmostEqual(
